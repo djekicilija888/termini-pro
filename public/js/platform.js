@@ -1,1 +1,73 @@
-const T='terminiOwnerToken';const $=s=>document.querySelector(s);async function api(u,o={}){let r=await fetch(u,o),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}function msg(el,t,c=''){el.textContent=t;el.className='msg '+c}async function loadName(){try{$('#platformName').textContent=(await api('/api/platform')).name}catch{}}function card(b){let e=document.createElement('article');e.className='item';e.innerHTML=`<p class="eyebrow">${b.type||'Firma'}</p><h3>${b.name}</h3><p class="muted">${[b.city,b.address].filter(Boolean).join(' · ')||'Lokacija nije upisana'}</p><div class="badges"><span>${b.subscription_plan}</span><span>${b.subscription_status}</span>${b.phone?`<span>${b.phone}</span>`:''}</div><div class="actions"><a class="btn small" href="/b/${b.slug}">Zakaži termin</a><button class="btn small ghost">Kopiraj link</button></div>`;e.querySelector('button').onclick=async()=>{await navigator.clipboard.writeText(b.booking_url);e.querySelector('button').textContent='Kopirano'};return e}async function load(){let p=new URLSearchParams();if(q.value)p.set('q',q.value);if(city.value)p.set('city',city.value);if(type.value)p.set('type',type.value);let rows=await api('/api/businesses?'+p.toString());businesses.innerHTML='';if(!rows.length)businesses.innerHTML='<div class="card"><p class="muted">Nema firmi.</p></div>';rows.forEach(x=>businesses.appendChild(card(x)))}registerForm.onsubmit=async e=>{e.preventDefault();try{msg(regMsg,'Registracija...');let d=await api('/api/auth/register-business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({business_name:regName.value,type:regType.value,city:regCity.value,phone:regPhone.value,owner_name:regOwner.value,email:regEmail.value,password:regPass.value})});localStorage.setItem(T,d.token);msg(regMsg,'Firma napravljena. Otvaram panel.','ok');setTimeout(()=>location='/owner.html',700)}catch(er){msg(regMsg,er.message,'err')}};loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:loginEmail.value,password:loginPass.value})});if(d.user.role!=='owner')throw Error('Ovo nije nalog firme.');localStorage.setItem(T,d.token);location='/owner.html'}catch(er){msg(loginMsg,er.message,'err')}};search.onclick=load;[q,city,type].forEach(i=>i.onkeydown=e=>{if(e.key==='Enter')load()});loadName();load();
+const T='terminiOwnerToken';
+const $=s=>document.querySelector(s);
+
+async function api(u,o={}){
+  const r=await fetch(u,o);
+  const d=await r.json();
+  if(!r.ok) throw Error(d.error||'Greška');
+  return d;
+}
+
+function msg(el,t,c=''){
+  if(!el) return;
+  el.textContent=t;
+  el.className='msg '+c;
+}
+
+async function loadName(){
+  try{
+    const data=await api('/api/platform');
+    const el=$('#platformName');
+    if(el) el.textContent=data.name;
+  }catch{}
+}
+
+if(typeof registerForm!=='undefined'){
+  registerForm.onsubmit=async e=>{
+    e.preventDefault();
+    try{
+      msg(regMsg,'Registracija...');
+      const d=await api('/api/auth/register-business',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          business_name:regName.value,
+          type:regType.value,
+          city:regCity.value,
+          phone:regPhone.value,
+          owner_name:regOwner.value,
+          email:regEmail.value,
+          password:regPass.value
+        })
+      });
+      localStorage.setItem(T,d.token);
+      msg(regMsg,'Firma napravljena. Otvaram panel.','ok');
+      setTimeout(()=>location='/owner.html',700);
+    }catch(er){
+      msg(regMsg,er.message,'err');
+    }
+  };
+}
+
+if(typeof loginForm!=='undefined'){
+  loginForm.onsubmit=async e=>{
+    e.preventDefault();
+    try{
+      const d=await api('/api/auth/login',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          email:loginEmail.value,
+          password:loginPass.value
+        })
+      });
+      if(d.user.role!=='owner') throw Error('Ovo nije nalog firme.');
+      localStorage.setItem(T,d.token);
+      location='/owner.html';
+    }catch(er){
+      msg(loginMsg,er.message,'err');
+    }
+  };
+}
+
+loadName();

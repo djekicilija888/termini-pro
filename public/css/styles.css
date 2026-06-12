@@ -327,3 +327,17 @@ img{max-width:100%}
   color: #9a3412;
   font-weight: 800;
 }
+
+
+/* clean-home-v51: glavna strana bez javne pretrage firmi */
+#businesses,
+.business-search,
+.business-grid,
+#businessList,
+#searchForm {
+  display: none !important;
+}
+
+.hero-actions {
+  justify-content: flex-start;
+}
