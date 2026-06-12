@@ -4,134 +4,112 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Online zakazivanje termina</title>
-  <meta name="theme-color" content="#070816" />
+  <meta name="theme-color" content="#111827" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body class="public-page">
-  <div class="noise"></div>
-  <div class="orb orb-a"></div>
-  <div class="orb orb-b"></div>
-  <div class="orb orb-c"></div>
-
-  <header class="site-header">
+  <header class="topbar">
     <div class="wrap nav">
       <a class="brand" href="/">
         <span class="brand-mark">T</span>
         <span id="businessName">Termini Pro</span>
       </a>
-      <nav class="nav-menu">
-        <a href="#services">Usluge</a>
-        <a href="#booking">Zakazivanje</a>
-        <a href="/admin.html">Admin</a>
-      </nav>
-      <a class="btn nav-cta" href="#booking">Zakaži</a>
+      <a class="nav-admin" href="/admin.html">Admin</a>
     </div>
   </header>
 
-  <main>
-    <section class="hero ultra-hero">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <div class="kicker"><span class="pulse-dot"></span> Premium online zakazivanje</div>
-          <h1>Zakazivanje koje izgleda kao ozbiljan biznis.</h1>
-          <p class="lead">Mušterija bira uslugu, datum i slobodan termin. Sistem automatski sprečava preklapanje i čuva zakazivanje u admin panelu.</p>
-          <div class="hero-actions">
-            <a class="btn big shine" href="#booking">Zakaži termin</a>
-            <a class="btn ghost big" href="#services">Pogledaj usluge</a>
-          </div>
-          <div class="trust-row">
-            <span>✓ Automatska provera</span>
-            <span>✓ Admin panel</span>
-            <span>✓ Radi na telefonu</span>
-          </div>
-        </div>
+  <main class="wrap page-grid">
+    <section class="intro-card">
+      <p class="eyebrow">Online zakazivanje</p>
+      <h1>Zakaži termin brzo.</h1>
+      <p class="lead">Izaberi uslugu, datum i slobodno vreme. Sistem automatski proverava zauzetost.</p>
 
-        <div class="hero-showcase">
-          <div class="phone-mockup">
-            <div class="phone-top"></div>
-            <div class="app-screen">
-              <div class="screen-header"><span></span><strong>Termini</strong></div>
-              <div class="metric-card">
-                <span>Danas</span>
-                <strong>12</strong>
-                <small>zakazanih termina</small>
-              </div>
-              <div class="mini-calendar">
-                <div>09:00</div><div class="active">10:30</div><div>12:00</div><div>14:15</div>
-              </div>
-              <div class="glass-line"></div><div class="glass-line short"></div>
-              <div class="screen-button">Rezerviši sada</div>
-            </div>
-          </div>
-          <div class="floating-card floating-one"><span>Bez duplih termina</span><strong>100%</strong></div>
-          <div class="floating-card floating-two"><span>Novi termin</span><strong>10:30</strong></div>
-        </div>
+      <div class="badges">
+        <span>Bez duplih termina</span>
+        <span>Admin panel</span>
+        <span>Radi na telefonu</span>
+      </div>
+
+      <div class="contact-card">
+        <strong>Kontakt</strong>
+        <span id="businessContact">Podaci se učitavaju...</span>
       </div>
     </section>
 
-    <section class="section power-strip">
-      <div class="wrap strip-grid">
-        <div><strong>Brzo</strong><span>Zakazivanje za manje od minut.</span></div>
-        <div><strong>Pametno</strong><span>Računa slobodne slotove.</span></div>
-        <div><strong>Profesionalno</strong><span>Admin kontrola i statusi.</span></div>
+    <section class="booking-card">
+      <div class="section-title">
+        <p class="eyebrow">Termin</p>
+        <h2>Novi termin</h2>
       </div>
+
+      <form id="bookingForm">
+        <label>
+          Usluga
+          <select id="service" required></select>
+        </label>
+
+        <div class="form-row">
+          <label>
+            Datum
+            <input id="date" type="date" required />
+          </label>
+
+          <label>
+            Vreme
+            <select id="slot" required>
+              <option value="">Prvo izaberi uslugu i datum</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          Ime i prezime
+          <input id="customerName" type="text" placeholder="Npr. Marko Marković" required />
+        </label>
+
+        <label>
+          Telefon
+          <input id="phone" type="tel" placeholder="Npr. +381641234567" required />
+        </label>
+
+        <details class="optional-fields">
+          <summary>Dodatno, nije obavezno</summary>
+
+          <label>
+            Email
+            <input id="email" type="email" placeholder="npr. marko@email.com" />
+          </label>
+
+          <label>
+            Napomena
+            <textarea id="notes" rows="2" placeholder="Npr. posebna želja..."></textarea>
+          </label>
+        </details>
+
+        <button type="submit" class="btn">Zakaži termin</button>
+        <p id="message" class="message"></p>
+      </form>
     </section>
 
-    <section id="services" class="section services-section">
-      <div class="wrap">
-        <div class="section-head centered">
+    <section class="services-card">
+      <div class="section-title inline">
+        <div>
           <p class="eyebrow">Usluge</p>
-          <h2>Izaberi uslugu i odmah vidi dostupne termine.</h2>
-          <p class="muted max-center">Kartice se automatski pune iz admin panela. Kad promeniš uslugu, sajt odmah prati novu ponudu.</p>
-        </div>
-        <div id="servicesGrid" class="services-grid"></div>
-      </div>
-    </section>
-
-    <section class="section process-section">
-      <div class="wrap">
-        <div class="section-head centered">
-          <p class="eyebrow">Kako radi</p>
-          <h2>Tri koraka do rezervisanog termina.</h2>
-        </div>
-        <div class="process-grid">
-          <div class="process-card"><span>01</span><h3>Izbor usluge</h3><p>Mušterija bira uslugu koju si definisao u admin panelu.</p></div>
-          <div class="process-card"><span>02</span><h3>Slobodan termin</h3><p>Sistem prikazuje samo termine koji nisu zauzeti.</p></div>
-          <div class="process-card"><span>03</span><h3>Admin kontrola</h3><p>Ti vidiš sve termine i menjaš status po potrebi.</p></div>
+          <h2>Dostupne usluge</h2>
         </div>
       </div>
-    </section>
-
-    <section id="booking" class="section booking-section">
-      <div class="wrap booking-grid">
-        <div class="booking-copy">
-          <p class="eyebrow">Zakazivanje</p>
-          <h2>Rezerviši termin kroz premium formu.</h2>
-          <p class="muted">Forma proverava slobodne termine preko servera. Kasnije ovde povezujemo SMS ili Viber potvrdu.</p>
-          <div class="info-panel"><div class="info-icon">☎</div><div><strong>Kontakt</strong><span id="businessContact">Podaci se učitavaju...</span></div></div>
-          <div class="info-panel"><div class="info-icon">⚡</div><div><strong>Automatska zaštita</strong><span>Ne dozvoljava dva termina u isto vreme.</span></div></div>
-        </div>
-
-        <form id="bookingForm" class="card form-card premium-form">
-          <div class="form-title"><span class="form-badge">Live booking</span><h3>Novi termin</h3></div>
-          <label>Usluga<select id="service" required></select></label>
-          <div class="two-cols">
-            <label>Datum<input id="date" type="date" required /></label>
-            <label>Slobodan termin<select id="slot" required><option value="">Prvo izaberi uslugu i datum</option></select></label>
-          </div>
-          <label>Ime i prezime<input id="customerName" type="text" placeholder="Npr. Marko Marković" required /></label>
-          <label>Telefon<input id="phone" type="tel" placeholder="Npr. +381641234567" required /></label>
-          <label>Email nije obavezan<input id="email" type="email" placeholder="npr. marko@email.com" /></label>
-          <label>Napomena nije obavezna<textarea id="notes" rows="3" placeholder="Npr. kasnim 5 minuta, posebna želja..."></textarea></label>
-          <button type="submit" class="btn full big shine">Zakaži termin</button>
-          <p id="message" class="message"></p>
-        </form>
-      </div>
+      <div id="servicesGrid" class="services-grid"></div>
     </section>
   </main>
 
-  <footer class="footer"><div class="wrap footer-grid"><span>© <span id="year"></span> Termini Pro</span><span>Online sistem za zakazivanje</span></div></footer>
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>© <span id="year"></span> Termini Pro</span>
+      <span>Online zakazivanje termina</span>
+    </div>
+  </footer>
+
   <script src="/js/booking.js"></script>
 </body>
 </html>
