@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "5.7.0",
+  "version": "5.8.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Login heading and button changed to Prijavite se"
+  "description": "Deploy fix for Android registration only version"
 }

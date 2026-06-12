@@ -28,7 +28,7 @@ const PLANS={basic:{name:'Basic',price:29,max_staff:1,max_month:100,sms:false},s
 const run=(s,p=[])=>new Promise((res,rej)=>db.run(s,p,function(e){e?rej(e):res(this)}));
 const get=(s,p=[])=>new Promise((res,rej)=>db.get(s,p,(e,r)=>e?rej(e):res(r)));
 const all=(s,p=[])=>new Promise((res,rej)=>db.all(s,p,(e,r)=>e?rej(e):res(r)));
-const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toLowerCase(),phone=v=>String(v||'').replace(/\s+/g,'').slice(0,50),now=()=>new Date().toISOString(),token=()=>crypto.randomBytes(24).toString('hex');
+const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toLowerCase(),normalizeEmail=email,phone=v=>String(v||'').replace(/\s+/g,'').slice(0,50),now=()=>new Date().toISOString(),token=()=>crypto.randomBytes(24).toString('hex');
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function addDays(ds,n){let d=new Date(`${ds}T12:00:00`);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 const validDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(String(d||'')),validTime=t=>/^\d{2}:\d{2}$/.test(String(t||'')),tm=t=>{let [h,m]=t.split(':').map(Number);return h*60+m},mt=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`,dow=d=>new Date(`${d}T12:00:00`).getDay(),over=(a,b,c,d)=>a<d&&c<b;
@@ -111,7 +111,7 @@ app.post('/api/android/register-business',async(req,res)=>{
    [r.lastID,'owner',clean(req.body.owner_name,120)||name,email,h,now()]
   );
 
-  await createDefaults(r.lastID);
+  await defaults(r.lastID, clean(req.body.owner_name,120)||name);
   res.status(201).json({
    token:sign({id:u.lastID,role:'owner',business_id:r.lastID,email}),
    business:{id:r.lastID,slug},
@@ -209,7 +209,7 @@ app.patch('/api/superadmin/businesses/:id/subscription',auth,superadmin,async(re
 app.post('/api/google-play/purchase-token',auth,owner,async(req,res)=>{await run("UPDATE businesses SET google_play_product_id=?,google_play_purchase_token=?,google_play_order_id=?,google_play_state='token_received_pending_verification',google_play_last_check=?,updated_at=? WHERE id=?",[clean(req.body.product_id,120),clean(req.body.purchase_token,500),clean(req.body.order_id,120),now(),now(),req.user.business_id]);res.json({message:'Google Play token je sačuvan. Sledeći korak je verifikacija preko Google Play Developer API-ja.'})});
 app.post('/api/google-play/webhook',(req,res)=>{console.log('Google Play RTDN placeholder',JSON.stringify(req.body).slice(0,1000));res.json({ok:true,message:'RTDN primljen. U produkciji se ovde zove Google Play Developer API.'})});
 
-app.post('/api/superadmin/google-play/entitlement',auth,admin,async(req,res)=>{
+app.post('/api/superadmin/google-play/entitlement',auth,superadmin,async(req,res)=>{
  try{
   let email=normalizeEmail(req.body.email);
   let allowed=Number(req.body.allowed_businesses||2);
