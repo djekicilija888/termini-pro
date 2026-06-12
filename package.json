@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "4.9.0",
+  "version": "5.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -15,10 +15,10 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.16",
     "qrcode": "^1.5.4",
-    "pg": "^8.13.1"
+    "sqlite3": "^5.1.7"
   },
   "engines": {
     "node": ">=20"
   },
-  "description": "Jednostavna PostgreSQL verzija bez upload slika"
+  "description": "Jednostavna SQLite verzija bez slika i bez PostgreSQL-a"
 }

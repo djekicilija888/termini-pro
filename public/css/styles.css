@@ -306,7 +306,7 @@ img{max-width:100%}
 }
 
 
-/* simple-postgres-no-images-v49: jednostavna verzija bez slika */
+/* simple-sqlite-no-images-v50: jednostavna SQLite verzija bez slika */
 .profile-cover,
 .logo,
 .gallery-grid,
@@ -319,10 +319,11 @@ img{max-width:100%}
   display: none !important;
 }
 
-.simple-note {
-  border: 1px solid var(--line);
+.simple-warning {
+  border: 1px solid #fed7aa;
   border-radius: 16px;
   padding: 12px;
-  background: #f8fafc;
-  color: var(--muted);
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 800;
 }

@@ -1,60 +1,19 @@
 
 require('dotenv').config();
-const path=require('path'),crypto=require('crypto'),express=require('express'),cors=require('cors'),helmet=require('helmet'),rateLimit=require('express-rate-limit'),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),QRCode=require('qrcode'),nodemailer=require('nodemailer');
-const {Pool}=require('pg');
+const path=require('path'),crypto=require('crypto'),express=require('express'),cors=require('cors'),helmet=require('helmet'),rateLimit=require('express-rate-limit'),sqlite3=require('sqlite3').verbose(),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),QRCode=require('qrcode'),nodemailer=require('nodemailer');
 const fs=require('fs');
 const app=express(),PORT=process.env.PORT||3000,JWT_SECRET=process.env.JWT_SECRET||'secret',PLATFORM_NAME=process.env.PLATFORM_NAME||'Termini Pro Platforma';
 const DATA_DIR=process.env.DATA_DIR||process.env.RENDER_DISK_PATH||__dirname;
 fs.mkdirSync(DATA_DIR,{recursive:true});
+const DB_PATH=process.env.DB_PATH||path.join(DATA_DIR,'termini-platforma-pro.db');
 
 app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));
 app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
-if(!process.env.DATABASE_URL){
- console.error('Nedostaje DATABASE_URL. Napravi PostgreSQL bazu na Render-u i dodaj DATABASE_URL u Environment.');
- process.exit(1);
-}
-const pool=new Pool({
- connectionString:process.env.DATABASE_URL,
- ssl:(process.env.PGSSL==='false'||process.env.DATABASE_URL.includes('localhost'))?false:{rejectUnauthorized:false}
-});
+const db=new sqlite3.Database(DB_PATH);
 const PLANS={basic:{name:'Basic',price:29,max_staff:1,max_month:100,sms:false},standard:{name:'Standard',price:49,max_staff:5,max_month:1000,sms:false},premium:{name:'Premium',price:99,max_staff:30,max_month:10000,sms:true}};
-function pgParams(s){let i=0;return s.replace(/\?/g,()=>'$'+(++i))}
-function pgSql(s){
- if(!s)return s;
- let q=String(s).trim();
- if(/^PRAGMA\b/i.test(q))return null;
- return String(s)
-  .replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi,'SERIAL PRIMARY KEY')
-  .replace(/AUTOINCREMENT/gi,'')
-  .replace(/DATETIME/gi,'TEXT');
-}
-function withReturning(s){
- let q=String(s).trim();
- if(!/^INSERT\s+INTO\s+/i.test(q) || /\bRETURNING\b/i.test(q))return s;
- let m=q.match(/^INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)/i);
- let tables=new Set(['businesses','users','staff','services','appointments','notifications']);
- if(m&&tables.has(m[1]))return s+' RETURNING id';
- return s;
-}
-async function run(s,p=[]){
- s=pgSql(s);
- if(!s)return {lastID:null,changes:0,rowCount:0};
- s=withReturning(s);
- let r=await pool.query(pgParams(s),p);
- return {lastID:r.rows&&r.rows[0]?r.rows[0].id:null,changes:r.rowCount,rowCount:r.rowCount};
-}
-async function get(s,p=[]){
- s=pgSql(s);
- if(!s)return undefined;
- let r=await pool.query(pgParams(s),p);
- return r.rows[0];
-}
-async function all(s,p=[]){
- s=pgSql(s);
- if(!s)return [];
- let r=await pool.query(pgParams(s),p);
- return r.rows;
-}
+const run=(s,p=[])=>new Promise((res,rej)=>db.run(s,p,function(e){e?rej(e):res(this)}));
+const get=(s,p=[])=>new Promise((res,rej)=>db.get(s,p,(e,r)=>e?rej(e):res(r)));
+const all=(s,p=[])=>new Promise((res,rej)=>db.all(s,p,(e,r)=>e?rej(e):res(r)));
 const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toLowerCase(),phone=v=>String(v||'').replace(/\s+/g,'').slice(0,50),now=()=>new Date().toISOString(),token=()=>crypto.randomBytes(24).toString('hex');
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function addDays(ds,n){let d=new Date(`${ds}T12:00:00`);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
