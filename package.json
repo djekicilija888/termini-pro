@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "2.1.0",
+  "version": "4.1.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "PRO v2 vidljiva multi-firma platforma za zakazivanje"
+  "description": "Mobile Gallery v41 platforma za zakazivanje"
 }
