@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: termini-platforma
+    name: termini-platforma-pro
     runtime: node
     plan: free
     buildCommand: npm install
@@ -12,9 +12,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: PLATFORM_NAME
-        value: Termini Platforma
-      - key: SUPERADMIN_NAME
-        value: Super Admin
+        value: Termini Pro Platforma
       - key: SUPERADMIN_EMAIL
         value: admin@platform.local
       - key: SUPERADMIN_PASSWORD
