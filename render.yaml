@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: termini-pro
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_NAME
+        value: Admin
+      - key: ADMIN_EMAIL
+        value: admin@termini.local
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: BUSINESS_NAME
+        value: Moj Salon
+      - key: DB_PATH
+        value: /var/data/termini-pro.db
+    disk:
+      name: termini-pro-data
+      mountPath: /var/data
+      sizeGB: 1
