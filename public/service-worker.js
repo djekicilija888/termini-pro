@@ -1,4 +1,4 @@
-const CACHE_NAME = "termini-pro-same-text-v1";
+const CACHE_NAME = "termini-pro-no-admin-button-v1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
