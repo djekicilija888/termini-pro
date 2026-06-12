@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "4.2.0",
+  "version": "4.3.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -21,5 +21,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Upload Facebook profilna i naslovna slika"
+  "description": "Clean dashboard with separate booking link card"
 }

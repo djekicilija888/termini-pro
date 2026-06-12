@@ -105,3 +105,87 @@ img{max-width:100%}
   .fb-avatar-preview{width:86px;height:86px;left:16px;bottom:14px;border-width:4px}
   .upload-grid{grid-template-columns:1fr}
 }
+
+
+/* clean-dashboard-v43: očišćen dashboard + posebna kartica za link */
+.clean-stat {
+  min-height: 116px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid rgba(17,24,39,.08);
+  background: linear-gradient(180deg,#ffffff,#f8fafc);
+}
+
+.clean-stat span {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 950;
+}
+
+.clean-stat strong {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.clean-stat small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.booking-link-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg,#ffffff,#f8fafc);
+}
+
+.booking-link-card input {
+  font-weight: 800;
+  background: white;
+}
+
+.link-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+#dashboard .link-card,
+#dashboard .qr-wrap,
+#dashboard #qrImage {
+  display: none !important;
+}
+
+#dashboardCards {
+  margin-top: 8px;
+}
+
+#upcomingBody tr {
+  background: white;
+}
+
+#upcomingBody td {
+  font-weight: 800;
+}
+
+.dashboard-content .card table {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+@media(max-width:760px){
+  .link-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .clean-stat {
+    min-height: 92px;
+  }
+
+  .clean-stat strong {
+    font-size: 32px;
+  }
+}

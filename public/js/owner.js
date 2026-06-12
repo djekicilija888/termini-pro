@@ -86,4 +86,21 @@ async function loadGallery(){
  });
 }
 
+
+async function loadBookingLink(){
+ try{
+  let d=await api('/api/owner/dashboard');
+  if(typeof bookingUrlInput!=='undefined')bookingUrlInput.value=d.business.booking_url;
+  if(typeof openPublicLink!=='undefined')openPublicLink.href=d.business.booking_url;
+  if(typeof bookingLinkBusinessName!=='undefined')bookingLinkBusinessName.textContent=d.business.name||'Firma';
+ }catch(e){msg(e.message,'err')}
+}
+if(typeof copyLinkBtn!=='undefined')copyLinkBtn.onclick=async()=>{
+ try{
+  await loadBookingLink();
+  await navigator.clipboard.writeText(bookingUrlInput.value);
+  msg('Link je kopiran. Možeš ga staviti na Instagram, Viber, WhatsApp ili Google Business.','ok');
+ }catch(e){msg('Ne mogu da kopiram link. Označi ga ručno.','err')}
+};
+
 async function init(){from.value=today();to.value=add(30);if(!tok())return hide();try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}}init();
