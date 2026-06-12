@@ -304,3 +304,25 @@ img{max-width:100%}
     grid-template-columns: 1fr;
   }
 }
+
+
+/* simple-postgres-no-images-v49: jednostavna verzija bez slika */
+.profile-cover,
+.logo,
+.gallery-grid,
+.gallery-card,
+.gallery-admin-grid,
+.gallery-admin-card,
+.fb-preview,
+.upload-grid,
+.upload-card {
+  display: none !important;
+}
+
+.simple-note {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  color: var(--muted);
+}

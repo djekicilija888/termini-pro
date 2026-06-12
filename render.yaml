@@ -1,19 +1,17 @@
 services:
   - type: web
-    name: termini-platforma-pro
-    runtime: node
-    plan: free
+    name: termini-platforma
+    env: node
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /api/health
     envVars:
-      - key: NODE_ENV
-        value: production
+      - key: NODE_VERSION
+        value: 22
       - key: JWT_SECRET
         generateValue: true
-      - key: PLATFORM_NAME
-        value: Termini Pro Platforma
-      - key: SUPERADMIN_EMAIL
-        value: admin@platform.local
-      - key: SUPERADMIN_PASSWORD
+      - key: DATABASE_URL
         sync: false
+      - key: PGSSL
+        value: "true"
+      - key: DATA_DIR
+        value: /var/data

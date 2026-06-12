@@ -1,39 +1,60 @@
 
 require('dotenv').config();
-const path=require('path'),crypto=require('crypto'),express=require('express'),cors=require('cors'),helmet=require('helmet'),rateLimit=require('express-rate-limit'),sqlite3=require('sqlite3').verbose(),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),QRCode=require('qrcode'),nodemailer=require('nodemailer');
-const fs=require('fs'),multer=require('multer');
-const app=express(),PORT=process.env.PORT||3000,JWT_SECRET=process.env.JWT_SECRET||'secret',PLATFORM_NAME=process.env.PLATFORM_NAME||'Termini Pro Platforma',DB_PATH=process.env.DB_PATH||path.join(__dirname,'termini-platforma-pro.db');
-const UPLOAD_DIR=path.join(__dirname,'public','uploads');
-fs.mkdirSync(UPLOAD_DIR,{recursive:true});
-const uploadStorage=multer.diskStorage({
- destination:(req,file,cb)=>cb(null,UPLOAD_DIR),
- filename:(req,file,cb)=>{
-  let ext=path.extname(file.originalname||'').toLowerCase();
-  if(!['.jpg','.jpeg','.png','.webp','.gif'].includes(ext))ext='.jpg';
-  cb(null,Date.now()+'-'+crypto.randomBytes(6).toString('hex')+ext);
- }
-});
-const uploadImage=multer({
- storage:uploadStorage,
- limits:{fileSize:5*1024*1024},
- fileFilter:(req,file,cb)=>{
-  if(!/^image\/(jpeg|png|webp|gif)$/i.test(file.mimetype||''))return cb(new Error('Dozvoljene su samo slike JPG, PNG, WEBP ili GIF.'));
-  cb(null,true);
- }
-});
-function oneImage(req,res,next){
- uploadImage.single('image')(req,res,err=>{
-  if(err)return res.status(400).json({error:err.message||'Greška pri upload-u slike.'});
-  next();
- });
-}
+const path=require('path'),crypto=require('crypto'),express=require('express'),cors=require('cors'),helmet=require('helmet'),rateLimit=require('express-rate-limit'),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),QRCode=require('qrcode'),nodemailer=require('nodemailer');
+const {Pool}=require('pg');
+const fs=require('fs');
+const app=express(),PORT=process.env.PORT||3000,JWT_SECRET=process.env.JWT_SECRET||'secret',PLATFORM_NAME=process.env.PLATFORM_NAME||'Termini Pro Platforma';
+const DATA_DIR=process.env.DATA_DIR||process.env.RENDER_DISK_PATH||__dirname;
+fs.mkdirSync(DATA_DIR,{recursive:true});
 
-app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
-const db=new sqlite3.Database(DB_PATH);
+app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));
+app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
+if(!process.env.DATABASE_URL){
+ console.error('Nedostaje DATABASE_URL. Napravi PostgreSQL bazu na Render-u i dodaj DATABASE_URL u Environment.');
+ process.exit(1);
+}
+const pool=new Pool({
+ connectionString:process.env.DATABASE_URL,
+ ssl:(process.env.PGSSL==='false'||process.env.DATABASE_URL.includes('localhost'))?false:{rejectUnauthorized:false}
+});
 const PLANS={basic:{name:'Basic',price:29,max_staff:1,max_month:100,sms:false},standard:{name:'Standard',price:49,max_staff:5,max_month:1000,sms:false},premium:{name:'Premium',price:99,max_staff:30,max_month:10000,sms:true}};
-const run=(s,p=[])=>new Promise((res,rej)=>db.run(s,p,function(e){e?rej(e):res(this)}));
-const get=(s,p=[])=>new Promise((res,rej)=>db.get(s,p,(e,r)=>e?rej(e):res(r)));
-const all=(s,p=[])=>new Promise((res,rej)=>db.all(s,p,(e,r)=>e?rej(e):res(r)));
+function pgParams(s){let i=0;return s.replace(/\?/g,()=>'$'+(++i))}
+function pgSql(s){
+ if(!s)return s;
+ let q=String(s).trim();
+ if(/^PRAGMA\b/i.test(q))return null;
+ return String(s)
+  .replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi,'SERIAL PRIMARY KEY')
+  .replace(/AUTOINCREMENT/gi,'')
+  .replace(/DATETIME/gi,'TEXT');
+}
+function withReturning(s){
+ let q=String(s).trim();
+ if(!/^INSERT\s+INTO\s+/i.test(q) || /\bRETURNING\b/i.test(q))return s;
+ let m=q.match(/^INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)/i);
+ let tables=new Set(['businesses','users','staff','services','appointments','notifications']);
+ if(m&&tables.has(m[1]))return s+' RETURNING id';
+ return s;
+}
+async function run(s,p=[]){
+ s=pgSql(s);
+ if(!s)return {lastID:null,changes:0,rowCount:0};
+ s=withReturning(s);
+ let r=await pool.query(pgParams(s),p);
+ return {lastID:r.rows&&r.rows[0]?r.rows[0].id:null,changes:r.rowCount,rowCount:r.rowCount};
+}
+async function get(s,p=[]){
+ s=pgSql(s);
+ if(!s)return undefined;
+ let r=await pool.query(pgParams(s),p);
+ return r.rows[0];
+}
+async function all(s,p=[]){
+ s=pgSql(s);
+ if(!s)return [];
+ let r=await pool.query(pgParams(s),p);
+ return r.rows;
+}
 const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toLowerCase(),phone=v=>String(v||'').replace(/\s+/g,'').slice(0,50),now=()=>new Date().toISOString(),token=()=>crypto.randomBytes(24).toString('hex');
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function addDays(ds,n){let d=new Date(`${ds}T12:00:00`);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
@@ -56,10 +77,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
  await run(`CREATE TABLE IF NOT EXISTS blocked(business_id INTEGER,date TEXT,reason TEXT,created_at TEXT,PRIMARY KEY(business_id,date))`);
  await run(`CREATE TABLE IF NOT EXISTS appointments(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,service_id INTEGER,staff_id INTEGER,appt_token TEXT UNIQUE,customer_name TEXT,phone TEXT,email TEXT,date TEXT,start_time TEXT,end_time TEXT,status TEXT DEFAULT 'booked',notes TEXT,created_at TEXT,updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,appointment_id INTEGER,channel TEXT,recipient TEXT,subject TEXT,body TEXT,status TEXT,provider TEXT,error TEXT,created_at TEXT)`);
- 
- await run(`CREATE TABLE IF NOT EXISTS business_images(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER NOT NULL,image_url TEXT NOT NULL,title TEXT DEFAULT '',is_cover INTEGER DEFAULT 0,sort_order INTEGER DEFAULT 0,created_at TEXT,updated_at TEXT)`);
- await run('CREATE INDEX IF NOT EXISTS idx_biz_img ON business_images(business_id)');
- await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
+await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
  let se=email(process.env.SUPERADMIN_EMAIL||'admin@platform.local');if(!await get('SELECT id FROM users WHERE email=?',[se])){let h=await bcrypt.hash(process.env.SUPERADMIN_PASSWORD||'platform123',12);await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(NULL,'Super Admin',?,?,'superadmin',?)",[se,h,now()])}}
 async function defaults(bid,ownerName){await run('INSERT INTO settings(business_id,updated_at) VALUES(?,?)',[bid,now()]);for(let r of [[0,0,'09:00','17:00'],[1,1,'09:00','17:00'],[2,1,'09:00','17:00'],[3,1,'09:00','17:00'],[4,1,'09:00','17:00'],[5,1,'09:00','17:00'],[6,1,'09:00','14:00']])await run('INSERT INTO hours(business_id,day,is_open,open_time,close_time,break_start,break_end) VALUES(?,?,?,?,?,?,?)',[bid,...r,'','']);await run("INSERT INTO staff(business_id,name,title,active,sort_order,created_at,updated_at) VALUES(?,?,'Majstor',1,1,?,?)",[bid,ownerName||'Glavni majstor',now(),now()]);await run("INSERT INTO services(business_id,name,description,duration,price,active,sort_order,created_at,updated_at) VALUES(?,'Osnovna usluga','Promeni naziv i cenu u panelu.',30,1000,1,1,?,?)",[bid,now(),now()])}
 async function bizPlanOk(bid){let b=await get('SELECT * FROM businesses WHERE id=?',[bid]);if(!b)return {ok:false,reason:'Firma nije pronađena.'};let st=b.subscription_status||'trial';if(!['trial','active','manual_active'].includes(st))return {ok:false,reason:'Pretplata nije aktivna.'};if(b.subscription_expires_at&&b.subscription_expires_at<today())return {ok:false,reason:'Pretplata je istekla.'};return {ok:true,plan:b.subscription_plan||'basic'}}
@@ -78,19 +96,13 @@ app.get('/api/businesses/:slug',async(req,res)=>{
  let b=await get('SELECT * FROM businesses WHERE slug=? AND active=1',[clean(req.params.slug,100)]);
  if(!b)return res.status(404).json({error:'Firma nije pronađena.'});
  let ok=await bizPlanOk(b.id);
- let gallery=await all(`SELECT id,image_url,title,is_cover,sort_order
-   FROM business_images
-   WHERE business_id=?
-   AND is_cover=0
-   AND image_url!=COALESCE((SELECT logo_url FROM businesses WHERE id=?),'')
-   AND image_url!=COALESCE((SELECT cover_url FROM businesses WHERE id=?),'')
-   ORDER BY sort_order,id`,[b.id,b.id,b.id]);
  let pb=pubBiz(b);
+ pb.logo_url='';
+ pb.cover_url='';
  res.json({
   business:{...pb,booking_url:bookUrl(req,b.slug)},
   services:await all('SELECT * FROM services WHERE business_id=? AND active=1 ORDER BY sort_order,id',[b.id]),
   staff:await all('SELECT id,name,title,phone FROM staff WHERE business_id=? AND active=1 ORDER BY sort_order,id',[b.id]),
-  gallery,
   settings:await get('SELECT * FROM settings WHERE business_id=?',[b.id]),
   booking_enabled:ok.ok,
   booking_disabled_reason:ok.reason||''
@@ -124,54 +136,6 @@ app.get('/api/owner/notifications',auth,owner,async(req,res)=>res.json(await all
 
 
 
-app.post('/api/owner/upload-image',auth,owner,oneImage,async(req,res)=>{
- try{
-  if(!req.file)return res.status(400).json({error:'Izaberi sliku sa telefona ili računara. Maksimalno 5 MB.'});
-  let kind=clean(req.body.kind||req.body.type||'gallery',30);
-  let title=clean(req.body.title,120);
-  let sort_order=Number(req.body.sort_order||0);
-  let image_url='/uploads/'+req.file.filename;
-  let is_cover=kind==='cover'||req.body.is_cover==='true'||req.body.is_cover==='1'||req.body.is_cover===true;
-
-  if(kind==='profile'){
-   await run('UPDATE businesses SET logo_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id]);
-   return res.json({message:'Profilna slika je postavljena.',image_url});
-  }
-
-  if(kind==='cover'){
-   await run('UPDATE business_images SET is_cover=0 WHERE business_id=?',[req.user.business_id]);
-   await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id]);
-   await run('INSERT INTO business_images(business_id,image_url,title,is_cover,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',[req.user.business_id,image_url,title||'Naslovna slika',1,sort_order,now(),now()]);
-   return res.json({message:'Naslovna slika je postavljena.',image_url});
-  }
-
-  let cnt=await get('SELECT COUNT(*) total FROM business_images WHERE business_id=?',[req.user.business_id]);
-  if(cnt&&cnt.total>=20){
-   try{fs.unlinkSync(req.file.path)}catch(e){}
-   return res.status(400).json({error:'Album može imati maksimalno 20 slika po firmi.'});
-  }
-
-  if(is_cover){
-   await run('UPDATE business_images SET is_cover=0 WHERE business_id=?',[req.user.business_id]);
-   await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id]);
-  }
-
-  let r=await run('INSERT INTO business_images(business_id,image_url,title,is_cover,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',[req.user.business_id,image_url,title,is_cover?1:0,sort_order,now(),now()]);
-  res.status(201).json({id:r.lastID,message:is_cover?'Slika je dodata u album i postavljena kao naslovna.':'Slika je dodata u album.',image_url});
- }catch(e){
-  res.status(500).json({error:'Greška pri upload-u slike.'});
- }
-});
-
-app.get('/api/owner/gallery',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM business_images WHERE business_id=? ORDER BY is_cover DESC,sort_order,id',[req.user.business_id])));
-
-app.post('/api/owner/gallery',auth,owner,async(req,res)=>{try{let image_url=clean(req.body.image_url,1000),title=clean(req.body.title,120),sort_order=Number(req.body.sort_order||0),is_cover=req.body.is_cover?1:0;if(!image_url||!/^https?:\/\//i.test(image_url))return res.status(400).json({error:'Unesi URL slike koji počinje sa http ili https.'});if(is_cover){await run('UPDATE business_images SET is_cover=0 WHERE business_id=?',[req.user.business_id]);await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id])}let r=await run('INSERT INTO business_images(business_id,image_url,title,is_cover,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',[req.user.business_id,image_url,title,is_cover,sort_order,now(),now()]);res.status(201).json({id:r.lastID,message:is_cover?'Slika je dodata kao naslovna.':'Slika je dodata u album.'})}catch(e){res.status(500).json({error:'Greška pri dodavanju slike.'})}});
-
-app.put('/api/owner/gallery/:id',auth,owner,async(req,res)=>{try{let id=Number(req.params.id),image_url=clean(req.body.image_url,1000),title=clean(req.body.title,120),sort_order=Number(req.body.sort_order||0),is_cover=req.body.is_cover?1:0;if(!image_url||!/^https?:\/\//i.test(image_url))return res.status(400).json({error:'Unesi URL slike koji počinje sa http ili https.'});let img=await get('SELECT * FROM business_images WHERE id=? AND business_id=?',[id,req.user.business_id]);if(!img)return res.status(404).json({error:'Slika nije pronađena.'});if(is_cover){await run('UPDATE business_images SET is_cover=0 WHERE business_id=?',[req.user.business_id]);await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id])}await run('UPDATE business_images SET image_url=?,title=?,is_cover=?,sort_order=?,updated_at=? WHERE id=? AND business_id=?',[image_url,title,is_cover,sort_order,now(),id,req.user.business_id]);res.json({message:is_cover?'Slika je sačuvana kao naslovna.':'Slika je sačuvana.'})}catch(e){res.status(500).json({error:'Greška pri čuvanju slike.'})}});
-
-app.patch('/api/owner/gallery/:id/cover',auth,owner,async(req,res)=>{try{let id=Number(req.params.id),img=await get('SELECT * FROM business_images WHERE id=? AND business_id=?',[id,req.user.business_id]);if(!img)return res.status(404).json({error:'Slika nije pronađena.'});await run('UPDATE business_images SET is_cover=0 WHERE business_id=?',[req.user.business_id]);await run('UPDATE business_images SET is_cover=1,updated_at=? WHERE id=? AND business_id=?',[now(),id,req.user.business_id]);await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[img.image_url,now(),req.user.business_id]);res.json({message:'Naslovna slika je promenjena.'})}catch(e){res.status(500).json({error:'Greška pri promeni naslovne slike.'})}});
-
-app.delete('/api/owner/gallery/:id',auth,owner,async(req,res)=>{try{let id=Number(req.params.id),img=await get('SELECT * FROM business_images WHERE id=? AND business_id=?',[id,req.user.business_id]);if(!img)return res.status(404).json({error:'Slika nije pronađena.'});await run('DELETE FROM business_images WHERE id=? AND business_id=?',[id,req.user.business_id]);if(img.is_cover){let n=await get('SELECT * FROM business_images WHERE business_id=? ORDER BY sort_order,id LIMIT 1',[req.user.business_id]);if(n){await run('UPDATE business_images SET is_cover=1 WHERE id=?',[n.id]);await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[n.image_url,now(),req.user.business_id])}else await run("UPDATE businesses SET cover_url='',updated_at=? WHERE id=?",[now(),req.user.business_id])}res.json({message:'Slika je obrisana.'})}catch(e){res.status(500).json({error:'Greška pri brisanju slike.'})}});
 app.get('/api/superadmin/businesses',auth,superadmin,async(req,res)=>{let rows=await all(`SELECT b.*,(SELECT COUNT(*) FROM appointments a WHERE a.business_id=b.id) appointments_count,(SELECT COUNT(*) FROM services s WHERE s.business_id=b.id) services_count,(SELECT COUNT(*) FROM staff st WHERE st.business_id=b.id) staff_count FROM businesses b ORDER BY b.created_at DESC LIMIT 500`);res.json(rows.map(b=>({...pubBiz(b),appointments_count:b.appointments_count,services_count:b.services_count,staff_count:b.staff_count,booking_url:bookUrl(req,b.slug),google_play_product_id:b.google_play_product_id||'',google_play_order_id:b.google_play_order_id||'',google_play_state:b.google_play_state||'',google_play_last_check:b.google_play_last_check||''})))});
 app.patch('/api/superadmin/businesses/:id/active',auth,superadmin,async(req,res)=>{await run('UPDATE businesses SET active=?,updated_at=? WHERE id=?',[req.body.active?1:0,now(),Number(req.params.id)]);res.json({message:req.body.active?'Firma je aktivirana.':'Firma je deaktivirana.'})});
 app.patch('/api/superadmin/businesses/:id/subscription',auth,superadmin,async(req,res)=>{await run('UPDATE businesses SET subscription_plan=?,subscription_status=?,subscription_expires_at=?,google_play_product_id=?,google_play_order_id=?,google_play_state=?,google_play_last_check=?,updated_at=? WHERE id=?',[clean(req.body.subscription_plan,30),clean(req.body.subscription_status,30),clean(req.body.subscription_expires_at,20),clean(req.body.google_play_product_id,120),clean(req.body.google_play_order_id,120),clean(req.body.google_play_state,120),now(),now(),Number(req.params.id)]);res.json({message:'Pretplata je sačuvana.'})});
