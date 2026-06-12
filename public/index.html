@@ -6,24 +6,24 @@
   <title>Online zakazivanje termina</title>
   <meta name="theme-color" content="#111827" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/styles.css?v=same-text-v1" />
 </head>
-<body class="public-page">
+<body>
   <header class="topbar">
-    <div class="wrap nav">
+    <div class="app-shell nav">
       <a class="brand" href="/">
         <span class="brand-mark">T</span>
         <span id="businessName">Termini Pro</span>
       </a>
-      <a class="nav-admin" href="/admin.html">Admin</a>
+      <a class="admin-link" href="/admin.html">Admin</a>
     </div>
   </header>
 
-  <main class="wrap page-grid">
-    <section class="intro-card">
+  <main class="app-shell main-stack">
+    <section class="hero-card">
       <p class="eyebrow">Online zakazivanje</p>
       <h1>Zakaži termin brzo.</h1>
-      <p class="lead">Izaberi uslugu, datum i slobodno vreme. Sistem automatski proverava zauzetost.</p>
+      <p class="lead">Izaberi uslugu, datum i slobodno vreme. Sistem automatski proverava zauzetost termina.</p>
 
       <div class="badges">
         <span>Bez duplih termina</span>
@@ -31,7 +31,7 @@
         <span>Radi na telefonu</span>
       </div>
 
-      <div class="contact-card">
+      <div class="contact-box">
         <strong>Kontakt</strong>
         <span id="businessContact">Podaci se učitavaju...</span>
       </div>
@@ -49,19 +49,17 @@
           <select id="service" required></select>
         </label>
 
-        <div class="form-row">
-          <label>
-            Datum
-            <input id="date" type="date" required />
-          </label>
+        <label>
+          Datum
+          <input id="date" type="date" required />
+        </label>
 
-          <label>
-            Vreme
-            <select id="slot" required>
-              <option value="">Prvo izaberi uslugu i datum</option>
-            </select>
-          </label>
-        </div>
+        <label>
+          Vreme
+          <select id="slot" required>
+            <option value="">Prvo izaberi uslugu i datum</option>
+          </select>
+        </label>
 
         <label>
           Ime i prezime
@@ -93,23 +91,22 @@
     </section>
 
     <section class="services-card">
-      <div class="section-title inline">
-        <div>
-          <p class="eyebrow">Usluge</p>
-          <h2>Dostupne usluge</h2>
-        </div>
+      <div class="section-title">
+        <p class="eyebrow">Usluge</p>
+        <h2>Dostupne usluge</h2>
       </div>
+
       <div id="servicesGrid" class="services-grid"></div>
     </section>
   </main>
 
   <footer class="footer">
-    <div class="wrap footer-inner">
+    <div class="app-shell footer-inner">
       <span>© <span id="year"></span> Termini Pro</span>
       <span>Online zakazivanje termina</span>
     </div>
   </footer>
 
-  <script src="/js/booking.js"></script>
+  <script src="/js/booking.js?v=same-text-v1"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 {
-  "name": "Termini Pro Compact",
+  "name": "Termini Pro Same Text",
   "short_name": "Termini",
-  "start_url": "/",
+  "start_url": "/?v=same-text-v1",
   "display": "standalone",
   "background_color": "#f4f6fb",
   "theme_color": "#111827",

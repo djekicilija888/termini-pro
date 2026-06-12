@@ -5,20 +5,16 @@
   --muted: #667085;
   --line: #e5e7eb;
   --primary: #111827;
-  --primary-2: #2563eb;
+  --blue: #2563eb;
   --success: #047857;
   --danger: #dc2626;
-  --radius: 20px;
   --shadow: 0 16px 45px rgba(17, 24, 39, 0.08);
+  --radius: 20px;
   font-family: Inter, Arial, sans-serif;
 }
 
 * {
   box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 body {
@@ -33,8 +29,8 @@ a {
   color: inherit;
 }
 
-.wrap {
-  width: min(1120px, calc(100% - 28px));
+.app-shell {
+  width: min(720px, calc(100% - 24px));
   margin: 0 auto;
 }
 
@@ -42,16 +38,16 @@ a {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(244, 246, 251, 0.88);
+  background: rgba(244, 246, 251, 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
 
 .nav {
-  min-height: 64px;
+  min-height: 62px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
@@ -64,56 +60,33 @@ a {
 }
 
 .brand-mark {
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 13px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  background: linear-gradient(135deg, var(--primary), var(--blue));
   color: white;
   font-weight: 900;
 }
 
-.nav-admin,
-.btn {
-  border: 0;
+.admin-link {
+  padding: 10px 14px;
   border-radius: 14px;
   background: var(--primary);
   color: white;
-  padding: 12px 16px;
   font-weight: 900;
   text-decoration: none;
-  cursor: pointer;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.nav-admin {
-  padding: 10px 14px;
   font-size: 14px;
 }
 
-.btn {
-  width: 100%;
-  min-height: 48px;
-  font-size: 16px;
-}
-
-.btn:hover,
-.nav-admin:hover {
-  background: var(--primary-2);
-}
-
-.page-grid {
-  padding: 22px 0;
+.main-stack {
+  padding: 16px 0 20px;
   display: grid;
-  grid-template-columns: 0.92fr 1.08fr;
-  gap: 18px;
-  align-items: start;
+  gap: 14px;
 }
 
-.intro-card,
+.hero-card,
 .booking-card,
 .services-card,
 .card,
@@ -125,22 +98,15 @@ a {
   box-shadow: var(--shadow);
 }
 
-.intro-card,
+.hero-card,
 .booking-card,
 .services-card {
-  padding: 22px;
-}
-
-.intro-card {
-  min-height: 100%;
-  display: grid;
-  align-content: start;
-  gap: 14px;
+  padding: 18px;
 }
 
 .eyebrow {
-  margin: 0;
-  color: var(--primary-2);
+  margin: 0 0 7px;
+  color: var(--blue);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 12px;
@@ -155,72 +121,66 @@ h3 {
 }
 
 h1 {
-  font-size: clamp(34px, 5vw, 58px);
+  font-size: 36px;
   line-height: 0.98;
 }
 
 h2 {
-  font-size: clamp(24px, 3vw, 34px);
+  font-size: 25px;
   line-height: 1.05;
 }
 
+h3 {
+  font-size: 20px;
+}
+
 .lead {
-  margin: 0;
+  margin: 10px 0 0;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 .badges {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
+  margin-top: 14px;
 }
 
 .badges span,
 .pill {
   display: inline-flex;
+  width: fit-content;
   border-radius: 999px;
   padding: 7px 10px;
   background: #eef2ff;
   color: #1e3a8a;
-  font-weight: 800;
+  font-weight: 850;
   font-size: 13px;
 }
 
-.contact-card {
+.contact-box {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   background: #f8fafc;
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 14px;
+  padding: 13px;
+  margin-top: 14px;
 }
 
-.contact-card span,
+.contact-box span,
 .muted {
   color: var(--muted);
 }
 
 .section-title {
-  margin-bottom: 14px;
-}
-
-.section-title.inline {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  margin-bottom: 12px;
 }
 
 form {
   display: grid;
-  gap: 12px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 11px;
 }
 
 label {
@@ -246,7 +206,7 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--primary-2);
+  border-color: var(--blue);
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
 }
 
@@ -270,6 +230,28 @@ textarea {
   margin-top: 12px;
 }
 
+.btn {
+  border: 0;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 14px;
+  background: var(--primary);
+  color: white;
+  padding: 12px 16px;
+  font-weight: 900;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn:hover,
+.admin-link:hover {
+  background: var(--blue);
+}
+
 .message {
   margin: 0;
   min-height: 22px;
@@ -284,29 +266,20 @@ textarea {
   color: var(--danger);
 }
 
-.services-card {
-  grid-column: 1 / -1;
-}
-
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .service-card {
-  padding: 16px;
+  padding: 14px;
   border-radius: 16px;
   border: 1px solid var(--line);
   background: #f8fafc;
 }
 
-.service-card h3 {
-  font-size: 20px;
-}
-
 .service-card p {
-  margin: 8px 0 0;
+  margin: 7px 0 0;
   color: var(--muted);
   line-height: 1.45;
 }
@@ -315,22 +288,27 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .footer {
-  padding: 18px 0 24px;
+  padding: 14px 0 22px;
   color: var(--muted);
 }
 
 .footer-inner {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 4px;
   font-weight: 750;
+  font-size: 14px;
 }
 
-/* Admin page compatibility */
+/* Admin compatibility */
+.wrap {
+  width: min(1120px, calc(100% - 28px));
+  margin: 0 auto;
+}
+
 .hidden {
   display: none !important;
 }
@@ -352,7 +330,7 @@ textarea {
 }
 
 .login-card h1 {
-  font-size: clamp(32px, 5vw, 48px);
+  font-size: 36px;
 }
 
 .admin-shell {
@@ -590,32 +568,9 @@ th {
   background: #f8fafc;
 }
 
-/* The key fix: phone and desktop use the same clean card system.
-   On phone it stacks, but spacing, colors, cards and controls stay the same. */
+/* Important: desktop and Android show the same content and the same order.
+   Only admin panel stacks on smaller screens because it has many tables. */
 @media (max-width: 900px) {
-  .page-grid {
-    grid-template-columns: 1fr;
-    padding: 14px 0;
-  }
-
-  .intro-card,
-  .booking-card,
-  .services-card {
-    padding: 18px;
-  }
-
-  .intro-card {
-    min-height: auto;
-  }
-
-  .services-card {
-    grid-column: auto;
-  }
-
-  .services-grid {
-    grid-template-columns: 1fr;
-  }
-
   .admin-shell {
     grid-template-columns: 1fr;
   }
@@ -641,39 +596,22 @@ th {
 }
 
 @media (max-width: 560px) {
-  .wrap {
-    width: min(100% - 18px, 1120px);
+  .app-shell {
+    width: min(100% - 18px, 720px);
   }
 
   .nav {
     min-height: 58px;
   }
 
-  .brand-mark {
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
-  }
-
   h1 {
-    font-size: 36px;
+    font-size: 34px;
   }
 
-  .lead {
-    font-size: 16px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .badges {
-    display: grid;
-  }
-
-  .footer-inner,
-  .admin-top {
-    display: grid;
+  .hero-card,
+  .booking-card,
+  .services-card {
+    padding: 16px;
   }
 
   .dashboard-cards {
@@ -682,5 +620,9 @@ th {
 
   .admin-content {
     padding: 12px;
+  }
+
+  .admin-top {
+    display: grid;
   }
 }
