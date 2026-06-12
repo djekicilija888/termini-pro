@@ -266,3 +266,41 @@ img{max-width:100%}
     font-size: 32px;
   }
 }
+
+
+/* link-qr-pdf-v46: Link / QR kod + PDF list za štampu */
+.link-qr-layout {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.qr-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg,#ffffff,#f8fafc);
+}
+
+.qr-preview-box {
+  display: grid;
+  place-items: center;
+  min-height: 230px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  background: white;
+}
+
+.qr-preview-box img {
+  width: 190px;
+  height: 190px;
+}
+
+@media(max-width:760px){
+  .link-qr-layout {
+    grid-template-columns: 1fr;
+  }
+}

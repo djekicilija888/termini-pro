@@ -88,20 +88,73 @@ async function loadGallery(){
 }
 
 
+
+let ownerQrObjectUrl='';
+async function fetchOwnerQrDataUrl(){
+ let h={};
+ if(tok())h.Authorization='Bearer '+tok();
+ let r=await fetch('/api/owner/qr',{headers:h});
+ if(!r.ok)throw Error('Ne mogu da učitam QR kod.');
+ let svg=await r.text();
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
 async function loadBookingLink(){
  try{
   let d=await api('/api/owner/dashboard');
   if(typeof bookingUrlInput!=='undefined')bookingUrlInput.value=d.business.booking_url;
   if(typeof openPublicLink!=='undefined')openPublicLink.href=d.business.booking_url;
   if(typeof bookingLinkBusinessName!=='undefined')bookingLinkBusinessName.textContent=d.business.name||'Firma';
+  if(typeof ownerQrPreview!=='undefined'){
+   ownerQrObjectUrl=await fetchOwnerQrDataUrl();
+   ownerQrPreview.src=ownerQrObjectUrl;
+  }
  }catch(e){msg(e.message,'err')}
 }
 if(typeof copyLinkBtn!=='undefined')copyLinkBtn.onclick=async()=>{
  try{
   await loadBookingLink();
   await navigator.clipboard.writeText(bookingUrlInput.value);
-  msg('Link je kopiran. Možeš ga staviti na Instagram, Viber, WhatsApp ili Google Business.','ok');
+  msg('Link je kopiran.','ok');
  }catch(e){msg('Ne mogu da kopiram link. Označi ga ručno.','err')}
 };
+async function printQrPdfList(){
+ try{
+  await loadBookingLink();
+  let link=bookingUrlInput.value;
+  let name=bookingLinkBusinessName.textContent||'Firma';
+  let qr=ownerQrObjectUrl||await fetchOwnerQrDataUrl();
+  let items=Array.from({length:12}).map(()=>`
+    <div class="cut-card">
+      <img src="${qr}" alt="QR kod">
+      <strong>Zakazivanje termina</strong>
+      <small>${link}</small>
+    </div>
+  `).join('');
+  let w=window.open('','_blank');
+  if(!w)throw Error('Browser je blokirao prozor za štampanje.');
+  w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>QR kodovi - ${name}</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;margin:0;padding:16px;color:#111827}
+    h1{font-size:20px;margin:0 0 4px}
+    p{margin:0 0 14px;color:#475569}
+    .sheet{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .cut-card{border:1px dashed #94a3b8;border-radius:12px;padding:10px;text-align:center;min-height:230px;display:grid;align-content:center;gap:6px;page-break-inside:avoid}
+    .cut-card img{width:130px;height:130px;margin:0 auto}
+    .cut-card strong{font-size:14px}
+    .cut-card small{font-size:10px;word-break:break-all;color:#334155;line-height:1.25}
+    @page{size:A4;margin:10mm}
+    @media print{body{padding:0}.cut-card{min-height:225px}}
+  </style></head><body>
+    <h1>${name}</h1>
+    <p>Iseci kartice i podeli mušterijama. Ispod svakog QR koda stoji link za zakazivanje termina.</p>
+    <div class="sheet">${items}</div>
+    <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
+  </body></html>`);
+  w.document.close();
+  msg('Otvoren je list za štampanje. U print prozoru možeš izabrati Save as PDF.','ok');
+ }catch(e){msg(e.message,'err')}
+}
+if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
 
 async function init(){from.value=today();to.value=add(30);if(!tok())return hide();try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}}init();
