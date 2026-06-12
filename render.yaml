@@ -19,9 +19,3 @@ services:
         sync: false
       - key: BUSINESS_NAME
         value: Moj Salon
-      - key: DB_PATH
-        value: /var/data/termini-pro.db
-    disk:
-      name: termini-pro-data
-      mountPath: /var/data
-      sizeGB: 1
