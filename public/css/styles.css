@@ -32,3 +32,76 @@ img{max-width:100%}
   .btn{width:100%}
   .formgrid,.search-panel,.filters,.copy-row{display:grid!important;grid-template-columns:1fr!important}
 }
+
+
+/* upload-facebook-v42: upload slika sa telefona/desktopa + FB profil */
+.fb-preview{
+  position:relative;
+  border:1px solid var(--line);
+  border-radius:22px;
+  overflow:hidden;
+  background:white;
+  margin:14px 0 18px;
+  min-height:250px;
+}
+.fb-cover-preview{
+  height:210px;
+  background:linear-gradient(135deg,#dbeafe,#f8fafc);
+  background-size:cover;
+  background-position:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  font-weight:900;
+}
+.fb-avatar-preview{
+  position:absolute;
+  left:22px;
+  bottom:18px;
+  width:112px;
+  height:112px;
+  border-radius:999px;
+  border:5px solid white;
+  background:#111827;
+  color:white;
+  display:grid;
+  place-items:center;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  font-weight:900;
+}
+.fb-avatar-preview img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.upload-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin:14px 0;
+}
+.upload-card{
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:14px;
+  background:#f8fafc;
+}
+.upload-card input[type=file],
+#galleryForm input[type=file]{
+  border:1px dashed #94a3b8;
+  background:white;
+  padding:16px;
+}
+.soft-line{
+  border:0;
+  border-top:1px solid var(--line);
+  margin:20px 0;
+}
+@media(max-width:760px){
+  .fb-preview{min-height:210px;border-radius:18px}
+  .fb-cover-preview{height:170px}
+  .fb-avatar-preview{width:86px;height:86px;left:16px;bottom:14px;border-width:4px}
+  .upload-grid{grid-template-columns:1fr}
+}

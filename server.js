@@ -1,7 +1,33 @@
 
 require('dotenv').config();
 const path=require('path'),crypto=require('crypto'),express=require('express'),cors=require('cors'),helmet=require('helmet'),rateLimit=require('express-rate-limit'),sqlite3=require('sqlite3').verbose(),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),QRCode=require('qrcode'),nodemailer=require('nodemailer');
+const fs=require('fs'),multer=require('multer');
 const app=express(),PORT=process.env.PORT||3000,JWT_SECRET=process.env.JWT_SECRET||'secret',PLATFORM_NAME=process.env.PLATFORM_NAME||'Termini Pro Platforma',DB_PATH=process.env.DB_PATH||path.join(__dirname,'termini-platforma-pro.db');
+const UPLOAD_DIR=path.join(__dirname,'public','uploads');
+fs.mkdirSync(UPLOAD_DIR,{recursive:true});
+const uploadStorage=multer.diskStorage({
+ destination:(req,file,cb)=>cb(null,UPLOAD_DIR),
+ filename:(req,file,cb)=>{
+  let ext=path.extname(file.originalname||'').toLowerCase();
+  if(!['.jpg','.jpeg','.png','.webp','.gif'].includes(ext))ext='.jpg';
+  cb(null,Date.now()+'-'+crypto.randomBytes(6).toString('hex')+ext);
+ }
+});
+const uploadImage=multer({
+ storage:uploadStorage,
+ limits:{fileSize:6*1024*1024},
+ fileFilter:(req,file,cb)=>{
+  if(!/^image\/(jpeg|png|webp|gif)$/i.test(file.mimetype||''))return cb(new Error('Dozvoljene su samo slike JPG, PNG, WEBP ili GIF.'));
+  cb(null,true);
+ }
+});
+function oneImage(req,res,next){
+ uploadImage.single('image')(req,res,err=>{
+  if(err)return res.status(400).json({error:err.message||'Greška pri upload-u slike.'});
+  next();
+ });
+}
+
 app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
 const db=new sqlite3.Database(DB_PATH);
 const PLANS={basic:{name:'Basic',price:29,max_staff:1,max_month:100,sms:false},standard:{name:'Standard',price:49,max_staff:5,max_month:1000,sms:false},premium:{name:'Premium',price:99,max_staff:30,max_month:10000,sms:true}};
@@ -73,6 +99,40 @@ app.delete('/api/owner/blocked-dates/:date',auth,owner,async(req,res)=>{await ru
 app.get('/api/owner/settings',auth,owner,async(req,res)=>{let b=await get('SELECT * FROM businesses WHERE id=?',[req.user.business_id]);res.json({business:{...pubBiz(b),booking_url:bookUrl(req,b.slug)},settings:await get('SELECT * FROM settings WHERE business_id=?',[req.user.business_id]),plans:PLANS})});
 app.put('/api/owner/settings',auth,owner,async(req,res)=>{await run('UPDATE businesses SET name=?,type=?,city=?,phone=?,instagram=?,address=?,website=?,logo_url=?,cover_url=?,description=?,updated_at=? WHERE id=?',[clean(req.body.name,120),clean(req.body.type,80),clean(req.body.city,80),phone(req.body.phone),clean(req.body.instagram,120),clean(req.body.address,255),clean(req.body.website,255),clean(req.body.logo_url,500),clean(req.body.cover_url,500),clean(req.body.description,1000),now(),req.user.business_id]);await run('UPDATE settings SET interval=?,min_notice=?,max_days=?,notify_customer_email=?,notify_owner_email=?,notify_sms=?,notify_viber=?,updated_at=? WHERE business_id=?',[Number(req.body.interval||req.body.booking_interval_minutes||15),Number(req.body.min_notice||req.body.min_notice_hours||2),Number(req.body.max_days||req.body.max_booking_days||45),req.body.notify_customer_email?1:0,req.body.notify_owner_email?1:0,req.body.notify_sms?1:0,req.body.notify_viber?1:0,now(),req.user.business_id]);res.json({message:'Podešavanja su sačuvana.'})});
 app.get('/api/owner/notifications',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM notifications WHERE business_id=? ORDER BY created_at DESC LIMIT 100',[req.user.business_id])));
+
+
+app.post('/api/owner/upload-image',auth,owner,oneImage,async(req,res)=>{
+ try{
+  if(!req.file)return res.status(400).json({error:'Izaberi sliku sa telefona ili računara.'});
+  let kind=clean(req.body.kind||req.body.type||'gallery',30);
+  let title=clean(req.body.title,120);
+  let sort_order=Number(req.body.sort_order||0);
+  let image_url='/uploads/'+req.file.filename;
+  let is_cover=kind==='cover'||req.body.is_cover==='true'||req.body.is_cover==='1'||req.body.is_cover===true;
+
+  if(kind==='profile'){
+   await run('UPDATE businesses SET logo_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id]);
+   return res.json({message:'Profilna slika je postavljena.',image_url});
+  }
+
+  if(kind==='cover'){
+   await run('UPDATE business_images SET is_cover=0 WHERE business_id=?',[req.user.business_id]);
+   await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id]);
+   await run('INSERT INTO business_images(business_id,image_url,title,is_cover,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',[req.user.business_id,image_url,title||'Naslovna slika',1,sort_order,now(),now()]);
+   return res.json({message:'Naslovna slika je postavljena.',image_url});
+  }
+
+  if(is_cover){
+   await run('UPDATE business_images SET is_cover=0 WHERE business_id=?',[req.user.business_id]);
+   await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id]);
+  }
+
+  let r=await run('INSERT INTO business_images(business_id,image_url,title,is_cover,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',[req.user.business_id,image_url,title,is_cover?1:0,sort_order,now(),now()]);
+  res.status(201).json({id:r.lastID,message:is_cover?'Slika je dodata u album i postavljena kao naslovna.':'Slika je dodata u album.',image_url});
+ }catch(e){
+  res.status(500).json({error:'Greška pri upload-u slike.'});
+ }
+});
 
 app.get('/api/owner/gallery',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM business_images WHERE business_id=? ORDER BY is_cover DESC,sort_order,id',[req.user.business_id])));
 
