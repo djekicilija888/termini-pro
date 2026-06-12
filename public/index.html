@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online zakazivanje termina</title>
+  <meta name="theme-color" content="#101827" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/">
+        <span class="brand-mark">T</span>
+        <span id="businessName">Termini Pro</span>
+      </a>
+      <a class="nav-link" href="/admin.html">Admin</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Brzo i jednostavno</p>
+          <h1>Zakaži termin online, bez poziva i čekanja.</h1>
+          <p class="lead">Izaberi uslugu, datum i slobodno vreme. Sistem automatski proverava zauzetost termina.</p>
+          <div class="hero-actions">
+            <a class="btn" href="#booking">Zakaži sada</a>
+            <a class="btn ghost" href="#services">Pogledaj usluge</a>
+          </div>
+        </div>
+
+        <div class="hero-card">
+          <p>Radimo po terminima</p>
+          <strong>Bez preklapanja</strong>
+          <span>Slobodni termini se računaju automatski.</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="services" class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Usluge</p>
+          <h2>Izaberi šta ti treba</h2>
+        </div>
+        <div id="servicesGrid" class="services-grid"></div>
+      </div>
+    </section>
+
+    <section id="booking" class="section booking-section">
+      <div class="wrap booking-grid">
+        <div>
+          <p class="eyebrow">Zakazivanje</p>
+          <h2>Rezerviši svoj termin</h2>
+          <p class="muted">Nakon zakazivanja termin se čuva u sistemu. Kasnije se ovde može povezati SMS ili Viber potvrda.</p>
+
+          <div class="info-box">
+            <strong>Kontakt</strong>
+            <span id="businessContact">Podaci se učitavaju...</span>
+          </div>
+        </div>
+
+        <form id="bookingForm" class="card form-card">
+          <label>
+            Usluga
+            <select id="service" required></select>
+          </label>
+
+          <label>
+            Datum
+            <input id="date" type="date" required />
+          </label>
+
+          <label>
+            Slobodan termin
+            <select id="slot" required>
+              <option value="">Prvo izaberi uslugu i datum</option>
+            </select>
+          </label>
+
+          <label>
+            Ime i prezime
+            <input id="customerName" type="text" placeholder="Npr. Marko Marković" required />
+          </label>
+
+          <label>
+            Telefon
+            <input id="phone" type="tel" placeholder="Npr. +381641234567" required />
+          </label>
+
+          <label>
+            Email nije obavezan
+            <input id="email" type="email" placeholder="npr. marko@email.com" />
+          </label>
+
+          <label>
+            Napomena nije obavezna
+            <textarea id="notes" rows="3" placeholder="Npr. kasnim 5 minuta, posebna želja..."></textarea>
+          </label>
+
+          <button type="submit" class="btn full">Zakaži termin</button>
+          <p id="message" class="message"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>© <span id="year"></span> Termini Pro</span>
+    </div>
+  </footer>
+
+  <script src="/js/booking.js"></script>
+</body>
+</html>
