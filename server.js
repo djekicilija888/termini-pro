@@ -1,4 +1,18 @@
 
+async function allowedBusinessesForEmail(email){
+ email=normalizeEmail(email);
+ if(!email)return 1;
+ let e=await get('SELECT * FROM google_play_entitlements WHERE email=?',[email]);
+ if(e&&e.google_play_active&&Number(e.allowed_businesses)>1)return Number(e.allowed_businesses);
+ return 1;
+}
+async function ownerBusinessCountByEmail(email){
+ email=normalizeEmail(email);
+ let row=await get('SELECT COUNT(*) total FROM users WHERE email=? AND role=?',[email,'owner']);
+ return row?Number(row.total||0):0;
+}
+
+
 require('dotenv').config();
 const path=require('path'),crypto=require('crypto'),express=require('express'),cors=require('cors'),helmet=require('helmet'),rateLimit=require('express-rate-limit'),sqlite3=require('sqlite3').verbose(),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),QRCode=require('qrcode'),nodemailer=require('nodemailer');
 const fs=require('fs');
@@ -36,6 +50,16 @@ async function init(){await run('PRAGMA foreign_keys=ON');
  await run(`CREATE TABLE IF NOT EXISTS blocked(business_id INTEGER,date TEXT,reason TEXT,created_at TEXT,PRIMARY KEY(business_id,date))`);
  await run(`CREATE TABLE IF NOT EXISTS appointments(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,service_id INTEGER,staff_id INTEGER,appt_token TEXT UNIQUE,customer_name TEXT,phone TEXT,email TEXT,date TEXT,start_time TEXT,end_time TEXT,status TEXT DEFAULT 'booked',notes TEXT,created_at TEXT,updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,appointment_id INTEGER,channel TEXT,recipient TEXT,subject TEXT,body TEXT,status TEXT,provider TEXT,error TEXT,created_at TEXT)`);
+
+ await run(`CREATE TABLE IF NOT EXISTS google_play_entitlements(
+  email TEXT PRIMARY KEY,
+  allowed_businesses INTEGER DEFAULT 1,
+  google_play_active INTEGER DEFAULT 0,
+  product_id TEXT DEFAULT '',
+  purchase_token TEXT DEFAULT '',
+  order_id TEXT DEFAULT '',
+  updated_at TEXT
+ )`);
 await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
  let se=email(process.env.SUPERADMIN_EMAIL||'admin@platform.local');if(!await get('SELECT id FROM users WHERE email=?',[se])){let h=await bcrypt.hash(process.env.SUPERADMIN_PASSWORD||'platform123',12);await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(NULL,'Super Admin',?,?,'superadmin',?)",[se,h,now()])}}
 async function defaults(bid,ownerName){await run('INSERT INTO settings(business_id,updated_at) VALUES(?,?)',[bid,now()]);for(let r of [[0,0,'09:00','17:00'],[1,1,'09:00','17:00'],[2,1,'09:00','17:00'],[3,1,'09:00','17:00'],[4,1,'09:00','17:00'],[5,1,'09:00','17:00'],[6,1,'09:00','14:00']])await run('INSERT INTO hours(business_id,day,is_open,open_time,close_time,break_start,break_end) VALUES(?,?,?,?,?,?,?)',[bid,...r,'','']);await run("INSERT INTO staff(business_id,name,title,active,sort_order,created_at,updated_at) VALUES(?,?,'Majstor',1,1,?,?)",[bid,ownerName||'Glavni majstor',now(),now()]);await run("INSERT INTO services(business_id,name,description,duration,price,active,sort_order,created_at,updated_at) VALUES(?,'Osnovna usluga','Promeni naziv i cenu u panelu.',30,1000,1,1,?,?)",[bid,now(),now()])}
@@ -46,7 +70,91 @@ async function logN(o){await run('INSERT INTO notifications(business_id,appointm
 async function sendEmail(o){if(!(process.env.SMTP_HOST&&process.env.SMTP_USER&&process.env.SMTP_PASS))return logN({...o,channel:'email',status:'logged',provider:'smtp-not-configured'});try{let tr=nodemailer.createTransport({host:process.env.SMTP_HOST,port:Number(process.env.SMTP_PORT||587),secure:String(process.env.SMTP_SECURE)==='true',auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}});await tr.sendMail({from:process.env.SMTP_FROM||'no-reply@termini.local',to:o.recipient,subject:o.subject,text:o.body});await logN({...o,channel:'email',status:'sent',provider:'smtp'})}catch(e){await logN({...o,channel:'email',status:'failed',provider:'smtp',error:e.message})}}
 async function notify(req,a,ctx){let s=await get('SELECT * FROM settings WHERE business_id=?',[a.business_id]),own=await get("SELECT email FROM users WHERE business_id=? AND role='owner' LIMIT 1",[a.business_id]),m=manageUrl(req,a.appt_token);let body=`Termin je zakazan.\nFirma: ${ctx.biz.name}\nUsluga: ${ctx.service.name}\nRadnik: ${ctx.staff.name}\nDatum: ${a.date}\nVreme: ${a.start_time}\nPromena/otkazivanje: ${m}`;let obody=`Novi termin: ${a.customer_name}, ${a.phone}, ${a.date} ${a.start_time}, ${ctx.service.name}, ${ctx.staff.name}`;if(s.notify_customer_email&&a.email)await sendEmail({business_id:a.business_id,appointment_id:a.id,recipient:a.email,subject:'Potvrda termina',body});if(s.notify_owner_email&&own)await sendEmail({business_id:a.business_id,appointment_id:a.id,recipient:own.email,subject:'Novi termin',body:obody});if(s.notify_sms)await logN({business_id:a.business_id,appointment_id:a.id,channel:'sms',recipient:a.phone,subject:'SMS termin',body,status:'logged',provider:process.env.SMS_PROVIDER||'demo'});if(s.notify_viber)await logN({business_id:a.business_id,appointment_id:a.id,channel:'viber',recipient:a.phone,subject:'Viber termin',body,status:'logged',provider:process.env.VIBER_PROVIDER||'demo'})}
 app.get('/b/:slug',(req,res)=>res.sendFile(path.join(__dirname,'public','business.html')));app.get('/m/:tok',(req,res)=>res.sendFile(path.join(__dirname,'public','manage.html')));app.get('/api/health',(req,res)=>res.json({ok:true}));app.get('/api/platform',(req,res)=>res.json({name:PLATFORM_NAME,plans:PLANS}));
-app.post('/api/auth/register-business',async(req,res)=>{try{let name=clean(req.body.business_name,120),em=email(req.body.email),pw=String(req.body.password||''),ownerName=clean(req.body.owner_name||name,120);if(name.length<2||!em.includes('@')||pw.length<6)return res.status(400).json({error:'Proveri naziv, email i lozinku.'});if(await get('SELECT id FROM users WHERE email=?',[em]))return res.status(409).json({error:'Email već postoji.'});let sl=await uniqueSlug(name),ex=addDays(today(),14),r=await run("INSERT INTO businesses(name,slug,type,city,phone,active,subscription_plan,subscription_status,subscription_expires_at,created_at,updated_at) VALUES(?,?,?,?,?,1,'basic','trial',?,?,?)",[name,sl,clean(req.body.type,80),clean(req.body.city,80),phone(req.body.phone),ex,now(),now()]);let h=await bcrypt.hash(pw,12),ur=await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(?,?,?,?, 'owner',?)",[r.lastID,ownerName,em,h,now()]);await defaults(r.lastID,ownerName);let u={id:ur.lastID,business_id:r.lastID,name:ownerName,email:em,role:'owner'};res.status(201).json({token:sign(u),user:u,business:{id:r.lastID,name,slug:sl},booking_url:bookUrl(req,sl)})}catch(e){res.status(500).json({error:'Greška pri registraciji.'})}});
+app.post('/api/auth/register-business',async(req,res)=>{
+ res.status(403).json({error:'Registracija firme nije dostupna preko web sajta. Registracija se radi kroz Android aplikaciju preko Google Play-a.'});
+});
+
+app.get('/api/android/registration-info',(req,res)=>{
+ res.json({
+  message:'Registracija firme se radi kroz Android aplikaciju. Posle aktivacije isti nalog radi i na desktopu.',
+  first_business:'Prva firma može biti besplatna kroz Android aplikaciju.',
+  extra_business:'Dodatna firma zahteva Google Play otključavanje.',
+  desktop:'Desktop/web služi za prijavu i korišćenje panela.'
+ });
+});
+
+app.post('/api/android/register-business',async(req,res)=>{
+ try{
+  let email=normalizeEmail(req.body.email);
+  let existing=await ownerBusinessCountByEmail(email),allowed=await allowedBusinessesForEmail(email);
+
+  if(existing>=allowed){
+   return res.status(403).json({error:'Već imate registrovanu firmu. Za dodatnu firmu aktivirajte kupovinu u Android aplikaciji preko Google Play-a, pa zatim pokušajte ponovo sa istim emailom.'});
+  }
+
+  let name=clean(req.body.business_name,160);
+  if(!name||!email||!req.body.password){
+   return res.status(400).json({error:'Unesite naziv firme, email i lozinku.'});
+  }
+
+  let slug=slugify(name),base=slug,i=2;
+  while(await get('SELECT id FROM businesses WHERE slug=?',[slug]))slug=base+'-'+i++;
+
+  let h=await bcrypt.hash(req.body.password,10);
+  let r=await run(
+   'INSERT INTO businesses(name,slug,type,city,phone,subscription_plan,subscription_status,subscription_expires_at,active,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,1,?,?)',
+   [name,slug,clean(req.body.type,120),clean(req.body.city,120),phone(req.body.phone),'basic','trial','2099-01-01',now(),now()]
+  );
+
+  let u=await run(
+   'INSERT INTO users(business_id,role,name,email,password_hash,created_at) VALUES(?,?,?,?,?,?)',
+   [r.lastID,'owner',clean(req.body.owner_name,120)||name,email,h,now()]
+  );
+
+  await createDefaults(r.lastID);
+  res.status(201).json({
+   token:sign({id:u.lastID,role:'owner',business_id:r.lastID,email}),
+   business:{id:r.lastID,slug},
+   message:'Firma je registrovana. Ovaj nalog sada možete koristiti i na desktopu.'
+  });
+ }catch(e){
+  res.status(500).json({error:'Greška pri registraciji kroz Android aplikaciju.'});
+ }
+});
+
+app.post('/api/google-play/confirm',async(req,res)=>{
+ try{
+  let email=normalizeEmail(req.body.email);
+  let token=clean(req.body.purchase_token||req.body.purchaseToken,500);
+  let product=clean(req.body.product_id||req.body.productId||'extra_business_1',120);
+  let order=clean(req.body.order_id||req.body.orderId,160);
+  if(!email||!token)return res.status(400).json({error:'Nedostaje email ili Google Play purchaseToken.'});
+
+  // VAŽNO: ovo je priprema servera za Android aplikaciju.
+  // U produkciji ovde Android app šalje purchaseToken, a server ga proverava preko Google Play Developer API-ja.
+  // Dok nema Android aplikacije i service account verifikacije, automatsko otključavanje je blokirano.
+  if(process.env.ALLOW_UNVERIFIED_GOOGLE_PLAY!=='true'){
+   return res.status(402).json({error:'Google Play kupovina mora prvo da se verifikuje u Android aplikaciji. Server je spreman, ali automatsko otključavanje nije uključeno bez verifikacije.'});
+  }
+
+  await run(
+   'INSERT OR REPLACE INTO google_play_entitlements(email,allowed_businesses,google_play_active,product_id,purchase_token,order_id,updated_at) VALUES(?,?,?,?,?,?,?)',
+   [email,2,1,product,token,order,now()]
+  );
+  res.json({message:'Google Play kupovina je evidentirana. Možete registrovati dodatnu firmu sa istim emailom.',allowed_businesses:2});
+ }catch(e){res.status(500).json({error:'Greška pri obradi Google Play kupovine.'})}
+});
+
+app.get('/api/google-play/status',async(req,res)=>{
+ try{
+  let email=normalizeEmail(req.query.email);
+  if(!email)return res.status(400).json({error:'Nedostaje email.'});
+  let allowed=await allowedBusinessesForEmail(email);
+  let used=await ownerBusinessCountByEmail(email);
+  res.json({email,allowed_businesses:allowed,used_businesses:used,can_create_more:used<allowed});
+ }catch(e){res.status(500).json({error:'Greška pri proveri statusa.'})}
+});
+
 app.post('/api/auth/login',async(req,res)=>{try{let u=await get('SELECT * FROM users WHERE email=?',[email(req.body.email)]);if(!u||!await bcrypt.compare(String(req.body.password||''),u.password_hash))return res.status(401).json({error:'Pogrešan email ili lozinka.'});res.json({token:sign(u),user:{id:u.id,business_id:u.business_id,name:u.name,email:u.email,role:u.role}})}catch{res.status(500).json({error:'Greška pri prijavi.'})}});
 app.get('/api/auth/me',auth,async(req,res)=>{let b=req.user.business_id?await get('SELECT * FROM businesses WHERE id=?',[req.user.business_id]):null;res.json({user:req.user,business:b?{...pubBiz(b),booking_url:bookUrl(req,b.slug)}:null})});
 app.get('/api/businesses',async(req,res)=>{let q=clean(req.query.q,100).toLowerCase(),city=clean(req.query.city,80).toLowerCase(),type=clean(req.query.type,80).toLowerCase(),p=[],w='WHERE active=1';if(q){w+=' AND (LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(city) LIKE ? OR LOWER(type) LIKE ?)';p.push(`%${q}%`,`%${q}%`,`%${q}%`,`%${q}%`)}if(city){w+=' AND LOWER(city) LIKE ?';p.push(`%${city}%`)}if(type){w+=' AND LOWER(type) LIKE ?';p.push(`%${type}%`)}let rows=await all(`SELECT * FROM businesses ${w} ORDER BY created_at DESC LIMIT 200`,p);res.json(rows.map(b=>({...pubBiz(b),booking_url:bookUrl(req,b.slug)})))});
@@ -100,4 +208,17 @@ app.patch('/api/superadmin/businesses/:id/active',auth,superadmin,async(req,res)
 app.patch('/api/superadmin/businesses/:id/subscription',auth,superadmin,async(req,res)=>{await run('UPDATE businesses SET subscription_plan=?,subscription_status=?,subscription_expires_at=?,google_play_product_id=?,google_play_order_id=?,google_play_state=?,google_play_last_check=?,updated_at=? WHERE id=?',[clean(req.body.subscription_plan,30),clean(req.body.subscription_status,30),clean(req.body.subscription_expires_at,20),clean(req.body.google_play_product_id,120),clean(req.body.google_play_order_id,120),clean(req.body.google_play_state,120),now(),now(),Number(req.params.id)]);res.json({message:'Pretplata je sačuvana.'})});
 app.post('/api/google-play/purchase-token',auth,owner,async(req,res)=>{await run("UPDATE businesses SET google_play_product_id=?,google_play_purchase_token=?,google_play_order_id=?,google_play_state='token_received_pending_verification',google_play_last_check=?,updated_at=? WHERE id=?",[clean(req.body.product_id,120),clean(req.body.purchase_token,500),clean(req.body.order_id,120),now(),now(),req.user.business_id]);res.json({message:'Google Play token je sačuvan. Sledeći korak je verifikacija preko Google Play Developer API-ja.'})});
 app.post('/api/google-play/webhook',(req,res)=>{console.log('Google Play RTDN placeholder',JSON.stringify(req.body).slice(0,1000));res.json({ok:true,message:'RTDN primljen. U produkciji se ovde zove Google Play Developer API.'})});
+
+app.post('/api/superadmin/google-play/entitlement',auth,admin,async(req,res)=>{
+ try{
+  let email=normalizeEmail(req.body.email);
+  let allowed=Number(req.body.allowed_businesses||2);
+  if(!email||allowed<1)return res.status(400).json({error:'Unesi email i broj dozvoljenih firmi.'});
+  await run(
+   'INSERT OR REPLACE INTO google_play_entitlements(email,allowed_businesses,google_play_active,product_id,purchase_token,order_id,updated_at) VALUES(?,?,?,?,?,?,?)',
+   [email,allowed,1,clean(req.body.product_id||'manual_google_play',120),clean(req.body.purchase_token||'',500),clean(req.body.order_id||'',160),now()]
+  );
+  res.json({message:'Dozvola je upisana. Korisnik sada može dodati još firmi sa istim emailom.',email,allowed_businesses:allowed});
+ }catch(e){res.status(500).json({error:'Greška pri upisu dozvole.'})}
+});
 init().then(()=>app.listen(PORT,()=>console.log(`Radi na http://localhost:${PORT}`))).catch(e=>{console.error(e);process.exit(1)});

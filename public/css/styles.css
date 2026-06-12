@@ -341,3 +341,7 @@ img{max-width:100%}
 .hero-actions {
   justify-content: flex-start;
 }
+
+.single-panel{max-width:520px}
+.soft-card{margin-top:22px;background:rgba(255,255,255,.78)}
+.small-note{margin-top:12px}
