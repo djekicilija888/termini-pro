@@ -15,7 +15,7 @@ const uploadStorage=multer.diskStorage({
 });
 const uploadImage=multer({
  storage:uploadStorage,
- limits:{fileSize:6*1024*1024},
+ limits:{fileSize:5*1024*1024},
  fileFilter:(req,file,cb)=>{
   if(!/^image\/(jpeg|png|webp|gif)$/i.test(file.mimetype||''))return cb(new Error('Dozvoljene su samo slike JPG, PNG, WEBP ili GIF.'));
   cb(null,true);
@@ -84,7 +84,7 @@ app.patch('/api/manage/:tok/cancel',async(req,res)=>{let a=await get('SELECT * F
 app.get('/api/owner/dashboard',auth,owner,async(req,res)=>{let bid=req.user.business_id,b=await get('SELECT * FROM businesses WHERE id=?',[bid]),d=today(),w=addDays(d,7);let cards={today:(await get("SELECT COUNT(*) total FROM appointments WHERE business_id=? AND date=? AND status='booked'",[bid,d])).total,week:(await get("SELECT COUNT(*) total FROM appointments WHERE business_id=? AND date>=? AND date<=? AND status='booked'",[bid,d,w])).total,services:(await get('SELECT COUNT(*) total FROM services WHERE business_id=? AND active=1',[bid])).total,staff:(await get('SELECT COUNT(*) total FROM staff WHERE business_id=? AND active=1',[bid])).total};let upcoming=await all(`SELECT a.*,s.name service_name,st.name staff_name FROM appointments a JOIN services s ON s.id=a.service_id LEFT JOIN staff st ON st.id=a.staff_id WHERE a.business_id=? AND a.date>=? ORDER BY a.date,a.start_time LIMIT 10`,[bid,d]);res.json({business:{...pubBiz(b),booking_url:bookUrl(req,b.slug)},cards,upcoming})});
 app.get('/api/owner/qr',auth,owner,async(req,res)=>{let b=await get('SELECT * FROM businesses WHERE id=?',[req.user.business_id]);res.type('image/svg+xml').send(await QRCode.toString(bookUrl(req,b.slug),{type:'svg',margin:1,width:260}))});
 app.get('/api/owner/staff',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM staff WHERE business_id=? ORDER BY sort_order,id',[req.user.business_id])));
-app.post('/api/owner/staff',auth,owner,async(req,res)=>{let b=await get('SELECT * FROM businesses WHERE id=?',[req.user.business_id]),lim=PLANS[b.subscription_plan||'basic'].max_staff,c=(await get('SELECT COUNT(*) total FROM staff WHERE business_id=? AND active=1',[b.id])).total;if(c>=lim)return res.status(403).json({error:`Paket dozvoljava ${lim} aktivnih radnika.`});let r=await run('INSERT INTO staff(business_id,name,title,phone,email,active,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,1,?,?,?)',[b.id,clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),Number(req.body.sort_order||0),now(),now()]);res.status(201).json({id:r.lastID,message:'Radnik je dodat.'})});
+app.post('/api/owner/staff',auth,owner,async(req,res)=>{let b=await get('SELECT * FROM businesses WHERE id=?',[req.user.business_id]);let r=await run('INSERT INTO staff(business_id,name,title,phone,email,active,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,1,?,?,?)',[b.id,clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),Number(req.body.sort_order||0),now(),now()]);res.status(201).json({id:r.lastID,message:'Radnik je dodat.'})});
 app.put('/api/owner/staff/:id',auth,owner,async(req,res)=>{await run('UPDATE staff SET name=?,title=?,phone=?,email=?,active=?,sort_order=?,updated_at=? WHERE id=? AND business_id=?',[clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),req.body.active?1:0,Number(req.body.sort_order||0),now(),Number(req.params.id),req.user.business_id]);res.json({message:'Radnik je sačuvan.'})});
 app.get('/api/owner/services',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM services WHERE business_id=? ORDER BY sort_order,id',[req.user.business_id])));
 app.post('/api/owner/services',auth,owner,async(req,res)=>{let r=await run('INSERT INTO services(business_id,name,description,duration,price,active,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,1,?,?,?)',[req.user.business_id,clean(req.body.name,120),clean(req.body.description,500),Number(req.body.duration||req.body.duration_minutes||30),Number(req.body.price||0),Number(req.body.sort_order||0),now(),now()]);res.status(201).json({id:r.lastID,message:'Usluga je dodata.'})});
@@ -101,9 +101,10 @@ app.put('/api/owner/settings',auth,owner,async(req,res)=>{await run('UPDATE busi
 app.get('/api/owner/notifications',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM notifications WHERE business_id=? ORDER BY created_at DESC LIMIT 100',[req.user.business_id])));
 
 
+
 app.post('/api/owner/upload-image',auth,owner,oneImage,async(req,res)=>{
  try{
-  if(!req.file)return res.status(400).json({error:'Izaberi sliku sa telefona ili računara.'});
+  if(!req.file)return res.status(400).json({error:'Izaberi sliku sa telefona ili računara. Maksimalno 5 MB.'});
   let kind=clean(req.body.kind||req.body.type||'gallery',30);
   let title=clean(req.body.title,120);
   let sort_order=Number(req.body.sort_order||0);
@@ -120,6 +121,12 @@ app.post('/api/owner/upload-image',auth,owner,oneImage,async(req,res)=>{
    await run('UPDATE businesses SET cover_url=?,updated_at=? WHERE id=?',[image_url,now(),req.user.business_id]);
    await run('INSERT INTO business_images(business_id,image_url,title,is_cover,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',[req.user.business_id,image_url,title||'Naslovna slika',1,sort_order,now(),now()]);
    return res.json({message:'Naslovna slika je postavljena.',image_url});
+  }
+
+  let cnt=await get('SELECT COUNT(*) total FROM business_images WHERE business_id=?',[req.user.business_id]);
+  if(cnt&&cnt.total>=20){
+   try{fs.unlinkSync(req.file.path)}catch(e){}
+   return res.status(400).json({error:'Album može imati maksimalno 20 slika po firmi.'});
   }
 
   if(is_cover){

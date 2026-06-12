@@ -189,3 +189,80 @@ img{max-width:100%}
     font-size: 32px;
   }
 }
+
+
+/* final-dashboard-upload-limits-v44: završni dashboard + limiti slika */
+.dashboard-stats {
+  margin: 14px 0 18px;
+}
+
+.clean-stat {
+  min-height: 116px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  border: 1px solid rgba(17,24,39,.08);
+  background: linear-gradient(180deg,#ffffff,#f8fafc);
+}
+
+.clean-stat b {
+  color: var(--muted);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.clean-stat h2 {
+  font-size: 42px;
+  line-height: 1;
+}
+
+.clean-stat p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.booking-link-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg,#ffffff,#f8fafc);
+}
+
+.booking-link-card input {
+  font-weight: 800;
+  background: white;
+}
+
+.link-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.upload-card::after {
+  content: "Limit: 5 MB";
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #1e3a8a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+@media(max-width:760px){
+  .link-actions {
+    grid-template-columns: 1fr;
+  }
+  .clean-stat {
+    min-height: 92px;
+  }
+  .clean-stat h2 {
+    font-size: 32px;
+  }
+}

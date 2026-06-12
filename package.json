@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -21,5 +21,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Clean dashboard with separate booking link card"
+  "description": "Final dashboard, booking link tab, image upload limits"
 }
