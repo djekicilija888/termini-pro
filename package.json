@@ -1,7 +1,7 @@
 {
-  "name": "termini-pro",
-  "version": "2.0.0",
-  "description": "Ozbiljnija aplikacija za online zakazivanje termina",
+  "name": "termini-platforma",
+  "version": "1.0.0",
+  "description": "Multi-tenant platforma za zakazivanje termina za vise firmi",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

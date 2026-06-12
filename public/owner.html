@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel za firme</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="owner-body">
+  <main id="loginView" class="login-page">
+    <section class="card login-card">
+      <p class="eyebrow">Panel za firme</p>
+      <h1>Prijava vlasnika</h1>
+      <p class="muted">Uloguj se da vidiš termine, usluge i svoj link za zakazivanje.</p>
+
+      <form id="ownerLoginForm">
+        <label>Email
+          <input id="ownerEmail" type="email" required />
+        </label>
+        <label>Lozinka
+          <input id="ownerPassword" type="password" required />
+        </label>
+        <button class="btn" type="submit">Prijavi se</button>
+      </form>
+
+      <p id="ownerLoginMessage" class="message"></p>
+      <p class="muted small-text">Nemaš nalog? Registruj firmu na početnoj strani.</p>
+    </section>
+  </main>
+
+  <main id="ownerView" class="dashboard hidden">
+    <aside class="sidebar">
+      <a class="brand sidebar-brand" href="/">
+        <span class="brand-mark">T</span>
+        <span>Panel firme</span>
+      </a>
+      <nav class="side-nav">
+        <button data-tab="dashboard" class="active">Dashboard</button>
+        <button data-tab="appointments">Termini</button>
+        <button data-tab="services">Usluge</button>
+        <button data-tab="hours">Radno vreme</button>
+        <button data-tab="blocked">Blokirani datumi</button>
+        <button data-tab="settings">Podešavanja</button>
+      </nav>
+      <button id="logoutBtn" class="btn ghost" type="button">Odjava</button>
+    </aside>
+
+    <section class="dashboard-content">
+      <div class="dashboard-top">
+        <div>
+          <p class="eyebrow">Owner panel</p>
+          <h1 id="dashboardTitle">Dashboard</h1>
+        </div>
+        <a id="openPublicLink" class="btn ghost" target="_blank">Otvori javnu stranicu</a>
+      </div>
+
+      <p id="ownerMessage" class="message"></p>
+
+      <section id="tab-dashboard" class="tab-panel">
+        <div class="card link-card">
+          <p class="eyebrow">Tvoj link za zakazivanje</p>
+          <h2 id="ownerBusinessName">Firma</h2>
+          <div class="copy-row">
+            <input id="bookingUrlInput" readonly />
+            <button id="copyLinkBtn" class="btn small" type="button">Kopiraj</button>
+          </div>
+          <p class="muted">Ovaj link stavi u Instagram bio, Facebook, Google profil, Viber, WhatsApp ili na svoj sajt.</p>
+        </div>
+
+        <div id="dashboardCards" class="stats-grid"></div>
+
+        <div class="card">
+          <h2>Najbliži termini</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Datum</th>
+                  <th>Vreme</th>
+                  <th>Mušterija</th>
+                  <th>Telefon</th>
+                  <th>Usluga</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="upcomingBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-appointments" class="tab-panel hidden">
+        <div class="card">
+          <div class="filters">
+            <label>Od<input id="appointmentsFrom" type="date" /></label>
+            <label>Do<input id="appointmentsTo" type="date" /></label>
+            <label>Status
+              <select id="appointmentsStatus">
+                <option value="">Svi</option>
+                <option value="booked">Zakazani</option>
+                <option value="completed">Završeni</option>
+                <option value="cancelled">Otkazani</option>
+                <option value="no_show">Nije došao</option>
+              </select>
+            </label>
+            <button id="loadAppointmentsBtn" class="btn small" type="button">Učitaj</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Datum</th>
+                  <th>Vreme</th>
+                  <th>Mušterija</th>
+                  <th>Telefon</th>
+                  <th>Usluga</th>
+                  <th>Status</th>
+                  <th>Promeni</th>
+                </tr>
+              </thead>
+              <tbody id="appointmentsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-services" class="tab-panel hidden">
+        <div class="card">
+          <h2>Dodaj / izmeni uslugu</h2>
+          <form id="serviceForm" class="form-grid">
+            <input id="serviceId" type="hidden" />
+            <label>Naziv<input id="serviceName" required /></label>
+            <label>Trajanje min<input id="serviceDuration" type="number" min="5" value="30" required /></label>
+            <label>Cena RSD<input id="servicePrice" type="number" min="0" value="1000" required /></label>
+            <label>Redosled<input id="serviceSort" type="number" value="0" /></label>
+            <label class="full-row">Opis<textarea id="serviceDescription" rows="2"></textarea></label>
+            <label class="check-row"><input id="serviceActive" type="checkbox" checked /> Aktivna usluga</label>
+            <div class="actions full-row">
+              <button class="btn small" type="submit">Sačuvaj</button>
+              <button id="resetServiceBtn" class="btn small ghost" type="button">Poništi</button>
+            </div>
+          </form>
+        </div>
+        <div id="servicesList" class="item-list"></div>
+      </section>
+
+      <section id="tab-hours" class="tab-panel hidden">
+        <div class="card">
+          <h2>Radno vreme</h2>
+          <form id="hoursForm" class="hours-list"></form>
+          <button id="saveHoursBtn" class="btn small" type="button">Sačuvaj radno vreme</button>
+        </div>
+      </section>
+
+      <section id="tab-blocked" class="tab-panel hidden">
+        <div class="card">
+          <h2>Blokirani datumi</h2>
+          <form id="blockedForm" class="filters">
+            <label>Datum<input id="blockedDate" type="date" required /></label>
+            <label>Razlog<input id="blockedReason" /></label>
+            <button class="btn small" type="submit">Blokiraj</button>
+          </form>
+        </div>
+        <div id="blockedList" class="item-list"></div>
+      </section>
+
+      <section id="tab-settings" class="tab-panel hidden">
+        <div class="card">
+          <h2>Podešavanja firme</h2>
+          <form id="settingsForm" class="form-grid">
+            <label>Naziv firme<input id="settingsName" required /></label>
+            <label>Tip delatnosti<input id="settingsType" /></label>
+            <label>Grad<input id="settingsCity" /></label>
+            <label>Telefon<input id="settingsPhone" /></label>
+            <label>Instagram<input id="settingsInstagram" placeholder="@profil" /></label>
+            <label>Adresa<input id="settingsAddress" /></label>
+            <label class="full-row">Opis<textarea id="settingsDescription" rows="3"></textarea></label>
+            <label>Interval
+              <select id="settingsInterval">
+                <option value="5">5 min</option>
+                <option value="10">10 min</option>
+                <option value="15">15 min</option>
+                <option value="20">20 min</option>
+                <option value="30">30 min</option>
+                <option value="60">60 min</option>
+              </select>
+            </label>
+            <label>Minimalna najava sati<input id="settingsMinNotice" type="number" min="0" max="168" /></label>
+            <label>Maks. dana unapred<input id="settingsMaxDays" type="number" min="1" max="365" /></label>
+            <button class="btn small full-row" type="submit">Sačuvaj podešavanja</button>
+          </form>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="/js/owner.js"></script>
+</body>
+</html>

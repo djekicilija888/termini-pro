@@ -1,7 +1,7 @@
 {
-  "name": "Termini Pro",
+  "name": "Termini Platforma",
   "short_name": "Termini",
-  "start_url": "/?v=no-admin-button-v1",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#f4f6fb",
   "theme_color": "#111827",

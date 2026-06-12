@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Superadmin</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <main id="superLoginView" class="login-page">
+    <section class="card login-card">
+      <p class="eyebrow">Superadmin</p>
+      <h1>Platforma</h1>
+      <form id="superLoginForm">
+        <label>Email<input id="superEmail" type="email" value="admin@platform.local" required /></label>
+        <label>Lozinka<input id="superPassword" type="password" value="platform123" required /></label>
+        <button class="btn" type="submit">Prijavi se</button>
+      </form>
+      <p id="superLoginMessage" class="message"></p>
+    </section>
+  </main>
+
+  <main id="superView" class="shell main-stack hidden">
+    <section class="card">
+      <div class="dashboard-top">
+        <div>
+          <p class="eyebrow">Superadmin</p>
+          <h1>Sve firme</h1>
+        </div>
+        <button id="superLogoutBtn" class="btn small ghost" type="button">Odjava</button>
+      </div>
+      <p id="superMessage" class="message"></p>
+      <div id="superBusinessList" class="item-list"></div>
+    </section>
+  </main>
+
+  <script src="/js/superadmin.js"></script>
+</body>
+</html>

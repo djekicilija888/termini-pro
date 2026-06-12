@@ -1,95 +1,73 @@
-# Termini Pro
+# Termini Platforma
 
-Ozbiljnija početna verzija sajta/aplikacije za zakazivanje termina.
+Ovo je multi-firma verzija sistema za zakazivanje termina.
 
-## Šta ova verzija ima
+## Šta ima
 
-- Lepša korisnička stranica za zakazivanje
-- Admin login
-- Admin dashboard
-- Pregled termina
-- Promena statusa termina: zakazan, završen, otkazan, nije došao
-- Dodavanje, izmena i gašenje usluga
-- Podešavanje radnog vremena
-- Blokiranje neradnih datuma
-- Provera zauzetih termina
-- Zaštita admin ruta preko JWT tokena
-- Hashovanje admin lozinke
-- SQLite baza
-- PWA fajlovi za instalaciju na Android
-- Mesto za kasniju SMS/Viber integraciju
+- Više salona/majstora/firmi u jednoj aplikaciji
+- Svaka firma dobija svoj javni link za zakazivanje: `/b/ime-firme`
+- Registracija firme
+- Login za vlasnika firme
+- Owner admin panel
+- Usluge po firmi
+- Radno vreme po firmi
+- Termini po firmi
+- Javno zakazivanje bez login-a za mušterije
+- Superadmin panel za vlasnika platforme
+- SQLite baza za probu
+- Spremno za Render deploy
 
-## Instalacija
-
-Prvo instaliraj Node.js LTS.
-
-Zatim raspakuj projekat i u terminalu uđi u folder:
+## Pokretanje lokalno
 
 ```bash
-cd termini-pro
 npm install
 copy .env.example .env
 npm start
 ```
 
-Na PowerShell-u umesto `copy` možeš:
+Na PowerShell-u:
 
 ```powershell
 Copy-Item .env.example .env
+npm start
 ```
 
-Otvori u browseru:
+Otvori:
 
 ```txt
 http://localhost:3000
 ```
 
-Admin panel:
+Owner panel:
 
 ```txt
-http://localhost:3000/admin.html
+http://localhost:3000/owner.html
 ```
 
-Podrazumevani admin login je:
+Superadmin panel:
 
 ```txt
-Email: admin@termini.local
-Lozinka: admin123
+http://localhost:3000/superadmin.html
 ```
 
-Promeni ovo u `.env` fajlu pre stvarne upotrebe.
+Podrazumevani superadmin:
 
-## Važno
-
-Ovo je ozbiljnija osnova, ali nije još finalna produkciona aplikacija za klijente.
-
-Pre pravog puštanja na internet treba dodati:
-
-- HTTPS domen
-- pravu bazu kao PostgreSQL
-- backup baze
-- potvrdu broja telefona
-- SMS/Viber provajdera
-- politiku privatnosti
-- zaštitu od spam zakazivanja
-- profesionalni deploy
-
-## Gde se ubacuje SMS/Viber
-
-U fajlu `server.js` postoji funkcija:
-
-```js
-sendCustomerNotification()
+```txt
+Email: admin@platform.local
+Lozinka: platform123
 ```
 
-Tu se kasnije povezuje Twilio, Infobip ili Viber Business API.
+Za javni sajt promeni `SUPERADMIN_PASSWORD` na Render-u.
 
-## Radno vreme
+## Kako radi
 
-Podrazumevano:
+1. Firma se registruje.
+2. Sistem pravi slug/link.
+3. Firma dobije link npr. `/b/salon-marija`.
+4. Firma dodaje usluge i radno vreme.
+5. Mušterije preko linka zakazuju termin.
+6. Firma vidi termine u svom panelu.
 
-- ponedeljak-petak: 09:00-17:00
-- subota: 09:00-14:00
-- nedelja: zatvoreno
+## Važno za produkciju
 
-Menja se u admin panelu.
+Za pravi biznis kasnije pređi sa SQLite na PostgreSQL, dodaj email/SMS potvrde, naplatu pretplate, backup baze i politiku privatnosti.

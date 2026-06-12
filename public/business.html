@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zakazivanje termina</title>
+  <meta name="theme-color" content="#111827" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="narrow nav">
+      <a class="brand" href="/">
+        <span class="brand-mark">T</span>
+        <span id="businessNameHeader">Zakazivanje</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="narrow main-stack">
+    <section class="card business-profile">
+      <p class="eyebrow" id="businessType">Firma</p>
+      <h1 id="businessName">Učitavanje...</h1>
+      <p class="lead" id="businessDescription">Podaci se učitavaju...</p>
+      <div class="badges" id="businessBadges"></div>
+    </section>
+
+    <section class="card">
+      <p class="eyebrow">Termin</p>
+      <h2>Zakaži termin</h2>
+
+      <form id="bookingForm">
+        <label>Usluga
+          <select id="service" required></select>
+        </label>
+        <label>Datum
+          <input id="date" type="date" required />
+        </label>
+        <label>Vreme
+          <select id="slot" required>
+            <option value="">Prvo izaberi uslugu i datum</option>
+          </select>
+        </label>
+        <label>Ime i prezime
+          <input id="customerName" required placeholder="Npr. Marko Marković" />
+        </label>
+        <label>Telefon
+          <input id="phone" required placeholder="+381..." />
+        </label>
+
+        <details class="optional-fields">
+          <summary>Dodatno, nije obavezno</summary>
+          <label>Email
+            <input id="email" type="email" placeholder="email@primer.com" />
+          </label>
+          <label>Napomena
+            <textarea id="notes" rows="2"></textarea>
+          </label>
+        </details>
+
+        <button class="btn" type="submit">Zakaži termin</button>
+        <p id="message" class="message"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <p class="eyebrow">Usluge</p>
+      <h2>Dostupne usluge</h2>
+      <div id="servicesGrid" class="services-list"></div>
+    </section>
+  </main>
+
+  <script src="/js/business.js"></script>
+</body>
+</html>

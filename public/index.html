@@ -3,109 +3,121 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Online zakazivanje termina</title>
+  <title>Termini Platforma</title>
   <meta name="theme-color" content="#111827" />
+  <link rel="stylesheet" href="/css/styles.css" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="stylesheet" href="/css/styles.css?v=no-admin-button-v1" />
 </head>
 <body>
   <header class="topbar">
-    <div class="app-shell nav">
+    <div class="shell nav">
       <a class="brand" href="/">
         <span class="brand-mark">T</span>
-        <span id="businessName">Termini Pro</span>
+        <span id="platformName">Termini Platforma</span>
       </a>
+      <div class="nav-actions">
+        <a class="nav-link" href="#businesses">Pronađi firmu</a>
+        <a class="btn small" href="/owner.html">Panel za firme</a>
+      </div>
     </div>
   </header>
 
-  <main class="app-shell main-stack">
-    <section class="hero-card">
-      <p class="eyebrow">Online zakazivanje</p>
-      <h1>Zakaži termin brzo.</h1>
-      <p class="lead">Izaberi uslugu, datum i slobodno vreme. Sistem automatski proverava zauzetost termina.</p>
-
-      <div class="badges">
-        <span>Bez duplih termina</span>
-        <span>Admin panel</span>
-        <span>Radi na telefonu</span>
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Univerzalna platforma</p>
+        <h1>Jedan sistem za zakazivanje za sve salone i majstore.</h1>
+        <p class="lead">Svaka firma dobija svoj javni link koji može da stavi na Instagram, Google profil, Viber, WhatsApp ili svoj sajt.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#register">Registruj firmu</a>
+          <a class="btn ghost" href="#businesses">Pogledaj firme</a>
+        </div>
       </div>
 
-      <div class="contact-box">
-        <strong>Kontakt</strong>
-        <span id="businessContact">Podaci se učitavaju...</span>
+      <div class="hero-card">
+        <strong>Link za Instagram</strong>
+        <span>primer:</span>
+        <code>tvojaplatforma.com/b/salon-marija</code>
+        <p>Mušterija klikne i odmah zakazuje termin.</p>
       </div>
     </section>
 
-    <section class="booking-card">
-      <div class="section-title">
-        <p class="eyebrow">Termin</p>
-        <h2>Novi termin</h2>
+    <section id="register" class="grid-2">
+      <div class="card">
+        <p class="eyebrow">Za vlasnike</p>
+        <h2>Registruj firmu</h2>
+        <p class="muted">Posle registracije dobijaš svoj link za zakazivanje i owner panel.</p>
+
+        <form id="registerForm">
+          <label>Naziv firme
+            <input id="regBusinessName" required placeholder="Npr. Salon Marija" />
+          </label>
+          <label>Tip delatnosti
+            <input id="regType" placeholder="Frizer, barber, majstor, servis..." />
+          </label>
+          <label>Grad
+            <input id="regCity" placeholder="Npr. Beograd" />
+          </label>
+          <label>Telefon
+            <input id="regPhone" placeholder="+381..." />
+          </label>
+          <label>Ime vlasnika
+            <input id="regOwnerName" placeholder="Ime i prezime" />
+          </label>
+          <label>Email za login
+            <input id="regEmail" type="email" required placeholder="vlasnik@email.com" />
+          </label>
+          <label>Lozinka
+            <input id="regPassword" type="password" required placeholder="Minimum 6 karaktera" />
+          </label>
+          <button class="btn" type="submit">Napravi nalog i link</button>
+        </form>
+
+        <p id="registerMessage" class="message"></p>
       </div>
 
-      <form id="bookingForm">
-        <label>
-          Usluga
-          <select id="service" required></select>
-        </label>
+      <div class="card">
+        <p class="eyebrow">Prijava</p>
+        <h2>Već imaš firmu?</h2>
+        <p class="muted">Uđi u panel i upravljaj uslugama, terminima i svojim linkom.</p>
 
-        <label>
-          Datum
-          <input id="date" type="date" required />
-        </label>
-
-        <label>
-          Vreme
-          <select id="slot" required>
-            <option value="">Prvo izaberi uslugu i datum</option>
-          </select>
-        </label>
-
-        <label>
-          Ime i prezime
-          <input id="customerName" type="text" placeholder="Npr. Marko Marković" required />
-        </label>
-
-        <label>
-          Telefon
-          <input id="phone" type="tel" placeholder="Npr. +381641234567" required />
-        </label>
-
-        <details class="optional-fields">
-          <summary>Dodatno, nije obavezno</summary>
-
-          <label>
-            Email
-            <input id="email" type="email" placeholder="npr. marko@email.com" />
+        <form id="loginForm">
+          <label>Email
+            <input id="loginEmail" type="email" required />
           </label>
-
-          <label>
-            Napomena
-            <textarea id="notes" rows="2" placeholder="Npr. posebna želja..."></textarea>
+          <label>Lozinka
+            <input id="loginPassword" type="password" required />
           </label>
-        </details>
+          <button class="btn" type="submit">Prijavi se</button>
+        </form>
 
-        <button type="submit" class="btn">Zakaži termin</button>
-        <p id="message" class="message"></p>
-      </form>
+        <p id="loginMessage" class="message"></p>
+      </div>
     </section>
 
-    <section class="services-card">
-      <div class="section-title">
-        <p class="eyebrow">Usluge</p>
-        <h2>Dostupne usluge</h2>
+    <section id="businesses" class="section">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Zakazivanje</p>
+          <h2>Firme na platformi</h2>
+        </div>
+        <div class="search-box">
+          <input id="searchInput" placeholder="Pretraži po nazivu, gradu ili delatnosti" />
+          <button id="searchBtn" class="btn small" type="button">Traži</button>
+        </div>
       </div>
 
-      <div id="servicesGrid" class="services-grid"></div>
+      <div id="businessList" class="business-grid"></div>
     </section>
   </main>
 
   <footer class="footer">
-    <div class="app-shell footer-inner">
-      <span>© <span id="year"></span> Termini Pro</span>
-      <span>Online zakazivanje termina</span>
+    <div class="shell footer-inner">
+      <span>© Termini Platforma</span>
+      <a href="/superadmin.html">Superadmin</a>
     </div>
   </footer>
 
-  <script src="/js/booking.js?v=no-admin-button-v1"></script>
+  <script src="/js/platform.js"></script>
 </body>
 </html>
