@@ -69,3 +69,225 @@ async function printQrPdfList(){
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
 
 async function init(){from.value=today();to.value=add(30);if(!tok())return hide();try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}}init();
+
+
+/* Desktop Like Android v60 */
+(function(){
+  function token(){ return localStorage.getItem('token') || ''; }
+  async function api(path, opts={}){
+    const res = await fetch(path,{
+      headers:{'Content-Type':'application/json', Authorization:'Bearer '+token(), ...(opts.headers||{})},
+      ...opts
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'Greška.');
+    return data;
+  }
+  function q(s){ return document.querySelector(s); }
+  function qa(s){ return Array.from(document.querySelectorAll(s)); }
+  function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function setMsg(el, text, ok=false){
+    if(!el) return;
+    el.textContent = text || '';
+    el.className = ok ? 'msg ok' : 'msg';
+  }
+  function findMain(){
+    return q('#content') || q('#app') || q('main') || document.body;
+  }
+  function renameMenus(){
+    qa('button,a').forEach(el=>{
+      const t=(el.textContent||'').trim();
+      if(t==='Profil / poruke' || t==='Profil i poruke' || t==='Profil') el.textContent='Profil firme';
+      if(t==='Štampaj PDF list' || t==='Preuzmi QR list' || t==='Preuzmi PDF list') el.textContent='Štampaj / preuzmi QR list';
+    });
+  }
+  function bookingUrlFromBusiness(b){
+    if(!b) return '';
+    return b.booking_url || b.public_url || (location.origin + '/b/' + (b.slug||''));
+  }
+
+  function qrUrl(value, size=240){
+    return 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(value);
+  }
+
+  async function openPublicPage(){
+    try{
+      const data = await api('/api/auth/me');
+      const url = bookingUrlFromBusiness(data.business);
+      if(url) window.open(url, '_blank');
+    }catch(e){ alert(e.message); }
+  }
+
+  function printQrList(url, businessName='Zakazivanje termina'){
+    const w = window.open('', '_blank');
+    if(!w){ alert('Browser je blokirao novi prozor. Dozvolite popup pa pokušajte ponovo.'); return; }
+    const qr = qrUrl(url, 320);
+    w.document.write(`<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<title>QR list</title>
+<style>
+  body{font-family:Arial,sans-serif;margin:0;padding:28px;color:#111827}
+  .sheet{max-width:760px;margin:0 auto;text-align:center}
+  h1{font-size:30px;margin:0 0 8px}
+  p{font-size:15px;color:#374151}
+  .qr{width:320px;height:320px;margin:22px auto 12px;display:block}
+  .link{font-size:14px;word-break:break-all;border:1px solid #ddd;border-radius:12px;padding:12px;margin:16px auto;max-width:620px}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+  .card{border:1px solid #111827;border-radius:14px;padding:14px;text-align:center;break-inside:avoid}
+  .card img{width:145px;height:145px}
+  .card b{display:block;margin-bottom:6px}
+  .small{font-size:11px;word-break:break-all;color:#111827}
+  .no-print{margin-top:18px}
+  button{background:#111827;color:white;border:0;border-radius:12px;padding:12px 18px;font-weight:700;cursor:pointer}
+  @media print{.no-print{display:none}body{padding:10mm}.cards{gap:8px}.card{padding:8px}}
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <h1>${esc(businessName)}</h1>
+    <p>Skenirajte QR kod i zakažite termin online.</p>
+    <img class="qr" src="${qr}">
+    <div class="link">${esc(url)}</div>
+    <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
+    <div class="cards">
+      ${Array.from({length:8}).map(()=>`<div class="card"><b>Zakazivanje termina</b><img src="${qr}"><div class="small">${esc(url)}</div></div>`).join('')}
+    </div>
+  </div>
+</body>
+</html>`);
+    w.document.close();
+  }
+
+  async function renderLinkLikeAndroid(){
+    const main = findMain();
+    try{
+      const data = await api('/api/auth/me');
+      const b = data.business || {};
+      const url = bookingUrlFromBusiness(b);
+      main.innerHTML = `<section class="card">
+        <p class="eyebrow">LINK</p>
+        <h1>Link za zakazivanje</h1>
+        <p class="muted">Ovaj link šaljete mušterijama preko SMS-a, Vibera, WhatsApp-a, Instagrama ili QR koda.</p>
+        <div class="link-box">${esc(url || 'Link nije pronađen.')}</div>
+        ${url ? `<div class="qr-wrap"><img alt="QR kod" src="${qrUrl(url,260)}"></div>` : ''}
+        <div class="actions">
+          <button class="btn" id="copyPublicLink">Kopiraj link</button>
+          ${url ? `<button class="btn secondary" id="printQrList">Štampaj / preuzmi QR list</button>` : ''}
+        </div>
+        <p class="muted">Ako imate povezan štampač, možete odmah štampati. Ako nemate, sačuvajte PDF i odštampajte kasnije.</p>
+      </section>`;
+      q('#copyPublicLink')?.addEventListener('click', async()=>{
+        await navigator.clipboard.writeText(url);
+        alert('Link je kopiran.');
+      });
+      q('#printQrList')?.addEventListener('click', ()=>printQrList(url,b.name||'Zakazivanje termina'));
+    }catch(e){
+      main.innerHTML = `<section class="card"><h1>Link</h1><p class="msg">${esc(e.message)}</p></section>`;
+    }
+  }
+
+  async function renderProfileLikeAndroid(){
+    const main = findMain();
+    main.innerHTML = `<section class="card"><h1>Podešavanje profila firme</h1><p class="muted">Učitavam...</p></section>`;
+    try{
+      const data = await api('/api/owner/settings');
+      const b = data.business || {};
+      const s = data.settings || {};
+      const url = bookingUrlFromBusiness(b);
+      main.innerHTML = `
+        <section class="card">
+          <p class="eyebrow">PROFIL FIRME</p>
+          <h1>Podešavanje profila firme</h1>
+          <p class="muted">Podaci koje mušterije vide na javnoj stranici.</p>
+        </section>
+
+        <section class="card">
+          <h2>Podaci firme</h2>
+          <div class="form-grid">
+            <label>Naziv firme<input id="pfName" value="${esc(b.name||'')}"></label>
+            <label>Grad<input id="pfCity" value="${esc(b.city||'')}"></label>
+            <label>Telefon<input id="pfPhone" value="${esc(b.phone||'')}"></label>
+            <label>Instagram/Facebook link<input id="pfInstagram" value="${esc(b.instagram||'')}"></label>
+          </div>
+          <label>Opis firme<textarea id="pfDescription" rows="4">${esc(b.description||'')}</textarea></label>
+          <div class="actions">
+            <button class="btn secondary" id="openPublicPageBtn">Otvori javnu stranicu</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Automatske poruke za mušterije</h2>
+          <label>Poruka posle zakazivanja<textarea id="pfMsgBooking" rows="3">${esc(s.msg_booking||'Hvala, vaš termin je uspešno zakazan.')}</textarea></label>
+          <label>Poruka kod otkazivanja<textarea id="pfMsgCancel" rows="3">${esc(s.msg_cancel||'Vaš termin je otkazan.')}</textarea></label>
+          <label>Napomena za mušterije<textarea id="pfCustomerNote" rows="3">${esc(s.customer_note||'Molimo vas da dođete 5 minuta ranije.')}</textarea></label>
+          <button class="btn" id="saveProfileFirm">Sačuvajte profil firme</button>
+          <p id="profileFirmMsg" class="msg"></p>
+        </section>
+      `;
+      q('#openPublicPageBtn')?.addEventListener('click', ()=>window.open(url,'_blank'));
+      q('#saveProfileFirm')?.addEventListener('click', async()=>{
+        const msg=q('#profileFirmMsg');
+        setMsg(msg,'Čuvam...',true);
+        try{
+          const payload = {
+            name:q('#pfName').value.trim(),
+            type:b.type||'',
+            city:q('#pfCity').value.trim(),
+            phone:q('#pfPhone').value.trim(),
+            instagram:q('#pfInstagram').value.trim(),
+            address:b.address||'',
+            website:b.website||'',
+            logo_url:b.logo_url||'',
+            cover_url:b.cover_url||'',
+            description:q('#pfDescription').value.trim(),
+            interval:s.interval||15,
+            min_notice:s.min_notice||2,
+            max_days:s.max_days||45,
+            notify_customer_email:!!s.notify_customer_email,
+            notify_owner_email:!!s.notify_owner_email,
+            notify_sms:!!s.notify_sms,
+            notify_viber:!!s.notify_viber,
+            msg_booking:q('#pfMsgBooking').value.trim(),
+            msg_cancel:q('#pfMsgCancel').value.trim(),
+            customer_note:q('#pfCustomerNote').value.trim()
+          };
+          const out = await api('/api/owner/settings',{method:'PUT',body:JSON.stringify(payload)});
+          setMsg(msg,out.message||'Profil firme je sačuvan.',true);
+        }catch(e){ setMsg(msg,e.message); }
+      });
+    }catch(e){
+      main.innerHTML = `<section class="card"><h1>Podešavanje profila firme</h1><p class="msg">${esc(e.message)}</p></section>`;
+    }
+  }
+
+  function installDesktopLikeAndroid(){
+    renameMenus();
+
+    qa('button,a').forEach(el=>{
+      const txt=(el.textContent||'').trim().toLowerCase();
+      const target=(el.dataset.tab||el.dataset.page||el.getAttribute('href')||'').toLowerCase();
+      if(txt==='profil firme' || target.includes('profile') || target.includes('settings')){
+        el.addEventListener('click', (ev)=>{
+          ev.preventDefault();
+          setTimeout(renderProfileLikeAndroid, 0);
+        }, true);
+      }
+      if(txt==='link' || target.includes('link') || target.includes('qr')){
+        el.addEventListener('click', (ev)=>{
+          ev.preventDefault();
+          setTimeout(renderLinkLikeAndroid, 0);
+        }, true);
+      }
+    });
+
+    window.renderProfileLikeAndroid = renderProfileLikeAndroid;
+    window.renderLinkLikeAndroid = renderLinkLikeAndroid;
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    setTimeout(installDesktopLikeAndroid, 600);
+    setTimeout(renameMenus, 1200);
+  });
+})();

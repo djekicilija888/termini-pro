@@ -345,3 +345,49 @@ img{max-width:100%}
 .single-panel{max-width:520px}
 .soft-card{margin-top:22px;background:rgba(255,255,255,.78)}
 .small-note{margin-top:12px}
+
+
+/* Desktop Like Android v60 */
+.link-box{
+  border:1px solid #e5e7eb;
+  background:#f9fafb;
+  border-radius:16px;
+  padding:14px;
+  word-break:break-all;
+  margin:14px 0;
+  font-weight:700;
+}
+.qr-wrap{
+  display:flex;
+  justify-content:center;
+  padding:18px 0;
+}
+.qr-wrap img{
+  width:260px;
+  height:260px;
+  background:white;
+  padding:12px;
+  border-radius:18px;
+  border:1px solid #e5e7eb;
+}
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.card textarea{
+  width:100%;
+  min-height:96px;
+  border:1px solid #d1d5db;
+  border-radius:14px;
+  padding:12px;
+  font:inherit;
+  resize:vertical;
+}
+.card input{
+  width:100%;
+}
+@media(max-width:720px){
+  .form-grid{grid-template-columns:1fr}
+  .qr-wrap img{width:220px;height:220px}
+}
