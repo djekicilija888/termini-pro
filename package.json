@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Desktop owner panel aligned with Android app"
+  "description": "Desktop A4 door poster aligned with Android v12"
 }

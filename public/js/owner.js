@@ -160,6 +160,173 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     w.document.close();
   }
 
+
+  function printA4DoorPoster(url, business={}){
+    const w = window.open('', '_blank');
+    if(!w){ alert('Browser je blokirao novi prozor. Dozvolite popup pa pokušajte ponovo.'); return; }
+
+    const name = business.name || 'Vaša firma';
+    const phone = business.phone || '';
+    const city = business.city || '';
+    const instagram = business.instagram || '';
+    const footerParts = [];
+    if(phone) footerParts.push('Tel: ' + phone);
+    if(city) footerParts.push(city);
+    if(instagram) footerParts.push(instagram);
+    const footer = footerParts.length ? footerParts.join('  •  ') : 'Hvala na poverenju';
+    const qr = qrUrl(url, 430);
+
+    w.document.write(`<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<title>A4 poster za vrata</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:white;
+    color:#111827;
+    font-family:Arial,Helvetica,sans-serif;
+  }
+  .page{
+    width:210mm;
+    min-height:297mm;
+    margin:0 auto;
+    padding:14mm 13mm;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .poster{
+    width:100%;
+    min-height:266mm;
+    border:3px solid #111827;
+    border-radius:18px;
+    padding:18px;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+  }
+  .header{
+    background:#111827;
+    color:white;
+    border-radius:18px;
+    padding:22px 16px;
+    margin-bottom:28px;
+  }
+  .header h1{
+    margin:0;
+    font-size:38px;
+    line-height:1.12;
+    letter-spacing:.5px;
+  }
+  .business{
+    font-size:31px;
+    line-height:1.2;
+    font-weight:900;
+    margin:0 0 8px;
+  }
+  .subtitle{
+    font-size:18px;
+    color:#374151;
+    margin:0 0 28px;
+  }
+  .qr-card{
+    margin:0 auto 22px;
+    width:132mm;
+    min-height:132mm;
+    border:2px solid #d1d5db;
+    border-radius:24px;
+    background:#f9fafb;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+  }
+  .qr-card img{
+    width:112mm;
+    height:112mm;
+    background:white;
+  }
+  .instruction{
+    font-size:21px;
+    font-weight:900;
+    margin:6px 0 20px;
+  }
+  .link-title{
+    font-size:15px;
+    color:#374151;
+    margin:0 0 8px;
+  }
+  .link{
+    max-width:165mm;
+    margin:0 auto;
+    font-size:14px;
+    line-height:1.35;
+    word-break:break-all;
+    color:#374151;
+  }
+  .footer{
+    margin-top:auto;
+    background:#111827;
+    color:white;
+    border-radius:12px;
+    padding:12px 16px;
+    font-size:15px;
+    font-weight:800;
+    word-break:break-word;
+  }
+  .no-print{
+    position:fixed;
+    right:16px;
+    top:16px;
+  }
+  .no-print button{
+    background:#111827;
+    color:white;
+    border:0;
+    border-radius:12px;
+    padding:12px 18px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  @media print{
+    @page{size:A4;margin:0}
+    .no-print{display:none}
+    .page{width:210mm;min-height:297mm;margin:0;padding:12mm}
+    .poster{min-height:273mm}
+  }
+</style>
+</head>
+<body>
+  <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
+  <div class="page">
+    <section class="poster">
+      <div class="header">
+        <h1>SKENIRAJTE I ZAKAŽITE<br>TERMIN ONLINE</h1>
+      </div>
+
+      <h2 class="business">${esc(name)}</h2>
+      <p class="subtitle">Bez poziva — izaberite uslugu, radnika i slobodan termin.</p>
+
+      <div class="qr-card">
+        <img src="${qr}" alt="QR kod">
+      </div>
+
+      <p class="instruction">Otvorite kameru telefona i skenirajte QR kod</p>
+
+      <p class="link-title">Link za zakazivanje:</p>
+      <p class="link">${esc(url)}</p>
+
+      <div class="footer">${esc(footer).slice(0,160)}</div>
+    </section>
+  </div>
+</body>
+</html>`);
+    w.document.close();
+  }
+
   async function renderLinkLikeAndroid(){
     const main = findMain();
     try{
@@ -175,7 +342,9 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
         <div class="actions">
           <button class="btn" id="copyPublicLink">Kopiraj link</button>
           ${url ? `<button class="btn secondary" id="printQrList">Štampaj / preuzmi QR list</button>` : ''}
+          ${url ? `<button class="btn secondary" id="printA4Poster">Štampaj / preuzmi A4 poster</button>` : ''}
         </div>
+        <p class="muted">QR list je za više manjih kartica. A4 poster je za vrata, izlog ili zid.</p>
         <p class="muted">Ako imate povezan štampač, možete odmah štampati. Ako nemate, sačuvajte PDF i odštampajte kasnije.</p>
       </section>`;
       q('#copyPublicLink')?.addEventListener('click', async()=>{
@@ -183,6 +352,7 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
         alert('Link je kopiran.');
       });
       q('#printQrList')?.addEventListener('click', ()=>printQrList(url,b.name||'Zakazivanje termina'));
+      q('#printA4Poster')?.addEventListener('click', ()=>printA4DoorPoster(url,b));
     }catch(e){
       main.innerHTML = `<section class="card"><h1>Link</h1><p class="msg">${esc(e.message)}</p></section>`;
     }

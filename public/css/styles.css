@@ -391,3 +391,13 @@ img{max-width:100%}
   .form-grid{grid-template-columns:1fr}
   .qr-wrap img{width:220px;height:220px}
 }
+
+
+/* Desktop A4 Poster v61 */
+.actions{
+  flex-wrap:wrap;
+  gap:10px;
+}
+.actions .btn{
+  margin-bottom:8px;
+}
