@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "6.3.0",
+  "version": "6.7.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Desktop QR cards cut-line layout aligned with Android v16"
+  "description": "Hide public staff section when business has only one staff member"
 }

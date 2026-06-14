@@ -413,3 +413,48 @@ img{max-width:100%}
   font:inherit;
   resize:vertical;
 }
+
+
+/* Public Phone Display v64 */
+.public-phone-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+  align-items:flex-start;
+}
+.public-phone-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  max-width:100%;
+  padding:9px 13px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#1e3a8a;
+  font-weight:800;
+  font-size:15px;
+  line-height:1.15;
+  text-decoration:none;
+  word-break:normal;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+@media(max-width:520px){
+  .public-phone-list{
+    gap:7px;
+  }
+  .public-phone-chip{
+    font-size:14px;
+    padding:8px 11px;
+  }
+}
+
+
+.badges .public-phone-list{
+  margin-top:0;
+  display:inline-flex;
+}
+.badges .public-phone-chip{
+  margin:0;
+}
