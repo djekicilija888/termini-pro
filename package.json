@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "7.5.0",
+  "version": "7.8.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Full width fixed topbar for owner desktop panel"
+  "description": "Visible blocked days and periods inside working hours"
 }

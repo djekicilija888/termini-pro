@@ -470,48 +470,41 @@ img{max-width:100%}
 #settings .card{margin:0}
 
 
-/* Owner Full Width Topbar v75 */
-html, body{
-  overflow-x:hidden;
-}
 
-#ownerFullWidthTopbar.owner-full-width-topbar{
+
+/* Owner Facebook Style Header v74 */
+#ownerFacebookHeader.owner-facebook-header{
   position:fixed;
   top:0;
   left:0;
   right:0;
   width:100vw;
-  min-width:100vw;
+  z-index:999;
   height:58px;
-  z-index:9999;
-  box-sizing:border-box;
-
   display:flex;
   align-items:center;
   justify-content:space-between;
-
+  gap:18px;
   background:#111827;
   color:#ffffff;
   border-radius:0;
-  margin:0;
-  padding:0 24px;
-  box-shadow:0 2px 8px rgba(0,0,0,.18);
+  padding:0 28px;
+  box-shadow:0 2px 10px rgba(0,0,0,.18);
+  box-sizing:border-box;
 }
-
-.owner-full-width-title{
+.owner-facebook-title{
   color:#ffffff;
-  font-size:22px;
   font-weight:900;
+  font-size:22px;
   line-height:1;
+  letter-spacing:.2px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  padding-right:18px;
 }
-
-.owner-full-width-logout{
-  border:1px solid rgba(255,255,255,.34);
-  background:rgba(255,255,255,.14);
+.owner-facebook-logout{
+  border:1px solid rgba(255,255,255,.28);
+  background:rgba(255,255,255,.12);
   color:#ffffff;
   border-radius:999px;
   padding:8px 18px;
@@ -519,13 +512,10 @@ html, body{
   cursor:pointer;
   flex:0 0 auto;
 }
-
-.owner-full-width-logout:hover{
+.owner-facebook-logout:hover{
   background:#ffffff;
   color:#111827;
 }
-
-.owner-header-hidden-v75,
 .owner-old-header-hidden-v73,
 .owner-old-header-hidden,
 .owner-clean-header,
@@ -533,31 +523,138 @@ html, body{
   display:none !important;
 }
 
-/* Content starts under the fixed topbar */
+/* Leave space so content does not go under fixed header */
 body{
   padding-top:72px !important;
 }
 
-/* Duplicate menu must never appear */
+/* Keep original owner navigation under the fixed header */
+.tabs{
+  position:relative;
+  z-index:10;
+}
+
+/* No duplicate menu */
 #ownerStableNavClone{
   display:none !important;
 }
 
 @media(max-width:760px){
-  #ownerFullWidthTopbar.owner-full-width-topbar{
+  #ownerFacebookHeader.owner-facebook-header{
     height:54px;
-    padding:0 14px;
+    padding:0 16px;
   }
-
-  .owner-full-width-title{
+  .owner-facebook-title{
     font-size:18px;
   }
-
-  .owner-full-width-logout{
+  .owner-facebook-logout{
     padding:7px 13px;
   }
-
   body{
     padding-top:66px !important;
   }
+}
+
+
+/* Owner Appointments + Hours v75 */
+.manual-appointment-card{
+  border:1px solid #e5e7eb;
+}
+.form-actions{
+  display:flex;
+  gap:10px;
+  align-items:end;
+  flex-wrap:wrap;
+}
+.hour{
+  display:grid;
+  grid-template-columns:1.1fr .9fr repeat(4, minmax(120px,1fr));
+  gap:10px;
+  align-items:center;
+}
+.hour label{
+  margin:0;
+}
+@media(max-width:900px){
+  .hour{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+
+/* Owner Manual Appointment Visible v76 */
+.manual-appointment-strong{
+  border:2px solid #111827 !important;
+  background:#ffffff !important;
+  box-shadow:0 8px 20px rgba(17,24,39,.10) !important;
+}
+.manual-title-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:6px;
+}
+.manual-title-row h3{
+  margin:0;
+  font-size:22px;
+}
+.manual-title-row span{
+  background:#111827;
+  color:white;
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+#manualForm .form-actions{
+  grid-column:1/-1;
+}
+
+
+/* Owner Remove Blocked Final v77 */
+[data-tab="blocked"],
+#blocked{
+  display:none !important;
+}
+
+
+/* Owner Working Hours Blocked Visible v78 */
+.blocked-inside-hours-card{
+  border:2px solid #111827 !important;
+  background:#fff !important;
+  box-shadow:0 8px 20px rgba(17,24,39,.10) !important;
+}
+.blocked-title-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:8px;
+}
+.blocked-title-row h3{
+  margin:0;
+  font-size:22px;
+}
+.blocked-title-row span{
+  background:#111827;
+  color:#fff;
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.blocked-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.blocked-item p{
+  margin:.25rem 0 0;
+}
+#blockedForm .form-actions{
+  grid-column:1/-1;
 }

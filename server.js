@@ -21,7 +21,7 @@ const DATA_DIR=process.env.DATA_DIR||process.env.RENDER_DISK_PATH||__dirname;
 fs.mkdirSync(DATA_DIR,{recursive:true});
 const DB_PATH=process.env.DB_PATH||path.join(DATA_DIR,'termini-platforma-pro.db');
 
-app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));
+app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use((req,res,next)=>{if(req.path.endsWith('.html')||req.path==='/'||req.path==='/owner.html')res.set('Cache-Control','no-store, no-cache, must-revalidate, private');next()});app.use(express.static(path.join(__dirname,'public')));
 app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
 const db=new sqlite3.Database(DB_PATH);
 const PLANS={basic:{name:'Basic',price:29,max_staff:1,max_month:100,sms:false},standard:{name:'Standard',price:49,max_staff:5,max_month:1000,sms:false},premium:{name:'Premium',price:99,max_staff:30,max_month:10000,sms:true}};
@@ -49,6 +49,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
  await run(`CREATE TABLE IF NOT EXISTS services(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,name TEXT,description TEXT,duration INTEGER,price INTEGER DEFAULT 0,active INTEGER DEFAULT 1,sort_order INTEGER DEFAULT 0,created_at TEXT,updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS hours(business_id INTEGER,day INTEGER,is_open INTEGER,open_time TEXT,close_time TEXT,break_start TEXT,break_end TEXT,PRIMARY KEY(business_id,day))`);
  await run(`CREATE TABLE IF NOT EXISTS blocked(business_id INTEGER,date TEXT,reason TEXT,created_at TEXT,PRIMARY KEY(business_id,date))`);
+ await run(`CREATE TABLE IF NOT EXISTS blocked_periods(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,date TEXT,start_time TEXT DEFAULT '',end_time TEXT DEFAULT '',reason TEXT DEFAULT '',created_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS appointments(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,service_id INTEGER,staff_id INTEGER,appt_token TEXT UNIQUE,customer_name TEXT,phone TEXT,email TEXT,date TEXT,start_time TEXT,end_time TEXT,status TEXT DEFAULT 'booked',notes TEXT,created_at TEXT,updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,appointment_id INTEGER,channel TEXT,recipient TEXT,subject TEXT,body TEXT,status TEXT,provider TEXT,error TEXT,created_at TEXT)`);
  await addColumnIfMissing('settings','msg_booking',`TEXT DEFAULT 'Hvala, vaš termin je uspešno zakazan.'`);
@@ -68,7 +69,41 @@ await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await r
  let se=email(process.env.SUPERADMIN_EMAIL||'admin@platform.local');if(!await get('SELECT id FROM users WHERE email=?',[se])){let h=await bcrypt.hash(process.env.SUPERADMIN_PASSWORD||'platform123',12);await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(NULL,'Super Admin',?,?,'superadmin',?)",[se,h,now()])}}
 async function defaults(bid,ownerName){await run('INSERT INTO settings(business_id,updated_at) VALUES(?,?)',[bid,now()]);for(let r of [[0,0,'09:00','17:00'],[1,1,'09:00','17:00'],[2,1,'09:00','17:00'],[3,1,'09:00','17:00'],[4,1,'09:00','17:00'],[5,1,'09:00','17:00'],[6,1,'09:00','14:00']])await run('INSERT INTO hours(business_id,day,is_open,open_time,close_time,break_start,break_end) VALUES(?,?,?,?,?,?,?)',[bid,...r,'','']);await run("INSERT INTO staff(business_id,name,title,active,sort_order,created_at,updated_at) VALUES(?,?,'Majstor',1,1,?,?)",[bid,ownerName||'Glavni majstor',now(),now()]);await run("INSERT INTO services(business_id,name,description,duration,price,active,sort_order,created_at,updated_at) VALUES(?,'Osnovna usluga','Promeni naziv i cenu u panelu.',30,1000,1,1,?,?)",[bid,now(),now()])}
 async function bizPlanOk(bid){let b=await get('SELECT * FROM businesses WHERE id=?',[bid]);if(!b)return {ok:false,reason:'Firma nije pronađena.'};let st=b.subscription_status||'trial';if(!['trial','active','manual_active'].includes(st))return {ok:false,reason:'Pretplata nije aktivna.'};if(b.subscription_expires_at&&b.subscription_expires_at<today())return {ok:false,reason:'Pretplata je istekla.'};return {ok:true,plan:b.subscription_plan||'basic'}}
-async function slots(bid,date,service,staffId=null){if(!(await bizPlanOk(bid)).ok)return[];let s=await get('SELECT * FROM settings WHERE business_id=?',[bid]),t=today(),max=addDays(t,Number(s.max_days||45));if(!validDate(date)||date<t||date>max)return[];if(await get('SELECT 1 FROM blocked WHERE business_id=? AND date=?',[bid,date]))return[];let h=await get('SELECT * FROM hours WHERE business_id=? AND day=?',[bid,dow(date)]);if(!h||!h.is_open)return[];let staff=staffId?[await get('SELECT * FROM staff WHERE business_id=? AND id=? AND active=1',[bid,staffId])]:await all('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY sort_order,id',[bid]);staff=staff.filter(Boolean);if(!staff.length)return[];let dur=Number(service.duration),int=Number(s.interval||15),open=tm(h.open_time),close=tm(h.close_time),bs=h.break_start?tm(h.break_start):null,be=h.break_end?tm(h.break_end):null,minDate=new Date(Date.now()+Number(s.min_notice||0)*3600000),out=[];let busy={};for(let st of staff)busy[st.id]=await all("SELECT start_time,end_time FROM appointments WHERE business_id=? AND date=? AND staff_id=? AND status='booked'",[bid,date,st.id]);for(let start=open;start+dur<=close;start+=int){let end=start+dur,stt=mt(start),ett=mt(end);if(new Date(`${date}T${stt}:00`)<minDate)continue;if(bs!==null&&over(start,end,bs,be))continue;for(let p of staff){let c=busy[p.id].some(x=>over(start,end,tm(x.start_time),tm(x.end_time)));if(!c){out.push({start_time:stt,end_time:ett,staff_id:p.id,staff_name:p.name});break}}}return out}
+async function slots(bid,date,service,staffId=null,opts={}){
+ if(!(await bizPlanOk(bid)).ok)return[];
+ let s=await get('SELECT * FROM settings WHERE business_id=?',[bid]);
+ let t=today(),max=addDays(t,Number(s.max_days||45));
+ if(!validDate(date)||date<t||date>max)return[];
+
+ if(await get('SELECT 1 FROM blocked WHERE business_id=? AND date=?',[bid,date]))return[];
+ let blockedPeriods=await all('SELECT * FROM blocked_periods WHERE business_id=? AND date=? ORDER BY start_time,end_time',[bid,date]);
+ if(blockedPeriods.some(x=>!x.start_time||!x.end_time))return[];
+
+ let h=await get('SELECT * FROM hours WHERE business_id=? AND day=?',[bid,dow(date)]);
+ if(!h||!h.is_open)return[];
+
+ let staff=staffId?[await get('SELECT * FROM staff WHERE business_id=? AND id=? AND active=1',[bid,staffId])]:await all('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY sort_order,id',[bid]);
+ staff=staff.filter(Boolean);
+ if(!staff.length)return[];
+
+ let dur=Number(service.duration),int=Number(s.interval||15),open=tm(h.open_time),close=tm(h.close_time),bs=h.break_start?tm(h.break_start):null,be=h.break_end?tm(h.break_end):null;
+ let minDate=opts.ignoreMinNotice?new Date():new Date(Date.now()+Number(s.min_notice||0)*3600000);
+ let out=[],busy={};
+ for(let st of staff)busy[st.id]=await all("SELECT start_time,end_time FROM appointments WHERE business_id=? AND date=? AND staff_id=? AND status='booked'",[bid,date,st.id]);
+
+ for(let start=open;start+dur<=close;start+=int){
+  let end=start+dur,stt=mt(start),ett=mt(end);
+  if(new Date(`${date}T${stt}:00`)<minDate)continue;
+  if(bs!==null&&be!==null&&over(start,end,bs,be))continue;
+  if(blockedPeriods.some(x=>validTime(x.start_time)&&validTime(x.end_time)&&over(start,end,tm(x.start_time),tm(x.end_time))))continue;
+
+  for(let p of staff){
+   let c=busy[p.id].some(x=>over(start,end,tm(x.start_time),tm(x.end_time)));
+   if(!c){out.push({start_time:stt,end_time:ett,staff_id:p.id,staff_name:p.name});break}
+  }
+ }
+ return out
+}
 async function nextSlots(bid,from,service,staffId=null){let out=[],st=validDate(from)?from:today();if(st<today())st=today();for(let i=0;i<45&&out.length<5;i++){let d=addDays(st,i);for(let sl of await slots(bid,d,service,staffId)){out.push({date:d,...sl});if(out.length>=5)break}}return out}
 async function logN(o){await run('INSERT INTO notifications(business_id,appointment_id,channel,recipient,subject,body,status,provider,error,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)',[o.business_id,o.appointment_id||null,o.channel,o.recipient||'',o.subject||'',o.body||'',o.status||'logged',o.provider||'demo',o.error||'',now()])}
 async function sendEmail(o){if(!(process.env.SMTP_HOST&&process.env.SMTP_USER&&process.env.SMTP_PASS))return logN({...o,channel:'email',status:'logged',provider:'smtp-not-configured'});try{let tr=nodemailer.createTransport({host:process.env.SMTP_HOST,port:Number(process.env.SMTP_PORT||587),secure:String(process.env.SMTP_SECURE)==='true',auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}});await tr.sendMail({from:process.env.SMTP_FROM||'no-reply@termini.local',to:o.recipient,subject:o.subject,text:o.body});await logN({...o,channel:'email',status:'sent',provider:'smtp'})}catch(e){await logN({...o,channel:'email',status:'failed',provider:'smtp',error:e.message})}}
@@ -207,12 +242,55 @@ app.get('/api/owner/services',auth,owner,async(req,res)=>res.json(await all('SEL
 app.post('/api/owner/services',auth,owner,async(req,res)=>{let r=await run('INSERT INTO services(business_id,name,description,duration,price,active,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,1,?,?,?)',[req.user.business_id,clean(req.body.name,120),clean(req.body.description,500),Number(req.body.duration||req.body.duration_minutes||30),Number(req.body.price||0),Number(req.body.sort_order||0),now(),now()]);res.status(201).json({id:r.lastID,message:'Usluga je dodata.'})});
 app.put('/api/owner/services/:id',auth,owner,async(req,res)=>{await run('UPDATE services SET name=?,description=?,duration=?,price=?,active=?,sort_order=?,updated_at=? WHERE id=? AND business_id=?',[clean(req.body.name,120),clean(req.body.description,500),Number(req.body.duration||req.body.duration_minutes||30),Number(req.body.price||0),req.body.active?1:0,Number(req.body.sort_order||0),now(),Number(req.params.id),req.user.business_id]);res.json({message:'Usluga je sačuvana.'})});
 app.get('/api/owner/appointments',auth,owner,async(req,res)=>{let p=[req.user.business_id,clean(req.query.from,20)||today(),clean(req.query.to,20)||addDays(today(),30)],w='WHERE a.business_id=? AND a.date>=? AND a.date<=?';if(req.query.status){w+=' AND a.status=?';p.push(clean(req.query.status,30))}if(req.query.staff_id){w+=' AND a.staff_id=?';p.push(Number(req.query.staff_id))}res.json(await all(`SELECT a.*,s.name service_name,s.price,st.name staff_name FROM appointments a JOIN services s ON s.id=a.service_id LEFT JOIN staff st ON st.id=a.staff_id ${w} ORDER BY a.date,a.start_time`,p))});
+app.get('/api/owner/available-slots',auth,owner,async(req,res)=>{
+ try{
+  let srv=await get('SELECT * FROM services WHERE business_id=? AND id=? AND active=1',[req.user.business_id,Number(req.query.service_id)]);
+  if(!srv)return res.status(404).json({error:'Usluga nije pronađena.'});
+  let rows=await slots(req.user.business_id,clean(req.query.date,20),srv,req.query.staff_id?Number(req.query.staff_id):null,{ignoreMinNotice:true});
+  res.json(rows);
+ }catch(e){res.status(500).json({error:'Greška pri učitavanju slobodnih termina.'})}
+});
+app.post('/api/owner/appointments',auth,owner,async(req,res)=>{
+ try{
+  let srv=await get('SELECT * FROM services WHERE business_id=? AND id=? AND active=1',[req.user.business_id,Number(req.body.service_id)]);
+  if(!srv)return res.status(404).json({error:'Usluga nije pronađena.'});
+  let date=clean(req.body.date,20),start=clean(req.body.start_time,10);
+  let rows=await slots(req.user.business_id,date,srv,req.body.staff_id?Number(req.body.staff_id):null,{ignoreMinNotice:true});
+  let sel=rows.find(x=>x.start_time===start);
+  if(!sel)return res.status(409).json({error:'Termin nije slobodan.'});
+  let tok=token();
+  let r=await run("INSERT INTO appointments(business_id,service_id,staff_id,appt_token,customer_name,phone,email,date,start_time,end_time,status,notes,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,'booked',?,?,?)",[
+   req.user.business_id,srv.id,sel.staff_id,tok,clean(req.body.customer_name,120),phone(req.body.phone),email(req.body.email),date,sel.start_time,sel.end_time,clean(req.body.notes,500),now(),now()
+  ]);
+  await logN({business_id:req.user.business_id,appointment_id:r.lastID,channel:'system',subject:'Ručno dodat termin',body:`Vlasnik je dodao termin: ${clean(req.body.customer_name,120)} ${date} ${sel.start_time}`,status:'logged'});
+  res.status(201).json({id:r.lastID,message:'Termin je dodat.'});
+ }catch(e){res.status(500).json({error:'Greška pri dodavanju termina.'})}
+});
+
 app.patch('/api/owner/appointments/:id/status',auth,owner,async(req,res)=>{await run('UPDATE appointments SET status=?,updated_at=? WHERE id=? AND business_id=?',[clean(req.body.status,30),now(),Number(req.params.id),req.user.business_id]);res.json({message:'Status je promenjen.'})});
 app.get('/api/owner/working-hours',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM hours WHERE business_id=? ORDER BY day',[req.user.business_id])));
 app.put('/api/owner/working-hours',auth,owner,async(req,res)=>{for(let r of req.body.rows||[])await run('UPDATE hours SET is_open=?,open_time=?,close_time=?,break_start=?,break_end=? WHERE business_id=? AND day=?',[r.is_open?1:0,clean(r.open_time,10),clean(r.close_time,10),clean(r.break_start,10),clean(r.break_end,10),req.user.business_id,Number(r.day)]);res.json({message:'Radno vreme je sačuvano.'})});
-app.get('/api/owner/blocked-dates',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM blocked WHERE business_id=? ORDER BY date',[req.user.business_id])));
-app.post('/api/owner/blocked-dates',auth,owner,async(req,res)=>{await run('INSERT OR REPLACE INTO blocked(business_id,date,reason,created_at) VALUES(?,?,?,?)',[req.user.business_id,clean(req.body.date,20),clean(req.body.reason,255),now()]);res.status(201).json({message:'Datum je blokiran.'})});
-app.delete('/api/owner/blocked-dates/:date',auth,owner,async(req,res)=>{await run('DELETE FROM blocked WHERE business_id=? AND date=?',[req.user.business_id,clean(req.params.date,20)]);res.json({message:'Datum je odblokiran.'})});
+app.get('/api/owner/blocked-dates',auth,owner,async(req,res)=>{
+ let legacy=(await all('SELECT date,reason,created_at FROM blocked WHERE business_id=? ORDER BY date',[req.user.business_id])).map(x=>({...x,key:'legacy:'+x.date,start_time:'',end_time:''}));
+ let periods=(await all('SELECT id,date,start_time,end_time,reason,created_at FROM blocked_periods WHERE business_id=? ORDER BY date,start_time,id',[req.user.business_id])).map(x=>({...x,key:String(x.id)}));
+ res.json([...legacy,...periods].sort((a,b)=>(a.date+a.start_time).localeCompare(b.date+b.start_time)));
+});
+app.post('/api/owner/blocked-dates',auth,owner,async(req,res)=>{
+ let date=clean(req.body.date,20),st=clean(req.body.start_time,10),en=clean(req.body.end_time,10);
+ if(!validDate(date))return res.status(400).json({error:'Izaberi datum.'});
+ if((st||en)&&!(validTime(st)&&validTime(en)&&tm(st)<tm(en)))return res.status(400).json({error:'Za period unesi ispravno vreme od/do.'});
+ await run('INSERT INTO blocked_periods(business_id,date,start_time,end_time,reason,created_at) VALUES(?,?,?,?,?,?)',[req.user.business_id,date,st,en,clean(req.body.reason,255),now()]);
+ res.status(201).json({message:st&&en?'Period je blokiran.':'Dan je blokiran.'});
+});
+app.delete('/api/owner/blocked-dates/:key',auth,owner,async(req,res)=>{
+ let key=decodeURIComponent(clean(req.params.key,80));
+ if(key.startsWith('legacy:')){
+  await run('DELETE FROM blocked WHERE business_id=? AND date=?',[req.user.business_id,key.slice(7)]);
+ }else{
+  await run('DELETE FROM blocked_periods WHERE business_id=? AND id=?',[req.user.business_id,Number(key)]);
+ }
+ res.json({message:'Neradno vreme je obrisano.'});
+});
 app.get('/api/owner/settings',auth,owner,async(req,res)=>{let b=await get('SELECT * FROM businesses WHERE id=?',[req.user.business_id]);res.json({business:{...pubBiz(b),booking_url:bookUrl(req,b.slug)},settings:await get('SELECT * FROM settings WHERE business_id=?',[req.user.business_id]),plans:PLANS})});
 app.put('/api/owner/settings',auth,owner,async(req,res)=>{
  let st=await get('SELECT * FROM settings WHERE business_id=?',[req.user.business_id])||{};
