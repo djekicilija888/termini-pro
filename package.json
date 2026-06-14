@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Make owner logout button clearly visible in header"
+  "description": "Owner fixed wide black header without logo icon"
 }

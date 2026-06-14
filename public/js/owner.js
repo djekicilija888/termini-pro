@@ -144,7 +144,22 @@ if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{awai
 async function init(){from.value=today();to.value=add(30);if(!tok())return hide();try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}}init();
 
 
-/* Owner Clean Header v70 */
+/* Owner Nav Clean Final v72 */
+(function(){
+ function cleanOwner(){
+  const clone=document.getElementById('ownerStableNavClone');
+  if(clone) clone.remove();
+  document.querySelectorAll('.tabs button').forEach(b=>{
+   if((b.textContent||'').trim()==='Profil/poruke') b.textContent='Profil firme';
+  });
+ }
+ document.addEventListener('DOMContentLoaded',()=>{setTimeout(cleanOwner,100);setTimeout(cleanOwner,800)});
+ document.addEventListener('click',()=>setTimeout(cleanOwner,80),true);
+})();
+
+
+
+/* Owner Fixed Wide Header v73 */
 (function(){
   async function ownerApi(path){
     const token = localStorage.getItem('token') || '';
@@ -161,99 +176,85 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     });
   }
 
-  function getLogoLetter(name){
-    const clean = String(name || '').trim();
-    return clean ? clean[0].toUpperCase() : 'T';
-  }
-
   function findOldHeader(){
-    const candidates = Array.from(document.querySelectorAll('header,.topbar,.navbar,.app-header,body > div,body > section'));
-    return candidates.find(el => {
+    return Array.from(document.querySelectorAll('header,.topbar,.navbar,.app-header,body > div,body > section')).find(el => {
       const text = (el.textContent || '').toLowerCase();
       return text.includes('panel firme') || (text.includes('odjava') && el.querySelector('button,a'));
     });
   }
 
-  async function installCleanHeader(){
-    if(document.getElementById('ownerCleanHeader')) return;
-
-    let businessName = '';
+  async function businessName(){
     try{
       const data = await ownerApi('/api/auth/me');
-      businessName = (data.business && data.business.name) ? data.business.name : '';
+      return (data.business && data.business.name) ? data.business.name : 'Firma';
     }catch(_){
-      businessName = '';
+      return 'Firma';
     }
+  }
 
-    const logout = findLogoutButton();
-    const oldHeader = findOldHeader();
+  async function installFixedWideHeader(){
+    let header = document.getElementById('ownerFixedWideHeader');
+    const name = await businessName();
 
-    const header = document.createElement('div');
-    header.id = 'ownerCleanHeader';
-    header.className = 'owner-clean-header';
+    if(!header){
+      header = document.createElement('div');
+      header.id = 'ownerFixedWideHeader';
+      header.className = 'owner-fixed-wide-header';
 
-    const brand = document.createElement('div');
-    brand.className = 'owner-clean-brand';
+      const title = document.createElement('div');
+      title.className = 'owner-fixed-wide-title';
+      title.id = 'ownerFixedWideTitle';
+      title.textContent = name;
 
-    const logo = document.createElement('div');
-    logo.className = 'owner-clean-logo';
-    logo.textContent = getLogoLetter(businessName);
+      const out = document.createElement('button');
+      out.type = 'button';
+      out.className = 'owner-fixed-wide-logout';
+      out.textContent = 'Odjava';
+      out.addEventListener('click', ev => {
+        ev.preventDefault();
+        const btn = findLogoutButton();
+        if(btn && btn !== out) btn.click();
+        else{
+          localStorage.removeItem('token');
+          location.href = '/';
+        }
+      });
 
-    const title = document.createElement('div');
-    title.className = 'owner-clean-title';
-    title.textContent = businessName || 'Firma';
+      header.appendChild(title);
+      header.appendChild(out);
 
-    brand.appendChild(logo);
-    brand.appendChild(title);
-
-    const out = document.createElement('button');
-    out.type = 'button';
-    out.className = 'owner-clean-logout';
-    out.textContent = 'Odjava';
-    out.addEventListener('click', ev => {
-      ev.preventDefault();
-      const btn = findLogoutButton();
-      if(btn && btn !== out) btn.click();
-      else {
-        localStorage.removeItem('token');
-        location.href = '/';
+      const oldHeader = findOldHeader();
+      if(oldHeader && oldHeader.parentElement){
+        oldHeader.insertAdjacentElement('beforebegin', header);
+        oldHeader.classList.add('owner-old-header-hidden-v73');
+      }else{
+        document.body.insertAdjacentElement('afterbegin', header);
       }
-    });
-
-    header.appendChild(brand);
-    header.appendChild(out);
-
-    if(oldHeader && oldHeader.parentElement){
-      oldHeader.insertAdjacentElement('beforebegin', header);
-      oldHeader.classList.add('owner-old-header-hidden');
     }else{
-      document.body.insertAdjacentElement('afterbegin', header);
+      const t = document.getElementById('ownerFixedWideTitle');
+      if(t) t.textContent = name;
     }
 
-    // Rename old profile label wherever it remains.
-    Array.from(document.querySelectorAll('button,a')).forEach(el => {
-      const t = (el.textContent || '').trim().toLowerCase();
+    // Remove old icon/logo headers if they exist from previous cached code.
+    document.querySelectorAll('.owner-clean-logo,.owner-clean-brand .owner-clean-logo').forEach(el=>el.remove());
+
+    // Normalize profile label.
+    document.querySelectorAll('.tabs button,button,a').forEach(el=>{
+      const t=(el.textContent||'').trim().toLowerCase();
       if(t === 'profil/poruke' || t === 'profil i poruke' || t === 'profil') el.textContent = 'Profil firme';
     });
+
+    // Keep duplicate clone removed.
+    const clone=document.getElementById('ownerStableNavClone');
+    if(clone) clone.remove();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(installCleanHeader, 400);
-    setTimeout(installCleanHeader, 1200);
+    setTimeout(installFixedWideHeader, 250);
+    setTimeout(installFixedWideHeader, 1000);
   });
-})();
 
-
-
-/* Owner Nav Clean Final v72 */
-(function(){
- function cleanOwner(){
-  const clone=document.getElementById('ownerStableNavClone');
-  if(clone) clone.remove();
-  document.querySelectorAll('.tabs button').forEach(b=>{
-   if((b.textContent||'').trim()==='Profil/poruke') b.textContent='Profil firme';
-  });
- }
- document.addEventListener('DOMContentLoaded',()=>{setTimeout(cleanOwner,100);setTimeout(cleanOwner,800)});
- document.addEventListener('click',()=>setTimeout(cleanOwner,80),true);
+  document.addEventListener('click', () => {
+    setTimeout(installFixedWideHeader, 120);
+  }, true);
 })();
