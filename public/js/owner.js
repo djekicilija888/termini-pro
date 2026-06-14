@@ -106,6 +106,20 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     return b.booking_url || b.public_url || (location.origin + '/b/' + (b.slug||''));
   }
 
+
+  function normalizePhones(value){
+    return String(value||'')
+      .split(/[\n,;]+/)
+      .map(x=>x.trim())
+      .filter(Boolean)
+      .filter((x,i,a)=>a.indexOf(x)===i)
+      .slice(0,10)
+      .join('\n');
+  }
+  function phoneParts(value){
+    return normalizePhones(value).split('\n').filter(Boolean).slice(0,10);
+  }
+
   function qrUrl(value, size=240){
     return 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(value);
   }
@@ -121,45 +135,120 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
   function printQrList(url, businessName='Zakazivanje termina'){
     const w = window.open('', '_blank');
     if(!w){ alert('Browser je blokirao novi prozor. Dozvolite popup pa pokušajte ponovo.'); return; }
-    const qr = qrUrl(url, 320);
+
+    const qr = qrUrl(url, 180);
+    const cards = Array.from({length:12}).map(()=>`
+      <div class="cut-card">
+        <div class="card-title">Zakažite termin</div>
+        <img src="${qr}" alt="QR kod">
+        <div class="link-title">Link za zakazivanje:</div>
+        <div class="card-link">${esc(url)}</div>
+      </div>
+    `).join('');
+
     w.document.write(`<!doctype html>
 <html lang="sr">
 <head>
 <meta charset="utf-8">
-<title>QR list</title>
+<title>QR kartice za zakazivanje</title>
 <style>
-  body{font-family:Arial,sans-serif;margin:0;padding:28px;color:#111827}
-  .sheet{max-width:760px;margin:0 auto;text-align:center}
-  h1{font-size:30px;margin:0 0 8px}
-  p{font-size:15px;color:#374151}
-  .qr{width:320px;height:320px;margin:22px auto 12px;display:block}
-  .link{font-size:14px;word-break:break-all;border:1px solid #ddd;border-radius:12px;padding:12px;margin:16px auto;max-width:620px}
-  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
-  .card{border:1px solid #111827;border-radius:14px;padding:14px;text-align:center;break-inside:avoid}
-  .card img{width:145px;height:145px}
-  .card b{display:block;margin-bottom:6px}
-  .small{font-size:11px;word-break:break-all;color:#111827}
-  .no-print{margin-top:18px}
-  button{background:#111827;color:white;border:0;border-radius:12px;padding:12px 18px;font-weight:700;cursor:pointer}
-  @media print{.no-print{display:none}body{padding:10mm}.cards{gap:8px}.card{padding:8px}}
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:white;
+    color:#111827;
+    font-family:Arial,Helvetica,sans-serif;
+  }
+  .page{
+    width:210mm;
+    min-height:297mm;
+    margin:0 auto;
+    padding:10mm 7mm;
+  }
+  h1{
+    margin:0 0 4px;
+    text-align:center;
+    font-size:23px;
+    line-height:1.2;
+  }
+  .top-text{
+    margin:0 0 7mm;
+    text-align:center;
+    font-size:12px;
+    color:#111827;
+  }
+  .grid{
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    grid-template-rows:repeat(4, 1fr);
+    border-left:1px solid #111827;
+    border-top:1px solid #111827;
+  }
+  .cut-card{
+    height:63mm;
+    border-right:1px solid #111827;
+    border-bottom:1px solid #111827;
+    padding:4mm 3mm 3mm;
+    text-align:center;
+    overflow:hidden;
+    break-inside:avoid;
+  }
+  .card-title{
+    font-size:13px;
+    line-height:1.1;
+    font-weight:900;
+    margin-bottom:2mm;
+  }
+  .cut-card img{
+    width:31mm;
+    height:31mm;
+    display:block;
+    margin:0 auto 2mm;
+  }
+  .link-title{
+    font-size:10px;
+    font-weight:900;
+    margin-bottom:1mm;
+  }
+  .card-link{
+    font-size:9.6px;
+    line-height:1.22;
+    word-break:break-all;
+    color:#111827;
+  }
+  .no-print{
+    position:fixed;
+    right:16px;
+    top:16px;
+    z-index:9;
+  }
+  .no-print button{
+    background:#111827;
+    color:white;
+    border:0;
+    padding:12px 18px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  @media print{
+    @page{size:A4;margin:0}
+    .no-print{display:none}
+    .page{width:210mm;min-height:297mm;margin:0;padding:10mm 7mm}
+  }
 </style>
 </head>
 <body>
-  <div class="sheet">
-    <h1>${esc(businessName)}</h1>
-    <p>Skenirajte QR kod i zakažite termin online.</p>
-    <img class="qr" src="${qr}">
-    <div class="link">${esc(url)}</div>
-    <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
-    <div class="cards">
-      ${Array.from({length:8}).map(()=>`<div class="card"><b>Zakazivanje termina</b><img src="${qr}"><div class="small">${esc(url)}</div></div>`).join('')}
-    </div>
-  </div>
+  <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
+  <main class="page">
+    <h1>QR kartice za zakazivanje termina</h1>
+    <p class="top-text">Odštampajte list, isecite kartice i podelite ih mušterijama.</p>
+    <section class="grid">${cards}</section>
+  </main>
 </body>
 </html>`);
     w.document.close();
   }
-
 
   function printA4DoorPoster(url, business={}){
     const w = window.open('', '_blank');
@@ -169,11 +258,14 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     const phone = business.phone || '';
     const city = business.city || '';
     const instagram = business.instagram || '';
-    const footerParts = [];
-    if(phone) footerParts.push('Tel: ' + phone);
-    if(city) footerParts.push(city);
-    if(instagram) footerParts.push(instagram);
-    const footer = footerParts.length ? footerParts.join('  •  ') : 'Hvala na poverenju';
+    const phones = phoneParts(phone);
+    const footerLines = [];
+    if(phones.length) footerLines.push('Telefoni: ' + phones.join('  •  '));
+    const placeParts = [];
+    if(city) placeParts.push(city);
+    if(instagram) placeParts.push(instagram);
+    if(placeParts.length) footerLines.push(placeParts.join('  •  '));
+    const footer = footerLines.join('<br>');
     const qr = qrUrl(url, 430);
 
     w.document.write(`<!doctype html>
@@ -269,13 +361,12 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
   }
   .footer{
     margin-top:auto;
-    background:#111827;
-    color:white;
-    border-radius:12px;
-    padding:12px 16px;
+    color:#111827;
+    padding:8px 16px 0;
     font-size:15px;
     font-weight:800;
     word-break:break-word;
+    line-height:1.45;
   }
   .no-print{
     position:fixed;
@@ -286,7 +377,6 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     background:#111827;
     color:white;
     border:0;
-    border-radius:12px;
     padding:12px 18px;
     font-weight:900;
     cursor:pointer;
@@ -319,7 +409,7 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
       <p class="link-title">Link za zakazivanje:</p>
       <p class="link">${esc(url)}</p>
 
-      <div class="footer">${esc(footer).slice(0,160)}</div>
+      ${footer ? `<div class="footer">${footer}</div>` : ``}
     </section>
   </div>
 </body>
@@ -378,7 +468,7 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
           <div class="form-grid">
             <label>Naziv firme<input id="pfName" value="${esc(b.name||'')}"></label>
             <label>Grad<input id="pfCity" value="${esc(b.city||'')}"></label>
-            <label>Telefon<input id="pfPhone" value="${esc(b.phone||'')}"></label>
+            <label>Telefoni firme, najviše 10 brojeva<textarea id="pfPhone" rows="5" placeholder="Svaki broj u novi red">${esc(b.phone||'')}</textarea></label>
             <label>Instagram/Facebook link<input id="pfInstagram" value="${esc(b.instagram||'')}"></label>
           </div>
           <label>Opis firme<textarea id="pfDescription" rows="4">${esc(b.description||'')}</textarea></label>
@@ -405,7 +495,7 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
             name:q('#pfName').value.trim(),
             type:b.type||'',
             city:q('#pfCity').value.trim(),
-            phone:q('#pfPhone').value.trim(),
+            phone:normalizePhones(q('#pfPhone').value),
             instagram:q('#pfInstagram').value.trim(),
             address:b.address||'',
             website:b.website||'',

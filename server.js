@@ -29,7 +29,7 @@ const run=(s,p=[])=>new Promise((res,rej)=>db.run(s,p,function(e){e?rej(e):res(t
 async function addColumnIfMissing(table,column,definition){try{await run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)}catch(e){if(!String(e.message||'').toLowerCase().includes('duplicate column'))throw e}}
 const get=(s,p=[])=>new Promise((res,rej)=>db.get(s,p,(e,r)=>e?rej(e):res(r)));
 const all=(s,p=[])=>new Promise((res,rej)=>db.all(s,p,(e,r)=>e?rej(e):res(r)));
-const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toLowerCase(),normalizeEmail=email,phone=v=>String(v||'').replace(/\s+/g,'').slice(0,50),now=()=>new Date().toISOString(),token=()=>crypto.randomBytes(24).toString('hex');
+const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toLowerCase(),normalizeEmail=email,phone=v=>String(v||'').split(/[\n,;]+/).map(x=>x.trim().replace(/[^0-9+()\-\s\/]/g,'').replace(/\s+/g,' ')).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10).join('\n'),now=()=>new Date().toISOString(),token=()=>crypto.randomBytes(24).toString('hex');
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function addDays(ds,n){let d=new Date(`${ds}T12:00:00`);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 const validDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(String(d||'')),validTime=t=>/^\d{2}:\d{2}$/.test(String(t||'')),tm=t=>{let [h,m]=t.split(':').map(Number);return h*60+m},mt=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`,dow=d=>new Date(`${d}T12:00:00`).getDay(),over=(a,b,c,d)=>a<d&&c<b;

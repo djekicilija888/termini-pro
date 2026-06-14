@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "6.1.0",
+  "version": "6.3.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Desktop A4 door poster aligned with Android v12"
+  "description": "Desktop QR cards cut-line layout aligned with Android v16"
 }
