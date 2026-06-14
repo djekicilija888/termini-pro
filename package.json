@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Visible blocked days and periods inside working hours"
+  "description": "Remove NOVO badge from manual appointment section"
 }

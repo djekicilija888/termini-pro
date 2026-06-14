@@ -21,7 +21,7 @@ const DATA_DIR=process.env.DATA_DIR||process.env.RENDER_DISK_PATH||__dirname;
 fs.mkdirSync(DATA_DIR,{recursive:true});
 const DB_PATH=process.env.DB_PATH||path.join(DATA_DIR,'termini-platforma-pro.db');
 
-app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use((req,res,next)=>{if(req.path.endsWith('.html')||req.path==='/'||req.path==='/owner.html')res.set('Cache-Control','no-store, no-cache, must-revalidate, private');next()});app.use(express.static(path.join(__dirname,'public')));
+app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));
 app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
 const db=new sqlite3.Database(DB_PATH);
 const PLANS={basic:{name:'Basic',price:29,max_staff:1,max_month:100,sms:false},standard:{name:'Standard',price:49,max_staff:5,max_month:1000,sms:false},premium:{name:'Premium',price:99,max_staff:30,max_month:10000,sms:true}};

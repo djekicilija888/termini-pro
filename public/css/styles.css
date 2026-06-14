@@ -582,79 +582,59 @@ body{
 }
 
 
-/* Owner Manual Appointment Visible v76 */
-.manual-appointment-strong{
-  border:2px solid #111827 !important;
-  background:#ffffff !important;
-  box-shadow:0 8px 20px rgba(17,24,39,.10) !important;
+/* Owner Manual Appointment Toggle v77 */
+.manual-appointment-card{
+  padding:0 !important;
+  overflow:hidden;
 }
-.manual-title-row{
+.manual-toggle{
+  width:100%;
   display:flex;
   align-items:center;
-  justify-content:space-between;
   gap:12px;
-  margin-bottom:6px;
-}
-.manual-title-row h3{
-  margin:0;
-  font-size:22px;
-}
-.manual-title-row span{
-  background:#111827;
-  color:white;
-  border-radius:999px;
-  padding:5px 10px;
-  font-size:12px;
+  border:0;
+  background:#ffffff;
+  color:#111827;
+  text-align:left;
   font-weight:900;
-  text-transform:uppercase;
+  font-size:17px;
+  padding:18px 20px;
+  cursor:pointer;
 }
-#manualForm .form-actions{
-  grid-column:1/-1;
+.manual-toggle:hover{
+  background:#f9fafb;
 }
-
-
-/* Owner Remove Blocked Final v77 */
-[data-tab="blocked"],
-#blocked{
+.manual-plus{
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:#111827;
+  color:#ffffff;
+  font-size:24px;
+  font-weight:900;
+  line-height:1;
+  flex:0 0 auto;
+}
+.manual-toggle.open{
+  border-bottom:1px solid #e5e7eb;
+}
+.manual-panel{
+  padding:18px 20px 20px;
+}
+.manual-panel.hidden{
   display:none !important;
 }
 
 
-/* Owner Working Hours Blocked Visible v78 */
-.blocked-inside-hours-card{
-  border:2px solid #111827 !important;
-  background:#fff !important;
-  box-shadow:0 8px 20px rgba(17,24,39,.10) !important;
-}
-.blocked-title-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:8px;
-}
-.blocked-title-row h3{
-  margin:0;
-  font-size:22px;
-}
-.blocked-title-row span{
-  background:#111827;
-  color:#fff;
-  border-radius:999px;
-  padding:5px 10px;
-  font-size:12px;
-  font-weight:900;
-  text-transform:uppercase;
-}
-.blocked-item{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-.blocked-item p{
-  margin:.25rem 0 0;
-}
-#blockedForm .form-actions{
-  grid-column:1/-1;
+/* Owner Remove Novo Badge v78 */
+.novo,
+.new-badge,
+.manual-new-badge,
+.owner-new-badge,
+.badge-novo,
+[data-badge="novo"]{
+  display:none !important;
 }

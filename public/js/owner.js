@@ -1,125 +1,30 @@
 const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'];let tok=()=>localStorage.getItem(T)||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}function msg(t,c=''){om.textContent=t;om.className='msg '+c}function show(){login.classList.add('hidden');app.classList.remove('hidden')}function hide(){login.classList.remove('hidden');app.classList.add('hidden')}loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};logout.onclick=()=>{localStorage.removeItem(T);hide()};document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));function tab(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
 let ownerServiceCache=[], ownerStaffCache=[];
 
-
-function ensureManualAppointmentUi(){
-  const sec = document.getElementById('appointments');
-  if(!sec) return;
-
-  if(!document.getElementById('manualForm')){
-    const wrap = document.createElement('div');
-    wrap.className = 'card soft-card manual-appointment-card manual-appointment-strong';
-    wrap.innerHTML = `
-      <div class="manual-title-row"><h3>➕ Ručno dodaj termin za mušteriju</h3><span>novo</span></div>
-      <p class="muted">Ovde vlasnik sam zakazuje mušteriju i termin odmah ulazi u listu termina.</p>
-      <form id="manualForm" class="formgrid">
-        <label>Ime mušterije<input id="manualName" placeholder="Ime i prezime"></label>
-        <label>Telefon<input id="manualPhone" placeholder="Telefon"></label>
-        <label>Email, nije obavezno<input id="manualEmail" type="email" placeholder="email@example.com"></label>
-        <label>Usluga<select id="manualService"></select></label>
-        <label>Radnik<select id="manualStaff"><option value="">Bilo koji slobodan radnik</option></select></label>
-        <label>Datum<input id="manualDate" type="date"></label>
-        <label>Slobodno vreme<select id="manualTime"></select></label>
-        <label>Napomena<textarea id="manualNotes" placeholder="Napomena, nije obavezno"></textarea></label>
-        <div class="form-actions">
-          <button id="manualSlotRefresh" type="button" class="btn small ghost">Osveži slobodna vremena</button>
-          <button class="btn small" type="submit">Dodaj termin</button>
-        </div>
-      </form>`;
-    const firstCard = sec.querySelector('.card.soft-card');
-    if(firstCard) sec.insertBefore(wrap, firstCard);
-    else sec.appendChild(wrap);
-  }
-
-  const form = document.getElementById('manualForm');
-  if(form && !form.dataset.ready){
-    form.dataset.ready = '1';
-    const service = document.getElementById('manualService');
-    const staff = document.getElementById('manualStaff');
-    const date = document.getElementById('manualDate');
-    const refresh = document.getElementById('manualSlotRefresh');
-
-    if(service) service.addEventListener('change', updateManualSlots);
-    if(staff) staff.addEventListener('change', updateManualSlots);
-    if(date) date.addEventListener('change', updateManualSlots);
-    if(refresh) refresh.addEventListener('click', updateManualSlots);
-
-    form.addEventListener('submit', async e=>{
-      e.preventDefault();
-      const manualTime = document.getElementById('manualTime');
-      const manualName = document.getElementById('manualName');
-      const manualPhone = document.getElementById('manualPhone');
-      const manualEmail = document.getElementById('manualEmail');
-      const manualService = document.getElementById('manualService');
-      const manualStaff = document.getElementById('manualStaff');
-      const manualDate = document.getElementById('manualDate');
-      const manualNotes = document.getElementById('manualNotes');
-      const selected = manualTime ? manualTime.options[manualTime.selectedIndex] : null;
-
-      if(!manualName.value.trim()) return msg('Unesi ime mušterije.','err');
-      if(!manualPhone.value.trim()) return msg('Unesi telefon mušterije.','err');
-      if(!manualService.value) return msg('Izaberi uslugu.','err');
-      if(!manualDate.value) return msg('Izaberi datum.','err');
-      if(!manualTime.value) return msg('Izaberi slobodno vreme.','err');
-
-      await api('/api/owner/appointments',{
-        method:'POST',
-        body:JSON.stringify({
-          customer_name:manualName.value,
-          phone:manualPhone.value,
-          email:manualEmail.value,
-          service_id:manualService.value,
-          staff_id:manualStaff.value || (selected ? selected.dataset.staff : ''),
-          date:manualDate.value,
-          start_time:manualTime.value,
-          notes:manualNotes.value
-        })
-      });
-
-      msg('Termin je dodat na listu.','ok');
-      manualName.value=''; manualPhone.value=''; manualEmail.value=''; manualNotes.value='';
-      await updateManualSlots();
-      await loadAppointments();
-    });
-  }
-}
-
-
 async function loadManualOptions(){
-  const manualService = document.getElementById('manualService');
-  const manualStaff = document.getElementById('manualStaff');
-  const manualDate = document.getElementById('manualDate');
-
   ownerServiceCache = await api('/api/owner/services');
   ownerStaffCache = await api('/api/owner/staff');
 
-  if(manualService){
+  if(typeof manualService!=='undefined'){
     let activeServices = ownerServiceCache.filter(x=>x.active!==0);
-    manualService.innerHTML = activeServices.length
-      ? activeServices.map(x=>`<option value="${x.id}">${htmlEsc(x.name)} · ${x.duration} min</option>`).join('')
-      : '<option value="">Prvo dodaj uslugu</option>';
+    manualService.innerHTML = activeServices.map(x=>`<option value="${x.id}">${htmlEsc(x.name)} · ${x.duration} min</option>`).join('');
   }
 
-  if(manualStaff){
+  if(typeof manualStaff!=='undefined'){
     let activeStaff = ownerStaffCache.filter(x=>x.active!==0);
     manualStaff.innerHTML = '<option value="">Bilo koji slobodan radnik</option>' + activeStaff.map(x=>`<option value="${x.id}">${htmlEsc(x.name)}</option>`).join('');
   }
 
-  if(manualDate && !manualDate.value) manualDate.value = today();
+  if(typeof manualDate!=='undefined' && !manualDate.value) manualDate.value = today();
   await updateManualSlots();
 }
 
 async function updateManualSlots(){
-  const manualTime = document.getElementById('manualTime');
-  const manualService = document.getElementById('manualService');
-  const manualStaff = document.getElementById('manualStaff');
-  const manualDate = document.getElementById('manualDate');
-
-  if(!manualTime || !manualService || !manualService.value || !manualDate || !manualDate.value) return;
+  if(typeof manualTime==='undefined' || !manualService || !manualService.value || !manualDate || !manualDate.value) return;
   manualTime.innerHTML = '<option value="">Učitavam...</option>';
   try{
     let p = new URLSearchParams({date:manualDate.value,service_id:manualService.value});
-    if(manualStaff && manualStaff.value) p.set('staff_id', manualStaff.value);
+    if(manualStaff.value) p.set('staff_id', manualStaff.value);
     let rows = await api('/api/owner/available-slots?'+p);
     manualTime.innerHTML = rows.length
       ? rows.map(x=>`<option value="${x.start_time}" data-staff="${x.staff_id}">${x.start_time}–${x.end_time} · ${htmlEsc(x.staff_name||'Radnik')}</option>`).join('')
@@ -131,8 +36,7 @@ async function updateManualSlots(){
 }
 
 async function loadAppointments(){
-  ensureManualAppointmentUi();
-  await loadManualOptions();
+  if(typeof manualService!=='undefined') await loadManualOptions();
 
   if(!from.value)from.value=today();
   if(!to.value)to.value=add(30);
@@ -167,9 +71,34 @@ async function loadAppointments(){
   });
 }
 
+if(typeof manualService!=='undefined') manualService.onchange=updateManualSlots;
+if(typeof manualStaff!=='undefined') manualStaff.onchange=updateManualSlots;
+if(typeof manualDate!=='undefined') manualDate.onchange=updateManualSlots;
+if(typeof manualSlotRefresh!=='undefined') manualSlotRefresh.onclick=updateManualSlots;
+if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
+  e.preventDefault();
+  let selected = manualTime.options[manualTime.selectedIndex];
+  if(!manualTime.value) return msg('Izaberi slobodno vreme.','err');
+  await api('/api/owner/appointments',{
+    method:'POST',
+    body:JSON.stringify({
+      customer_name:manualName.value,
+      phone:manualPhone.value,
+      email:manualEmail.value,
+      service_id:manualService.value,
+      staff_id:manualStaff.value || (selected ? selected.dataset.staff : ''),
+      date:manualDate.value,
+      start_time:manualTime.value,
+      notes:manualNotes.value
+    })
+  });
+  msg('Termin je dodat.','ok');
+  manualName.value='';manualPhone.value='';manualEmail.value='';manualNotes.value='';
+  await updateManualSlots();
+  await loadAppointments();
+};
 
 function resetSt(){staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true}resetStaff.onclick=resetSt;staffForm.onsubmit=async e=>{e.preventDefault();let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked};await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});msg('Radnik sačuvan.','ok');resetSt();loadStaff()};async function loadStaff(){let rows=await api('/api/owner/staff');staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.name}</h3><p>${x.title||''} ${x.phone||''}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span></div><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');staffList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active})}function resetSv(){serviceId.value='';serviceName.value='';serviceDesc.value='';serviceDuration.value=30;servicePrice.value=1000;serviceSort.value=0;serviceActive.checked=true}resetService.onclick=resetSv;serviceForm.onsubmit=async e=>{e.preventDefault();let id=serviceId.value,p={name:serviceName.value,description:serviceDesc.value,duration:+serviceDuration.value,price:+servicePrice.value,sort_order:+serviceSort.value,active:serviceActive.checked};await api(id?'/api/owner/services/'+id:'/api/owner/services',{method:id?'PUT':'POST',body:JSON.stringify(p)});msg('Usluga sačuvana.','ok');resetSv();loadServices()};async function loadServices(){let rows=await api('/api/owner/services');serviceList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.name}</h3><p>${x.duration} min · ${x.price} RSD</p><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');serviceList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);serviceId.value=x.id;serviceName.value=x.name;serviceDesc.value=x.description||'';serviceDuration.value=x.duration;servicePrice.value=x.price;serviceSort.value=x.sort_order;serviceActive.checked=!!x.active})}async function loadHours(){
-  if(window.ensureBlockedInsideHours) window.ensureBlockedInsideHours();
   let rows=await api('/api/owner/working-hours');
   hoursForm.innerHTML=rows.map(x=>`
     <div class="item hour" data-day="${x.day}">
@@ -181,7 +110,6 @@ function resetSt(){staffId.value='';staffName.value='';staffTitle.value='';staff
       <label>Pauza do<input class="be" type="time" value="${x.break_end||''}"></label>
     </div>`).join('');
   await loadBlocked();
-  if(window.loadBlockedInsideHoursV78) await window.loadBlockedInsideHoursV78();
 }
 
 saveHours.onclick=async()=>{
@@ -493,172 +421,72 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
 
 
 
-/* Owner Remove Blocked Final v77 */
+/* Owner Remove Duplicate Nonworking v76 */
 (function(){
-  function removeBlockedTab(){
-    document.querySelectorAll('[data-tab="blocked"]').forEach(el => el.remove());
-
-    document.querySelectorAll('button,a').forEach(el => {
-      const t = (el.textContent || '').trim().toLowerCase();
-      if(t === 'blokirani' || t === 'blokirano') el.remove();
+  function removeDuplicateNonworking(){
+    const forms = Array.from(document.querySelectorAll('#blockedForm'));
+    forms.slice(1).forEach(form => {
+      const card = form.closest('.card, .soft-card, section, article');
+      if(card && !card.id) card.remove();
+      else form.remove();
     });
 
-    const blockedSection = document.getElementById('blocked');
-    if(blockedSection) blockedSection.remove();
-
-    const clone = document.getElementById('ownerStableNavClone');
-    if(clone) clone.remove();
-
-    document.querySelectorAll('.tabs button,button,a').forEach(el=>{
-      const t=(el.textContent||'').trim().toLowerCase();
-      if(t === 'profil/poruke' || t === 'profil i poruke' || t === 'profil') el.textContent='Profil firme';
+    const lists = Array.from(document.querySelectorAll('#blockedList'));
+    lists.slice(1).forEach(list => {
+      const card = list.closest('.card, .soft-card, section, article');
+      if(card && !card.id) card.remove();
+      else list.remove();
     });
   }
 
-  document.addEventListener('DOMContentLoaded',()=>{
-    removeBlockedTab();
-    setTimeout(removeBlockedTab,200);
-    setTimeout(removeBlockedTab,1000);
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(removeDuplicateNonworking, 200);
+    setTimeout(removeDuplicateNonworking, 1000);
   });
-
-  document.addEventListener('click',()=>{
-    setTimeout(removeBlockedTab,80);
-  },true);
+  document.addEventListener('click', () => setTimeout(removeDuplicateNonworking, 100), true);
 })();
 
 
 
-/* Owner Working Hours Blocked Visible v78 */
+/* Owner Manual Appointment Toggle v77 */
 (function(){
-  function hEsc(v){
-    return String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
+  function setupManualAppointmentToggle(){
+    const btn = document.getElementById('toggleManualAppointment');
+    const panel = document.getElementById('manualAppointmentPanel');
+    if(!btn || !panel || btn.dataset.toggleReady) return;
 
-  function todayLocal(){
-    const d = new Date();
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const dd = String(d.getDate()).padStart(2,'0');
-    return `${d.getFullYear()}-${mm}-${dd}`;
-  }
+    btn.dataset.toggleReady = '1';
+    btn.addEventListener('click', async () => {
+      const open = panel.classList.toggle('hidden') === false;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.classList.toggle('open', open);
 
-  function ensureBlockedInsideHours(){
-    const hours = document.getElementById('hours');
-    if(!hours) return;
+      const plus = btn.querySelector('.manual-plus');
+      if(plus) plus.textContent = open ? '−' : '+';
 
-    document.querySelectorAll('[data-tab="blocked"]').forEach(el=>el.remove());
-    const oldBlocked = document.getElementById('blocked');
-    if(oldBlocked) oldBlocked.remove();
-
-    if(!document.getElementById('blockedInsideHours')){
-      const card = document.createElement('div');
-      card.id = 'blockedInsideHours';
-      card.className = 'card soft-card blocked-inside-hours-card';
-      card.innerHTML = `
-        <div class="blocked-title-row">
-          <h3>🗓 Neradni dani i zauzeti periodi</h3>
-          <span>blokira zakazivanje</span>
-        </div>
-        <p class="muted">Ako uneseš samo datum, blokira se ceo dan. Ako uneseš vreme od/do, blokira se samo taj period.</p>
-        <form id="blockedForm" class="formgrid">
-          <label>Datum<input id="blockedDate" type="date"></label>
-          <label>Od, nije obavezno<input id="blockedStart" type="time"></label>
-          <label>Do, nije obavezno<input id="blockedEnd" type="time"></label>
-          <label>Razlog<input id="blockedReason" placeholder="Odmor, pauza, privatna obaveza..."></label>
-          <div class="form-actions">
-            <button class="btn small" type="submit">Dodaj neradno</button>
-          </div>
-        </form>
-        <div id="blockedList" class="stack blocked-list"></div>
-      `;
-
-      const save = document.getElementById('saveHours');
-      const saveCard = save ? save.closest('.card') : null;
-      if(saveCard && saveCard.parentElement === hours) {
-        saveCard.insertAdjacentElement('afterend', card);
-      } else {
-        hours.appendChild(card);
+      if(open && typeof loadManualOptions === 'function'){
+        try{ await loadManualOptions(); }catch(e){}
       }
-    }
-
-    const date = document.getElementById('blockedDate');
-    if(date && !date.value) date.value = todayLocal();
-
-    const form = document.getElementById('blockedForm');
-    if(form && !form.dataset.v78Ready){
-      form.dataset.v78Ready = '1';
-      form.addEventListener('submit', async ev=>{
-        ev.preventDefault();
-        const blockedDate = document.getElementById('blockedDate');
-        const blockedStart = document.getElementById('blockedStart');
-        const blockedEnd = document.getElementById('blockedEnd');
-        const blockedReason = document.getElementById('blockedReason');
-
-        if(!blockedDate.value) return window.msg ? msg('Izaberi datum.','err') : alert('Izaberi datum.');
-
-        await api('/api/owner/blocked-dates',{
-          method:'POST',
-          body:JSON.stringify({
-            date: blockedDate.value,
-            start_time: blockedStart.value,
-            end_time: blockedEnd.value,
-            reason: blockedReason.value
-          })
-        });
-
-        if(window.msg) msg('Neradni dan/period je dodat.','ok');
-        blockedStart.value = '';
-        blockedEnd.value = '';
-        blockedReason.value = '';
-        await loadBlockedInsideHoursV78();
-      });
-    }
+    });
   }
 
-  async function loadBlockedInsideHoursV78(){
-    ensureBlockedInsideHours();
-    const list = document.getElementById('blockedList');
-    if(!list) return;
-
-    try{
-      const rows = await api('/api/owner/blocked-dates');
-      list.innerHTML = rows && rows.length ? rows.map(x=>{
-        const time = x.start_time && x.end_time ? `${x.start_time}–${x.end_time}` : 'Ceo dan';
-        const key = encodeURIComponent(x.key || x.id || x.date);
-        return `<article class="item blocked-item">
-          <div>
-            <b>${hEsc(x.date)} · ${hEsc(time)}</b>
-            <p>${hEsc(x.reason || '')}</p>
-          </div>
-          <button data-key="${key}" class="btn small danger" type="button">Obriši</button>
-        </article>`;
-      }).join('') : '<p class="muted">Nema dodatih neradnih dana ili zauzetih perioda.</p>';
-
-      list.querySelectorAll('button[data-key]').forEach(btn=>{
-        btn.onclick = async ()=>{
-          await api('/api/owner/blocked-dates/'+btn.dataset.key,{method:'DELETE'});
-          await loadBlockedInsideHoursV78();
-        };
-      });
-    }catch(e){
-      list.innerHTML = `<p class="muted">Greška: ${hEsc(e.message)}</p>`;
-    }
-  }
-
-  window.ensureBlockedInsideHours = ensureBlockedInsideHours;
-  window.loadBlockedInsideHoursV78 = loadBlockedInsideHoursV78;
-
-  document.addEventListener('DOMContentLoaded',()=>{
-    setTimeout(ensureBlockedInsideHours,200);
-    setTimeout(ensureBlockedInsideHours,1000);
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(setupManualAppointmentToggle, 200);
+    setTimeout(setupManualAppointmentToggle, 1000);
   });
+  document.addEventListener('click', () => setTimeout(setupManualAppointmentToggle, 80), true);
+})();
 
-  document.addEventListener('click',()=>{
-    setTimeout(()=>{
-      const active = document.querySelector('.tabs button.active');
-      if(active && (active.textContent||'').toLowerCase().includes('radno')){
-        ensureBlockedInsideHours();
-        loadBlockedInsideHoursV78();
-      }
-    },100);
-  },true);
+
+
+/* Owner Remove Novo Badge v78 */
+(function(){
+  function removeNovoBadges(){
+    document.querySelectorAll('.novo,.new-badge,.manual-new-badge,.owner-new-badge,.badge-novo,[data-badge="novo"]').forEach(el=>el.remove());
+    document.querySelectorAll('span,b,small,em,strong').forEach(el=>{
+      if((el.textContent||'').trim().toUpperCase()==='NOVO') el.remove();
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(removeNovoBadges,100);setTimeout(removeNovoBadges,800)});
+  document.addEventListener('click',()=>setTimeout(removeNovoBadges,80),true);
 })();
