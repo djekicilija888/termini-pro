@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Owner full-width sticky header like Facebook"
+  "description": "Full width fixed topbar for owner desktop panel"
 }

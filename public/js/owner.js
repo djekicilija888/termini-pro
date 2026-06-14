@@ -159,7 +159,7 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
 
 
 
-/* Owner Fixed Wide Header v73 */
+/* Owner Full Width Topbar v75 */
 (function(){
   async function ownerApi(path){
     const token = localStorage.getItem('token') || '';
@@ -183,7 +183,7 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     });
   }
 
-  async function businessName(){
+  async function getBusinessName(){
     try{
       const data = await ownerApi('/api/auth/me');
       return (data.business && data.business.name) ? data.business.name : 'Firma';
@@ -192,110 +192,64 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     }
   }
 
-  async function installFixedWideHeader(){
-    let header = document.getElementById('ownerFixedWideHeader');
-    const name = await businessName();
+  async function installTopbar(){
+    let bar = document.getElementById('ownerFullWidthTopbar');
+    const name = await getBusinessName();
 
-    if(!header){
-      header = document.createElement('div');
-      header.id = 'ownerFixedWideHeader';
-      header.className = 'owner-fixed-wide-header';
+    if(!bar){
+      bar = document.createElement('div');
+      bar.id = 'ownerFullWidthTopbar';
+      bar.className = 'owner-full-width-topbar';
 
       const title = document.createElement('div');
-      title.className = 'owner-fixed-wide-title';
-      title.id = 'ownerFixedWideTitle';
+      title.id = 'ownerFullWidthTitle';
+      title.className = 'owner-full-width-title';
       title.textContent = name;
 
-      const out = document.createElement('button');
-      out.type = 'button';
-      out.className = 'owner-fixed-wide-logout';
-      out.textContent = 'Odjava';
-      out.addEventListener('click', ev => {
+      const logout = document.createElement('button');
+      logout.type = 'button';
+      logout.className = 'owner-full-width-logout';
+      logout.textContent = 'Odjava';
+      logout.addEventListener('click', ev => {
         ev.preventDefault();
-        const btn = findLogoutButton();
-        if(btn && btn !== out) btn.click();
+        const oldLogout = findLogoutButton();
+        if(oldLogout && oldLogout !== logout) oldLogout.click();
         else{
           localStorage.removeItem('token');
           location.href = '/';
         }
       });
 
-      header.appendChild(title);
-      header.appendChild(out);
+      bar.appendChild(title);
+      bar.appendChild(logout);
 
       const oldHeader = findOldHeader();
       if(oldHeader && oldHeader.parentElement){
-        oldHeader.insertAdjacentElement('beforebegin', header);
-        oldHeader.classList.add('owner-old-header-hidden-v73');
+        oldHeader.insertAdjacentElement('beforebegin', bar);
+        oldHeader.classList.add('owner-header-hidden-v75');
       }else{
-        document.body.insertAdjacentElement('afterbegin', header);
+        document.body.insertAdjacentElement('afterbegin', bar);
       }
     }else{
-      const t = document.getElementById('ownerFixedWideTitle');
-      if(t) t.textContent = name;
+      const title = document.getElementById('ownerFullWidthTitle');
+      if(title) title.textContent = name;
     }
 
-    // Remove old icon/logo headers if they exist from previous cached code.
-    document.querySelectorAll('.owner-clean-logo,.owner-clean-brand .owner-clean-logo').forEach(el=>el.remove());
+    // Make sure no old icon/logo or duplicate navigation remains.
+    document.querySelectorAll('.owner-clean-logo,.owner-clean-header,#ownerStableNavClone').forEach(el => el.remove());
 
-    // Normalize profile label.
     document.querySelectorAll('.tabs button,button,a').forEach(el=>{
       const t=(el.textContent||'').trim().toLowerCase();
       if(t === 'profil/poruke' || t === 'profil i poruke' || t === 'profil') el.textContent = 'Profil firme';
     });
-
-    // Keep duplicate clone removed.
-    const clone=document.getElementById('ownerStableNavClone');
-    if(clone) clone.remove();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(installFixedWideHeader, 250);
-    setTimeout(installFixedWideHeader, 1000);
+    setTimeout(installTopbar, 150);
+    setTimeout(installTopbar, 800);
   });
 
   document.addEventListener('click', () => {
-    setTimeout(installFixedWideHeader, 120);
+    setTimeout(installTopbar, 80);
   }, true);
-})();
-
-
-
-/* Owner Responsive Header v74 */
-(function(){
-  function refreshOwnerResponsiveHeader(){
-    const h = document.getElementById('ownerFixedWideHeader');
-    if(!h) return;
-    h.style.width = 'min(1200px, calc(100vw - 32px))';
-    h.style.maxWidth = 'none';
-  }
-
-  window.addEventListener('resize', refreshOwnerResponsiveHeader);
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(refreshOwnerResponsiveHeader, 200);
-    setTimeout(refreshOwnerResponsiveHeader, 900);
-  });
-})();
-
-
-
-/* Owner Full Width Header v75 */
-(function(){
-  function forceFullWidthHeader(){
-    const h = document.getElementById('ownerFixedWideHeader');
-    if(!h) return;
-    h.style.width = '100vw';
-    h.style.maxWidth = 'none';
-    h.style.marginLeft = 'calc(50% - 50vw)';
-    h.style.marginRight = 'calc(50% - 50vw)';
-    h.style.borderRadius = '0';
-  }
-
-  window.addEventListener('resize', forceFullWidthHeader);
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(forceFullWidthHeader, 200);
-    setTimeout(forceFullWidthHeader, 900);
-    setTimeout(forceFullWidthHeader, 1600);
-  });
-  document.addEventListener('click', () => setTimeout(forceFullWidthHeader, 120), true);
 })();

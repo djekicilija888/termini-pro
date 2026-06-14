@@ -470,245 +470,94 @@ img{max-width:100%}
 #settings .card{margin:0}
 
 
-/* Owner Fixed Wide Header v73 */
-#ownerFixedWideHeader.owner-fixed-wide-header{
-  position:sticky;
+/* Owner Full Width Topbar v75 */
+html, body{
+  overflow-x:hidden;
+}
+
+#ownerFullWidthTopbar.owner-full-width-topbar{
+  position:fixed;
   top:0;
-  z-index:50;
-  width:100%;
-  max-width:1200px;
-  margin:0 auto 22px auto;
+  left:0;
+  right:0;
+  width:100vw;
+  min-width:100vw;
+  height:58px;
+  z-index:9999;
+  box-sizing:border-box;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:18px;
+
   background:#111827;
   color:#ffffff;
-  border-radius:0 0 18px 18px;
-  padding:14px 26px;
-  min-height:58px;
-  box-shadow:0 10px 26px rgba(17,24,39,.18);
+  border-radius:0;
+  margin:0;
+  padding:0 24px;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
 }
-.owner-fixed-wide-title{
+
+.owner-full-width-title{
   color:#ffffff;
-  font-weight:900;
   font-size:22px;
-  line-height:1.1;
-  letter-spacing:.2px;
+  font-weight:900;
+  line-height:1;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+  padding-right:18px;
 }
-.owner-fixed-wide-logout{
-  border:1px solid rgba(255,255,255,.28);
-  background:rgba(255,255,255,.12);
+
+.owner-full-width-logout{
+  border:1px solid rgba(255,255,255,.34);
+  background:rgba(255,255,255,.14);
   color:#ffffff;
   border-radius:999px;
-  padding:9px 18px;
+  padding:8px 18px;
   font-weight:900;
   cursor:pointer;
   flex:0 0 auto;
 }
-.owner-fixed-wide-logout:hover{
+
+.owner-full-width-logout:hover{
   background:#ffffff;
   color:#111827;
 }
+
+.owner-header-hidden-v75,
 .owner-old-header-hidden-v73,
 .owner-old-header-hidden,
-.owner-clean-header{
-  display:none !important;
-}
+.owner-clean-header,
 .owner-clean-logo{
   display:none !important;
 }
+
+/* Content starts under the fixed topbar */
+body{
+  padding-top:72px !important;
+}
+
+/* Duplicate menu must never appear */
+#ownerStableNavClone{
+  display:none !important;
+}
+
 @media(max-width:760px){
-  #ownerFixedWideHeader.owner-fixed-wide-header{
-    width:calc(100% - 24px);
-    margin:0 12px 16px 12px;
-    border-radius:0 0 16px 16px;
-    padding:12px 16px;
-    min-height:52px;
+  #ownerFullWidthTopbar.owner-full-width-topbar{
+    height:54px;
+    padding:0 14px;
   }
-  .owner-fixed-wide-title{
+
+  .owner-full-width-title{
     font-size:18px;
   }
-  .owner-fixed-wide-logout{
-    padding:8px 14px;
-  }
-}
 
-
-/* Owner Responsive Header v74 */
-html, body{
-  max-width:100%;
-  overflow-x:hidden;
-}
-
-/* Header behaves like a modern fixed/sticky site header:
-   it scales with browser zoom, but keeps firm name and Odjava visible. */
-#ownerFixedWideHeader.owner-fixed-wide-header{
-  position:sticky !important;
-  top:0 !important;
-  z-index:80 !important;
-  width:min(1200px, calc(100vw - 32px)) !important;
-  max-width:none !important;
-  box-sizing:border-box !important;
-  margin-left:auto !important;
-  margin-right:auto !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  flex-wrap:nowrap !important;
-  gap:clamp(10px, 2vw, 22px) !important;
-  padding:clamp(10px, 1.5vw, 14px) clamp(14px, 2.5vw, 26px) !important;
-  min-height:clamp(50px, 6vw, 60px) !important;
-  overflow:hidden !important;
-}
-
-.owner-fixed-wide-title{
-  flex:1 1 auto !important;
-  min-width:0 !important;
-  color:#ffffff !important;
-  font-weight:900 !important;
-  font-size:clamp(16px, 2vw, 22px) !important;
-  line-height:1.1 !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-}
-
-.owner-fixed-wide-logout{
-  flex:0 0 auto !important;
-  white-space:nowrap !important;
-  color:#ffffff !important;
-  font-size:clamp(12px, 1.35vw, 14px) !important;
-  padding:clamp(7px, 1vw, 9px) clamp(12px, 1.8vw, 18px) !important;
-}
-
-/* Menu must not disappear when the page is zoomed.
-   If there is not enough width, it stays in one row and can scroll horizontally. */
-.tabs{
-  max-width:min(1200px, calc(100vw - 32px)) !important;
-  margin-left:auto !important;
-  margin-right:auto !important;
-  display:flex !important;
-  align-items:center !important;
-  gap:10px !important;
-  overflow-x:auto !important;
-  overflow-y:hidden !important;
-  flex-wrap:nowrap !important;
-  -webkit-overflow-scrolling:touch !important;
-  scrollbar-width:thin !important;
-  padding-bottom:8px !important;
-}
-
-.tabs button{
-  flex:0 0 auto !important;
-  white-space:nowrap !important;
-  font-size:clamp(12px, 1.3vw, 15px) !important;
-  padding:clamp(9px, 1.2vw, 12px) clamp(13px, 1.7vw, 18px) !important;
-}
-
-@media(max-width:760px){
-  #ownerFixedWideHeader.owner-fixed-wide-header{
-    width:calc(100vw - 20px) !important;
-    margin-left:10px !important;
-    margin-right:10px !important;
-    border-radius:0 0 14px 14px !important;
+  .owner-full-width-logout{
+    padding:7px 13px;
   }
 
-  .tabs{
-    max-width:calc(100vw - 20px) !important;
-    margin-left:10px !important;
-    margin-right:10px !important;
-  }
-}
-
-@media(max-width:420px){
-  #ownerFixedWideHeader.owner-fixed-wide-header{
-    width:calc(100vw - 14px) !important;
-    margin-left:7px !important;
-    margin-right:7px !important;
-    padding:9px 10px !important;
-    gap:8px !important;
-  }
-
-  .owner-fixed-wide-title{
-    font-size:15px !important;
-  }
-
-  .owner-fixed-wide-logout{
-    font-size:12px !important;
-    padding:7px 10px !important;
-  }
-}
-
-
-/* Owner Full Width Header v75 */
-#ownerFixedWideHeader.owner-fixed-wide-header{
-  width:100vw !important;
-  max-width:none !important;
-  margin-left:calc(50% - 50vw) !important;
-  margin-right:calc(50% - 50vw) !important;
-  margin-top:0 !important;
-  margin-bottom:22px !important;
-  border-radius:0 !important;
-  box-sizing:border-box !important;
-  padding-left:max(28px, calc((100vw - 1200px) / 2 + 28px)) !important;
-  padding-right:max(28px, calc((100vw - 1200px) / 2 + 28px)) !important;
-  min-height:58px !important;
-  background:#111827 !important;
-  color:#ffffff !important;
-  position:sticky !important;
-  top:0 !important;
-  z-index:90 !important;
-}
-
-.owner-fixed-wide-title{
-  min-width:0 !important;
-  max-width:calc(100vw - 170px) !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-  white-space:nowrap !important;
-}
-
-.owner-fixed-wide-logout{
-  flex:0 0 auto !important;
-  white-space:nowrap !important;
-}
-
-/* Header is full-width, but the menu stays aligned with the panel like modern sites. */
-.tabs{
-  max-width:min(1200px, calc(100vw - 32px)) !important;
-  margin-left:auto !important;
-  margin-right:auto !important;
-}
-
-@media(max-width:760px){
-  #ownerFixedWideHeader.owner-fixed-wide-header{
-    width:100vw !important;
-    margin-left:calc(50% - 50vw) !important;
-    margin-right:calc(50% - 50vw) !important;
-    border-radius:0 !important;
-    padding-left:16px !important;
-    padding-right:16px !important;
-    min-height:54px !important;
-  }
-}
-
-@media(max-width:420px){
-  #ownerFixedWideHeader.owner-fixed-wide-header{
-    padding-left:12px !important;
-    padding-right:12px !important;
-  }
-
-  .owner-fixed-wide-title{
-    max-width:calc(100vw - 130px) !important;
-    font-size:15px !important;
-  }
-
-  .owner-fixed-wide-logout{
-    padding:7px 10px !important;
-    font-size:12px !important;
+  body{
+    padding-top:66px !important;
   }
 }
