@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "7.1.0",
+  "version": "7.3.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Owner desktop header and menu aligned with Android v22"
+  "description": "Make owner logout button clearly visible in header"
 }
