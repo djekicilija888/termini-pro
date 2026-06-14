@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "7.3.0",
+  "version": "7.5.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Owner fixed wide black header without logo icon"
+  "description": "Owner full-width sticky header like Facebook"
 }
