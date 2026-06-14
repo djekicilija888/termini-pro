@@ -1,3 +1,15 @@
+function esc(v){
+  return String(v == null ? '' : v).replace(/[&<>"']/g, m => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[m]));
+}
+window.esc=window.esc||esc;
+
+
 
 function publicPhoneList(value){
   return String(value||'')
