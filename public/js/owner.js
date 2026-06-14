@@ -551,3 +551,310 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     setTimeout(renameMenus, 1200);
   });
 })();
+
+
+
+/* Owner Stable Navigation v69 */
+(function(){
+  const navItems = [
+    {label:'Dashboard', keys:['dashboard','osnovna','pregled']},
+    {label:'Termini', keys:['termini','appointments']},
+    {label:'Link / QR kod', keys:['link','qr']},
+    {label:'Radnici', keys:['radnici','staff']},
+    {label:'Usluge', keys:['usluge','services']},
+    {label:'Radno vreme', keys:['radno vreme','working','hours']},
+    {label:'Blokirani', keys:['blokirani','blocked']},
+    {label:'Profil firme', keys:['profil','profile','settings','poruke']},
+    {label:'Log poruka', keys:['log poruka','notifications','log']}
+  ];
+
+  function getText(el){
+    return (el && el.textContent ? el.textContent : '').trim().toLowerCase();
+  }
+
+  function findOriginalButton(item){
+    return Array.from(document.querySelectorAll('button,a')).find(el => {
+      if(el.closest('#ownerStableNavClone')) return false;
+      const t = getText(el);
+      return item.keys.some(k => t.includes(k));
+    });
+  }
+
+  function findOwnerNav(){
+    const groups = Array.from(document.querySelectorAll('nav,.tabs,.pills,.actions,header,main,body'));
+    let best = null;
+    let bestCount = 0;
+
+    for(const g of groups){
+      const count = Array.from(g.querySelectorAll('button,a')).filter(el => {
+        if(el.closest('#ownerStableNavClone')) return false;
+        const t = getText(el);
+        return navItems.some(item => item.keys.some(k => t.includes(k)));
+      }).length;
+
+      if(count > bestCount){
+        best = g;
+        bestCount = count;
+      }
+    }
+    return bestCount >= 3 ? best : null;
+  }
+
+  function renameOldLabels(){
+    Array.from(document.querySelectorAll('button,a')).forEach(el => {
+      if(el.closest('#ownerStableNavClone')) return;
+      const t = getText(el);
+      if(t === 'profil/poruke' || t === 'profil i poruke' || t === 'profil') el.textContent = 'Profil firme';
+      el.style.display = '';
+      el.style.visibility = 'visible';
+    });
+  }
+
+  function installStableNav(){
+    renameOldLabels();
+
+    let clone = document.getElementById('ownerStableNavClone');
+    if(clone) return;
+
+    const originalNav = findOwnerNav();
+    if(!originalNav) return;
+
+    clone = document.createElement('div');
+    clone.id = 'ownerStableNavClone';
+    clone.className = 'owner-stable-nav-clone';
+
+    navItems.forEach(item => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = item.label;
+      b.addEventListener('click', ev => {
+        ev.preventDefault();
+        const original = findOriginalButton(item);
+        if(original){
+          original.click();
+          setTimeout(renameOldLabels, 80);
+          setTimeout(installStableNav, 160);
+        }
+      });
+      clone.appendChild(b);
+    });
+
+    originalNav.insertAdjacentElement('afterend', clone);
+    originalNav.classList.add('owner-original-nav-kept');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(installStableNav, 500);
+    setTimeout(installStableNav, 1200);
+  });
+
+  document.addEventListener('click', () => {
+    setTimeout(renameOldLabels, 80);
+    setTimeout(installStableNav, 160);
+  }, true);
+})();
+
+
+
+/* Owner Clean Header v70 */
+(function(){
+  async function ownerApi(path){
+    const token = localStorage.getItem('token') || '';
+    const res = await fetch(path, {headers:{Authorization:'Bearer '+token}});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'Greška');
+    return data;
+  }
+
+  function findLogoutButton(){
+    return Array.from(document.querySelectorAll('button,a')).find(el => {
+      const t = (el.textContent || '').trim().toLowerCase();
+      return t === 'odjava' || t === 'logout';
+    });
+  }
+
+  function getLogoLetter(name){
+    const clean = String(name || '').trim();
+    return clean ? clean[0].toUpperCase() : 'T';
+  }
+
+  function findOldHeader(){
+    const candidates = Array.from(document.querySelectorAll('header,.topbar,.navbar,.app-header,body > div,body > section'));
+    return candidates.find(el => {
+      const text = (el.textContent || '').toLowerCase();
+      return text.includes('panel firme') || (text.includes('odjava') && el.querySelector('button,a'));
+    });
+  }
+
+  async function installCleanHeader(){
+    if(document.getElementById('ownerCleanHeader')) return;
+
+    let businessName = '';
+    try{
+      const data = await ownerApi('/api/auth/me');
+      businessName = (data.business && data.business.name) ? data.business.name : '';
+    }catch(_){
+      businessName = '';
+    }
+
+    const logout = findLogoutButton();
+    const oldHeader = findOldHeader();
+
+    const header = document.createElement('div');
+    header.id = 'ownerCleanHeader';
+    header.className = 'owner-clean-header';
+
+    const brand = document.createElement('div');
+    brand.className = 'owner-clean-brand';
+
+    const logo = document.createElement('div');
+    logo.className = 'owner-clean-logo';
+    logo.textContent = getLogoLetter(businessName);
+
+    const title = document.createElement('div');
+    title.className = 'owner-clean-title';
+    title.textContent = businessName || 'Firma';
+
+    brand.appendChild(logo);
+    brand.appendChild(title);
+
+    const out = document.createElement('button');
+    out.type = 'button';
+    out.className = 'owner-clean-logout';
+    out.textContent = 'Odjava';
+    out.addEventListener('click', ev => {
+      ev.preventDefault();
+      const btn = findLogoutButton();
+      if(btn && btn !== out) btn.click();
+      else {
+        localStorage.removeItem('token');
+        location.href = '/';
+      }
+    });
+
+    header.appendChild(brand);
+    header.appendChild(out);
+
+    if(oldHeader && oldHeader.parentElement){
+      oldHeader.insertAdjacentElement('beforebegin', header);
+      oldHeader.classList.add('owner-old-header-hidden');
+    }else{
+      document.body.insertAdjacentElement('afterbegin', header);
+    }
+
+    // Rename old profile label wherever it remains.
+    Array.from(document.querySelectorAll('button,a')).forEach(el => {
+      const t = (el.textContent || '').trim().toLowerCase();
+      if(t === 'profil/poruke' || t === 'profil i poruke' || t === 'profil') el.textContent = 'Profil firme';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(installCleanHeader, 400);
+    setTimeout(installCleanHeader, 1200);
+  });
+})();
+
+
+
+/* Owner Desktop Header Menu v71 */
+(function(){
+  function cleanTopHeader(){
+    const header = document.getElementById('ownerCleanHeader');
+    if(header){
+      header.classList.add('owner-desktop-v71-header');
+      const logo = header.querySelector('.owner-clean-logo');
+      if(logo) logo.remove();
+
+      const title = header.querySelector('.owner-clean-title');
+      if(title){
+        title.classList.add('owner-desktop-v71-title');
+      }
+
+      const out = header.querySelector('.owner-clean-logout');
+      if(out){
+        out.classList.add('owner-desktop-v71-logout');
+      }
+    }
+
+    // Ako stari header nekad ostane vidljiv, sakrij "Panel firme".
+    Array.from(document.querySelectorAll('h1,h2,h3,b,strong,span,div')).forEach(el=>{
+      if((el.textContent||'').trim() === 'Panel firme'){
+        const box = el.closest('header,.topbar,.navbar,.app-header,div');
+        if(box && box.id !== 'ownerCleanHeader') box.style.display = 'none';
+      }
+    });
+  }
+
+  function normalizeMenuButtons(){
+    const clone = document.getElementById('ownerStableNavClone');
+    const nav = clone || document.querySelector('.owner-stable-nav-clone') || document.querySelector('nav') || document.querySelector('.tabs');
+
+    if(!nav) return;
+
+    nav.classList.add('owner-desktop-v71-menu');
+
+    const buttons = Array.from(nav.querySelectorAll('button,a'));
+    buttons.forEach(btn=>{
+      btn.classList.add('owner-desktop-v71-menu-btn');
+
+      const t = (btn.textContent || '').trim().toLowerCase();
+      if(t === 'profil/poruke' || t === 'profil i poruke' || t === 'profil'){
+        btn.textContent = 'Profil firme';
+      }
+
+      btn.addEventListener('click', ()=>{
+        setTimeout(()=>setActiveMenu(btn.textContent || ''), 80);
+      });
+    });
+
+    setActiveMenuFromContent();
+  }
+
+  function setActiveMenu(label){
+    const navs = Array.from(document.querySelectorAll('#ownerStableNavClone,.owner-stable-nav-clone,nav,.tabs'));
+    const wanted = String(label||'').trim().toLowerCase();
+
+    navs.forEach(nav=>{
+      Array.from(nav.querySelectorAll('button,a')).forEach(btn=>{
+        const t = (btn.textContent||'').trim().toLowerCase();
+        btn.classList.toggle('owner-desktop-v71-active', wanted && t === wanted);
+      });
+    });
+  }
+
+  function setActiveMenuFromContent(){
+    const bodyText = (document.body.textContent || '').toLowerCase();
+
+    const rules = [
+      ['dashboard', ['osnovna strana','pregled']],
+      ['termini', ['najbliži termini','mušterija']],
+      ['link / qr kod', ['link za zakazivanje','qr kod']],
+      ['radnici', ['dodaj radnika','aktivnih radnika']],
+      ['usluge', ['dodaj uslugu','aktivnih usluga']],
+      ['radno vreme', ['radno vreme']],
+      ['blokirani', ['blokirani']],
+      ['profil firme', ['podešavanje profila firme','podaci firme','automatske poruke']],
+      ['log poruka', ['log poruka']]
+    ];
+
+    for(const [label, keys] of rules){
+      if(keys.some(k=>bodyText.includes(k))){
+        setActiveMenu(label);
+        return;
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    setTimeout(cleanTopHeader, 500);
+    setTimeout(normalizeMenuButtons, 700);
+    setTimeout(cleanTopHeader, 1300);
+    setTimeout(normalizeMenuButtons, 1500);
+  });
+
+  document.addEventListener('click', ()=>{
+    setTimeout(cleanTopHeader, 100);
+    setTimeout(normalizeMenuButtons, 180);
+  }, true);
+})();
