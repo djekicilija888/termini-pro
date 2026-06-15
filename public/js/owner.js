@@ -222,10 +222,10 @@ async function printQrPdfList(){
   const qrSource=ownerQrObjectUrl || await fetchOwnerQrDataUrl();
   const b=window.ownerBusinessForPrint||{};
   const businessName=(b.name||'Vaša firma').trim();
-  const phones=ownerPhoneParts(b.phone);
-  const phoneText=(phones.join(' / ')||'Telefon nije unet').slice(0,58);
-  const locationText=((b.address?b.address.trim():'') + ((b.address&&b.city)?', ':'') + (b.city?b.city.trim():'')) || 'Lokacija nije uneta';
-
+const phones=ownerPhoneParts(b.phone);
+const phoneText=(phones.join(' / ')||'Telefon nije unet').slice(0,58);
+const locationText=((b.address?b.address.trim():'') + ((b.address&&b.city)?', ':'') + (b.city?b.city.trim():'')) || 'Lokacija nije uneta';
+const emailText=(b.email||'Email nije unet').trim();
   const splitWords=(value,maxChars,maxLines=3)=>{
     const words=String(value||'').trim().split(/\s+/).filter(Boolean);
     if(!words.length)return [];
@@ -307,11 +307,12 @@ async function printQrPdfList(){
     const gutterX=14, gutterY=10;
     const cardW=(pageW-marginX*2-gutterX)/cols;
     const cardH=(pageH-marginY*2-gutterY*(rows-1))/rows;
-    const qrSize=90;
+    const qrSize=78;
     const qrImage=await qrToRgbImage(qrSource);
-    const nameLines=splitWords(businessName,25,2);
-    const locationLines=splitWords(locationText,36,3);
-    const phoneLines=splitWords(phoneText,31,2);
+   const nameLines=splitWords(businessName,25,2);
+const locationLines=splitWords(locationText,36,3);
+const phoneLines=splitWords(phoneText,31,2);
+const emailLines=splitWords(emailText,24,2);
 
     const yPdf=(y)=>pageH-y;
     let content='';
@@ -349,16 +350,17 @@ async function printQrPdfList(){
           text(x+15,y+39,14.5,true,nameLines[1]||'');
         }
 
-        const infoY=y+76;
+        const infoY=y+82;
         phoneLines.forEach((ln,idx)=>text(x+15,infoY+idx*13,10.6,false,ln));
         locationLines.forEach((ln,idx)=>text(x+15,infoY+31+idx*12,10.0,false,ln));
 
-        centeredText(qrCenterX,y+24,11.2,true,'Zakažite termin online');
+        centeredText(qrCenterX,y+18,10.6,true,'ZAKAZITE TERMIN ONLINE');
+emailLines.forEach((ln,idx)=>centeredText(qrCenterX,y+31+idx*10,8.8,false,ln));
 
-        const imgX=qrCenterX-qrSize/2;
-        const imgTop=y+36;
-        const imgY=pageH-imgTop-qrSize;
-        content += `q ${qrSize} 0 0 ${qrSize} ${imgX.toFixed(2)} ${imgY.toFixed(2)} cm /Im0 Do Q\n`;
+const imgX=qrCenterX-qrSize/2;
+const imgTop=y+56;
+const imgY=pageH-imgTop-qrSize;
+content += `q ${qrSize} 0 0 ${qrSize} ${imgX.toFixed(2)} ${imgY.toFixed(2)} cm /Im0 Do Q\n`;
       }
     }
 
