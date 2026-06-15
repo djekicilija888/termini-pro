@@ -1,18 +1,17 @@
-# Login Text v53
+# V89 - Desktop PDF isti kao Android
 
-Promenjeno na glavnoj strani:
+Ispravljeno generisanje PDF-a u desktop verziji.
 
-- gore na login kartici sada piše: `Prijavi se`
-- na crnom dugmetu sada piše: `Uloguj se`
+## Šta je promenjeno
+- Desktop QR PDF koristi isti A4 raspored kao Android: 3 kolone x 4 reda kartica.
+- QR se više ne ubacuje kao PNG bajtovi u PDF stream.
+- QR se konvertuje u raw crno-beli DeviceRGB image stream, kao bitmap koju Android crta u `PdfDocument`.
+- PDF sada treba normalno da se otvara i štampa u desktop PDF čitačima.
+- Vraćeni su srpski karakteri u tekstu PDF-a preko PDF font encoding mape.
 
-## Provera
+## Fajl koji je izmenjen
+- `public/js/owner.js`
 
-```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=login-text-v53
-```
-
-Mora da piše:
-
-```txt
-Login Text v53 je aktivna
-```
+## Test
+Uloguj se kao vlasnik firme, otvori tab za link/QR i klikni dugme za PDF QR kartice.
+Treba da dobiješ PDF kao na Androidu: jedan A4 list sa 12 kartica za sečenje.

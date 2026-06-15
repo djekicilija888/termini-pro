@@ -1,23 +1,24 @@
-# Owner Appointments Hours v75
+# Login Prijavite se v57
 
-Dodato/promenjeno:
+Promenjeno:
 
-- u `Termini` je dodato ručno dodavanje termina za mušteriju
-- vlasnik bira mušteriju, telefon, uslugu, radnika, datum i slobodno vreme
-- posebna kartica `Blokirani` je uklonjena iz glavnog menija
-- `Neradni dani i zauzeti periodi` su sada u odeljku `Radno vreme`
-- ako se doda ceo neradni dan, taj datum se ne može zakazati
-- ako se doda period od/do, samo taj period se ne može zakazati
-- dnevna pauza u radnom vremenu i dalje automatski blokira zakazivanje
+- naslov login kartice: `Prijavite se`
+- crno dugme: `Prijavite se`
+
+Ostaje:
+
+- web/desktop samo za prijavu
+- registracija firme kroz Android aplikaciju
+- Google Play priprema iz prethodne verzije
 
 ## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=owner-appointments-hours-v75
+https://tvoj-render-link.onrender.com/pro-check.html?v=login-prijavite-se-v57
 ```
 
 Mora da piše:
 
 ```txt
-Owner Appointments Hours v75 je aktivna
+Login Prijavite se v57 je aktivna
 ```

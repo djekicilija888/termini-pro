@@ -1,15 +1,22 @@
-# Desktop Multiple Phones v62
+# Customer Gallery Fix v45
 
-Dodato:
+Popravljeno:
 
-- vlasnik firme može da unese više telefonskih brojeva
-- najviše 10 brojeva
-- svaki broj u novi red
-- brojevi se prikazuju na A4 posteru ako postoje
-- brojevi nisu u crnoj traci, nego kao običan tekst na dnu postera
+- Profilna slika se ne prikazuje u albumu koji vidi mušterija.
+- Naslovna slika se ne prikazuje u albumu koji vidi mušterija.
+- Mušterija na javnoj strani vidi:
+  - profilnu sliku gore
+  - naslovnu sliku gore
+  - album samo sa običnim slikama
 
-## Provera posle deploy-a
+## Provera
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=desktop-multiple-phones-v62
+https://tvoj-render-link.onrender.com/pro-check.html?v=customer-gallery-fix-v45
+```
+
+Mora da piše:
+
+```txt
+Customer Gallery Fix v45 je aktivna
 ```

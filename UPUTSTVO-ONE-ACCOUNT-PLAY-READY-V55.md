@@ -1,74 +1,34 @@
-# One Account Play Ready v55
+# Link QR PDF v46
 
 Urađeno:
 
-- jedan email može napraviti samo jednu besplatnu firmu
-- ako korisnik pokuša drugu firmu sa istim emailom, dobija poruku da treba Google Play otključavanje
-- dodata tabela `google_play_entitlements`
-- dodat API koji Android aplikacija kasnije koristi da pošalje Google Play `purchaseToken`
-- kad je email otključan, isti nalog/isti email može koristiti dodatnu firmu i preko desktopa
+- Kartica `Link za zakazivanje` je preimenovana u `Link / QR kod`.
+- Dodan je prikaz QR koda u toj kartici.
+- Dodato je dugme `Štampaj PDF list`.
+- PDF/print list ima 12 QR kodova.
+- Ispod svakog QR koda stoji link za zakazivanje termina.
+- Vlasnik može da sačuva list kao PDF ili da ga odštampa, iseče i deli mušterijama.
 
-## Važno
+## Kako se koristi
 
-Ovo je web/backend priprema.
+Owner panel → `Link / QR kod` → `Štampaj PDF list`
 
-Prava Google Play kupovina zahteva Android aplikaciju koja:
-1. pokrene Google Play Billing
-2. dobije purchaseToken
-3. pošalje purchaseToken serveru
-4. server proveri kupovinu
-5. server otključa dodatnu firmu
-
-Za sada server ne otključava automatski kupovinu bez verifikacije.
-
-## Endpointi
-
-Status:
+U print prozoru izabrati:
 
 ```txt
-GET /api/google-play/status?email=email@example.com
+Save as PDF
 ```
 
-Android potvrda kupovine:
+ili štampač.
+
+## Provera
 
 ```txt
-POST /api/google-play/confirm
-```
-
-Body:
-
-```json
-{
-  "email": "email@example.com",
-  "purchase_token": "TOKEN",
-  "product_id": "extra_business_1",
-  "order_id": "GPA..."
-}
-```
-
-Superadmin ručno otključavanje nakon provere:
-
-```txt
-POST /api/superadmin/google-play/entitlement
-```
-
-Body:
-
-```json
-{
-  "email": "email@example.com",
-  "allowed_businesses": 2
-}
-```
-
-## Provera posle deploy-a
-
-```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=one-account-play-ready-v55
+https://tvoj-render-link.onrender.com/pro-check.html?v=link-qr-pdf-v46
 ```
 
 Mora da piše:
 
 ```txt
-One Account Play Ready v55 je aktivna
+Link QR PDF v46 je aktivna
 ```

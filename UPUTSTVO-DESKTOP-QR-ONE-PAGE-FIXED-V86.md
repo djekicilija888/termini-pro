@@ -1,16 +1,49 @@
-# Desktop QR One Page Fixed v86
+# Desktop A4 Poster v61
 
-Popravka desktop QR lista za štampu/PDF:
+Desktop verzija sada ima isto kao Android v12.
 
-- QR kartice su smanjene da sigurno stanu na jednu A4 stranu u Chrome/Windows print preview-u
-- uklonjeno izbacivanje drugog praznog lista
-- sadržaj je centriran
-- ostaje 12 kartica: 3 kolone × 4 reda
-- `Zakažite termin` ostaje podebljano
-- druge funkcije nisu menjane
+U odeljku `Link` dodato je:
+
+```txt
+Štampaj / preuzmi A4 poster
+```
+
+Poster je namenjen za:
+
+```txt
+vrata
+izlog
+zid
+pult
+salon / radionicu
+```
+
+A4 poster sadrži:
+
+```txt
+SKENIRAJTE I ZAKAŽITE TERMIN ONLINE
+naziv firme
+veliki QR kod
+link za zakazivanje
+telefon / grad / Instagram-Facebook link ako su uneti
+```
+
+## Kako se koristi
+
+1. Uđi u desktop panel.
+2. Otvori `Link`.
+3. Klikni `Štampaj / preuzmi A4 poster`.
+4. Otvoriće se novi prozor.
+5. Klikni `Štampaj / sačuvaj PDF`.
 
 ## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=desktop-qr-one-page-fixed-v86
+https://tvoj-render-link.onrender.com/pro-check.html?v=desktop-a4-poster-v61
+```
+
+Mora da piše:
+
+```txt
+Desktop A4 Poster v61 je aktivna
 ```

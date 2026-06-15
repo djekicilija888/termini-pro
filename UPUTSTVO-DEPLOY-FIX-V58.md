@@ -1,26 +1,28 @@
-# Deploy Fix v58
+# Clean Dashboard v43
 
-Ispravljeno:
+Izmene:
 
-- greška `admin is not defined`
-- dodat `normalizeEmail` alias koji koristi Google Play / Android logika
-- ispravljeno pozivanje default podešavanja pri Android registraciji
+- Dashboard ne prikazuje veliki link blok.
+- Kopiranje linka je prebačeno u posebnu karticu `Link za zakazivanje`.
+- Uklonjen je QR/slika blok sa dashboarda.
+- Uklonjen je prikaz `basic`, `premium`, `trial` i paketa sa dashboarda.
+- Osnovna strana prikazuje samo:
+  - Danas
+  - 7 dana
+  - Radnici
+  - Usluge
+  - Najbliži/zakazani termini
 
-Ostaje:
+## Provera
 
-- web/desktop samo za prijavu
-- registracija firme kroz Android aplikaciju
-- Google Play priprema
-- naslov i dugme login forme: `Prijavite se`
-
-## Provera posle deploy-a
+Otvori:
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=deploy-fix-v58
+https://tvoj-render-link.onrender.com/pro-check.html?v=clean-dashboard-v43
 ```
 
-Mora da piše:
+Treba da piše:
 
 ```txt
-Deploy Fix v58 je aktivna
+Clean Dashboard v43 je aktivna
 ```

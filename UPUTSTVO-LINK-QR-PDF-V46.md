@@ -1,34 +1,19 @@
-# Link QR PDF v46
+# Desktop QR Real PDF v87
 
-Urađeno:
+Ovo je prava popravka desktop QR liste:
 
-- Kartica `Link za zakazivanje` je preimenovana u `Link / QR kod`.
-- Dodan je prikaz QR koda u toj kartici.
-- Dodato je dugme `Štampaj PDF list`.
-- PDF/print list ima 12 QR kodova.
-- Ispod svakog QR koda stoji link za zakazivanje termina.
-- Vlasnik može da sačuva list kao PDF ili da ga odštampa, iseče i deli mušterijama.
+- dugme vise ne pravi HTML print-preview stranicu
+- sada pravi pravi PDF fajl `qr-kartice-termini.pdf`
+- PDF ima fiksne koordinate kao Android logika
+- nema drugog praznog lista
+- raspored je 3 × 4 na jednoj A4 strani
+- Android nije menjan
 
-## Kako se koristi
+Napomena:
+Ako browser pita, dozvoli otvaranje/preuzimanje PDF fajla.
 
-Owner panel → `Link / QR kod` → `Štampaj PDF list`
-
-U print prozoru izabrati:
-
-```txt
-Save as PDF
-```
-
-ili štampač.
-
-## Provera
+## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=link-qr-pdf-v46
-```
-
-Mora da piše:
-
-```txt
-Link QR PDF v46 je aktivna
+https://tvoj-render-link.onrender.com/pro-check.html?v=desktop-qr-real-pdf-v87
 ```

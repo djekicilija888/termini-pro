@@ -1,44 +1,26 @@
-# Desktop QR Cards Cut v63
+# Deploy Fix v58
 
-Desktop verzija je usklađena sa Android v16.
+Ispravljeno:
 
-U odeljku `Link`, dugme:
+- greška `admin is not defined`
+- dodat `normalizeEmail` alias koji koristi Google Play / Android logika
+- ispravljeno pozivanje default podešavanja pri Android registraciji
 
-```txt
-Štampaj / preuzmi QR list
-```
+Ostaje:
 
-sada pravi A4 list sa:
-
-```txt
-12 kartica
-bez razmaka između kartica
-bez zaobljenih ivica
-tankim crnim linijama za sečenje
-čitljivijim tekstom linka
-```
-
-Jedna kartica je približno:
-
-```txt
-6.2 cm × 6.3 cm
-```
-
-Na vrhu piše:
-
-```txt
-QR kartice za zakazivanje termina
-Odštampajte list, isecite kartice i podelite ih mušterijama.
-```
+- web/desktop samo za prijavu
+- registracija firme kroz Android aplikaciju
+- Google Play priprema
+- naslov i dugme login forme: `Prijavite se`
 
 ## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=desktop-qr-cards-cut-v63
+https://tvoj-render-link.onrender.com/pro-check.html?v=deploy-fix-v58
 ```
 
 Mora da piše:
 
 ```txt
-Desktop QR Cards Cut v63 je aktivna
+Deploy Fix v58 je aktivna
 ```

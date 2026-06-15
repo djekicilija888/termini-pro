@@ -1,20 +1,21 @@
-# Owner Remove Duplicate Nonworking v76
+# Owner Manual Modal Center v79
 
-Popravljeno:
+Promenjeno u kartici `Termini`:
 
-- uklonjen je dupli donji blok `Neradni dani i zauzeti periodi`
-- u `Radno vreme` ostaje samo jedan deo za neradne dane i zauzete periode
-- ručno dodavanje termina iz v75 ostaje
-- neradni dani i zauzeti periodi i dalje blokiraju zakazivanje
+- klik na `+ Ručno dodaj termin za mušteriju` otvara obrazac na sredini ekrana
+- obrazac se prikazuje kao prozor preko stranice
+- stranica iza se ne skroluje dok je obrazac otvoren
+- obrazac može da se zatvori na `×`, na Escape ili klikom ponovo na plus
+- sve funkcije iz v78 ostaju
 
 ## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=owner-remove-duplicate-nonworking-v76
+https://tvoj-render-link.onrender.com/pro-check.html?v=owner-manual-modal-center-v79
 ```
 
 Mora da piše:
 
 ```txt
-Owner Remove Duplicate Nonworking v76 je aktivna
+Owner Manual Modal Center v79 je aktivna
 ```

@@ -1,31 +1,23 @@
-# Desktop Like Android v60
+# Clean Home v54
 
-Desktop/owner panel je usklađen sa Android aplikacijom.
+Uklonjeno:
 
-Dodato/usaglašeno:
+- gornje dugme `Registruj firmu` iz hero dela glavne strane
 
-## Link
+Ostaje:
 
-- QR kod u odeljku Link
-- dugme `Štampaj / preuzmi QR list`
-- štampa ili čuvanje PDF-a preko browser print prozora
+- forma za registraciju firme
+- forma za prijavu
+- ostatak aplikacije
 
-## Profil firme
-
-- meni: `Profil firme`
-- naslov: `Podešavanje profila firme`
-- kartica `Podaci firme`
-- kartica `Automatske poruke za mušterije`
-- dugme `Otvori javnu stranicu`
-
-## Provera posle deploy-a
+## Provera
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=desktop-like-android-v60
+https://tvoj-render-link.onrender.com/pro-check.html?v=clean-home-no-hero-button-v54
 ```
 
 Mora da piše:
 
 ```txt
-Desktop Like Android v60 je aktivna
+Clean Home v54 je aktivna
 ```

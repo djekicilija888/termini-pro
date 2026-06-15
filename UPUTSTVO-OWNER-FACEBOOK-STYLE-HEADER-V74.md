@@ -1,24 +1,29 @@
-# Owner Facebook Style Header v74
+# Mobile Gallery v41
 
-Header na desktop panelu sada radi kao gornja traka:
+Dodato:
 
-- zalepljen je za sam vrh ekrana
-- ide celom širinom ekrana
-- nema zaobljene ivice
-- nema marginu levo/desno
-- nema ikonicu/slovo pored naziva firme
-- levo stoji naziv firme
-- desno stoji dugme `Odjava`
-- stranica skroluje ispod njega
+- Album/slike u owner panelu
+- Naslovna slika firme
+- Prikaz albuma na javnoj stranici firme
+- Android/mobile CSS popravka
+- Uklonjena zelena PRO v2 traka
 
-## Provera posle deploy-a
+## Gde se dodaju slike
+
+Owner panel → `Album/slike`
+
+Za sada se ubacuje URL slike. Sledeći korak može biti pravi upload slika preko Cloudinary-ja.
+
+## Provera
+
+Otvori:
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=owner-facebook-style-header-v74
+https://tvoj-render-link.onrender.com/pro-check.html?v=mobile-gallery-v41
 ```
 
 Mora da piše:
 
 ```txt
-Owner Facebook Style Header v74 je aktivna
+Mobile Gallery v41 je aktivna
 ```

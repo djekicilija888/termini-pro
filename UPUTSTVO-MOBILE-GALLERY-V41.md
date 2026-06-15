@@ -1,29 +1,33 @@
-# Mobile Gallery v41
+# Final v44
 
-Dodato:
+Urađeno:
 
-- Album/slike u owner panelu
-- Naslovna slika firme
-- Prikaz albuma na javnoj stranici firme
-- Android/mobile CSS popravka
-- Uklonjena zelena PRO v2 traka
+- Dashboard prikazuje samo:
+  - Danas
+  - 7 dana
+  - Radnici
+  - Usluge
+  - Najbliži termini
+- `Kopiraj link` je u posebnoj kartici `Link za zakazivanje`.
+- Sa dashboarda su uklonjeni:
+  - QR/slika blok
+  - basic/premium/trial/paketi
+- Uklonjena su ograničenja paketa za dodavanje radnika.
+- Upload slika:
+  - profilna slika: 1
+  - naslovna slika: 1
+  - album: najviše 20 slika po firmi
+  - jedna slika: najviše 5 MB
+- Slike se biraju sa telefona ili desktopa, bez URL adrese.
 
-## Gde se dodaju slike
-
-Owner panel → `Album/slike`
-
-Za sada se ubacuje URL slike. Sledeći korak može biti pravi upload slika preko Cloudinary-ja.
-
-## Provera
-
-Otvori:
+## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=mobile-gallery-v41
+https://tvoj-render-link.onrender.com/pro-check.html?v=final-dashboard-upload-limits-v44
 ```
 
 Mora da piše:
 
 ```txt
-Mobile Gallery v41 je aktivna
+Final v44 je aktivna
 ```

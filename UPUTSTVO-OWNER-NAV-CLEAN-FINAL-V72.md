@@ -1,22 +1,23 @@
-# Owner Nav Clean Final v72
+# Owner Fixed Wide Header v73
 
-Popravljeno:
+Popravljeno na desktop panelu:
 
-- uklonjen dupli meni koji se pojavljivao dole
-- kada klikneš `Link / QR kod`, kartice ne nestaju
-- kada klikneš `Profil firme`, kartice ne nestaju
-- kada klikneš `Log poruka`, ne pojavljuje se niz kartica dole
-- aktivna kartica pocrni kao ranije
-- ostaje samo jedan meni
+- gornji header je crn
+- header je zamrznut/lepljiv gore dok se skroluje
+- širok je kao panel
+- nema ikonice/slova u levom uglu
+- levo stoji samo naziv firme
+- desno stoji dugme `Odjava`
+- dupli meni ostaje uklonjen
 
 ## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=owner-nav-clean-final-v72
+https://tvoj-render-link.onrender.com/pro-check.html?v=owner-fixed-wide-header-v73
 ```
 
 Mora da piše:
 
 ```txt
-Owner Nav Clean Final v72 je aktivna
+Owner Fixed Wide Header v73 je aktivna
 ```

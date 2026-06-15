@@ -1,23 +1,44 @@
-# Desktop QR Same As Android v85
+# Desktop QR Cards Cut v63
 
-Promenjeno je samo za desktop QR list za štampu/PDF:
+Desktop verzija je usklađena sa Android v16.
 
-- desktop PDF više nije obična HTML tabela nego fiksni A4 SVG
-- mere su iste kao u Android PDF-u:
-  - A4 595 × 842
-  - startX 35
-  - startY 82
-  - cardW 175
-  - cardH 181
-  - 3 kolone × 4 reda
-- leve/desne margine su iste
-- ne treba da izlazi drugi prazan list
-- `Zakažite termin` je podebljano
+U odeljku `Link`, dugme:
 
-Android v25 već ima podebljan naslov na QR karticama i nije menjan u ovoj desktop verziji.
+```txt
+Štampaj / preuzmi QR list
+```
+
+sada pravi A4 list sa:
+
+```txt
+12 kartica
+bez razmaka između kartica
+bez zaobljenih ivica
+tankim crnim linijama za sečenje
+čitljivijim tekstom linka
+```
+
+Jedna kartica je približno:
+
+```txt
+6.2 cm × 6.3 cm
+```
+
+Na vrhu piše:
+
+```txt
+QR kartice za zakazivanje termina
+Odštampajte list, isecite kartice i podelite ih mušterijama.
+```
 
 ## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=desktop-qr-same-as-android-v85
+https://tvoj-render-link.onrender.com/pro-check.html?v=desktop-qr-cards-cut-v63
+```
+
+Mora da piše:
+
+```txt
+Desktop QR Cards Cut v63 je aktivna
 ```

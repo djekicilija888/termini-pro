@@ -1,20 +1,18 @@
-# Owner Clean Header v70
+# Login Text v53
 
-Ulepšan gornji deo desktop panela:
+Promenjeno na glavnoj strani:
 
-- uklonjeno nepotrebno `Panel firme`
-- gore levo se prikazuje logo + naziv firme
-- dugme `Odjava` je gore desno
-- meni kartica ostaje ispod toga
+- gore na login kartici sada piše: `Prijavi se`
+- na crnom dugmetu sada piše: `Uloguj se`
 
-## Provera posle deploy-a
+## Provera
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=owner-clean-header-v70
+https://tvoj-render-link.onrender.com/pro-check.html?v=login-text-v53
 ```
 
 Mora da piše:
 
 ```txt
-Owner Clean Header v70 je aktivna
+Login Text v53 je aktivna
 ```

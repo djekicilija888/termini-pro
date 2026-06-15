@@ -1,20 +1,21 @@
-# Owner No Registration Test v81
+# Owner Manual Appointment Toggle v77
 
-Promenjeno je samo za testiranje na Render Free:
+Promenjeno u kartici `Termini`:
 
-- na login strani dodato je dugme `Uđi bez registracije`
-- ako je baza prazna posle deploy-a, server automatski napravi test firmu i vlasnika
-- korisnik ulazi direktno u owner panel
-- ovo je privremeno i kasnije se lako uklanja da opet ne može da se uđe bez registracije
+- obrazac za ručno dodavanje termina više nije odmah otvoren
+- stoji dugme `+ Ručno dodaj termin za mušteriju`
+- kada se klikne, otvara se ceo obrazac
+- kada se klikne ponovo, obrazac se zatvara
+- sve funkcije iz v76 ostaju
 
 ## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=owner-no-registration-test-v81
+https://tvoj-render-link.onrender.com/pro-check.html?v=owner-manual-appointment-toggle-v77
 ```
 
 Mora da piše:
 
 ```txt
-Owner No Registration Test v81 je aktivna
+Owner Manual Appointment Toggle v77 je aktivna
 ```

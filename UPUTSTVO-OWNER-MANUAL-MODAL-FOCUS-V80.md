@@ -1,20 +1,24 @@
-# Owner Manual Modal Focus v80
+# Owner Facebook Style Header v74
 
-Promenjeno:
+Header na desktop panelu sada radi kao gornja traka:
 
-- pozadina iza ručnog dodavanja termina je dosta tamnija
-- dodato je blago zamućenje pozadine
-- iskačući prozor je malo širi
-- fokus je sada na obrascu, stvari iza se mnogo manje vide
+- zalepljen je za sam vrh ekrana
+- ide celom širinom ekrana
+- nema zaobljene ivice
+- nema marginu levo/desno
+- nema ikonicu/slovo pored naziva firme
+- levo stoji naziv firme
+- desno stoji dugme `Odjava`
+- stranica skroluje ispod njega
 
 ## Provera posle deploy-a
 
 ```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=owner-manual-modal-focus-v80
+https://tvoj-render-link.onrender.com/pro-check.html?v=owner-facebook-style-header-v74
 ```
 
 Mora da piše:
 
 ```txt
-Owner Manual Modal Focus v80 je aktivna
+Owner Facebook Style Header v74 je aktivna
 ```

@@ -1,28 +1,13 @@
-# Clean Dashboard v43
+# Termini Platforma Pro
 
-Izmene:
+Dodato: više radnika, QR kod, kopiranje linka, email/SMS/Viber log obaveštenja, promena/otkazivanje termina preko linka, paketi/pretplate u superadmin panelu, Google Play polja, lepši profil firme i pretraga po gradu/delatnosti.
 
-- Dashboard ne prikazuje veliki link blok.
-- Kopiranje linka je prebačeno u posebnu karticu `Link za zakazivanje`.
-- Uklonjen je QR/slika blok sa dashboarda.
-- Uklonjen je prikaz `basic`, `premium`, `trial` i paketa sa dashboarda.
-- Osnovna strana prikazuje samo:
-  - Danas
-  - 7 dana
-  - Radnici
-  - Usluge
-  - Najbliži/zakazani termini
+Lokalno:
 
-## Provera
-
-Otvori:
-
-```txt
-https://tvoj-render-link.onrender.com/pro-check.html?v=clean-dashboard-v43
+```bash
+npm install
+copy .env.example .env
+npm start
 ```
 
-Treba da piše:
-
-```txt
-Clean Dashboard v43 je aktivna
-```
+Superadmin: `admin@platform.local` / `platform123` lokalno. Na Render-u promeni `SUPERADMIN_PASSWORD`.
