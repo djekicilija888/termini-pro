@@ -42,11 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         });
 
-        localStorage.setItem('token', data.token);
-
         if (data.role === 'admin') {
+          localStorage.setItem('token', data.token);
           location.href = '/superadmin.html';
         } else {
+          localStorage.setItem('terminiOwnerToken', data.token);
           location.href = '/owner.html';
         }
       } catch (err) {
@@ -75,7 +75,7 @@ function addNoRegistrationTestButton(){
     btn.disabled = true;
     try {
       const data = await api('/api/auth/test-owner-login', { method: 'POST' });
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('terminiOwnerToken', data.token);
       location.href = '/owner.html';
     } catch (err) {
       btn.disabled = false;
