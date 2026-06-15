@@ -200,7 +200,6 @@ async function loadBookingLink(){
  try{
   let d=await api('/api/owner/dashboard');
   window.ownerBusinessForPrint=d.business||{};
-  window.ownerStaffCountForPrint=(d.cards&&d.cards.staff)||0;
   if(typeof bookingUrlInput!=='undefined')bookingUrlInput.value=d.business.booking_url;
   if(typeof openPublicLink!=='undefined')openPublicLink.href=d.business.booking_url;
   if(typeof bookingLinkBusinessName!=='undefined')bookingLinkBusinessName.textContent=d.business.name||'Firma';
@@ -402,81 +401,100 @@ async function printQrPdfList(){
 }
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
 
-function splitPosterText(value,max){
-  const words=String(value||'').split(/\s+/).filter(Boolean);
-  const lines=[];
-  let line='';
-  for(const w of words){
-    if((line+' '+w).trim().length>max){
-      if(line)lines.push(line);
-      line=w;
-    }else{
-      line=(line+' '+w).trim();
-    }
-  }
-  if(line)lines.push(line);
-  return lines;
-}
-
 function printA4DoorPoster(){
  try{
   let link=bookingUrlInput.value;
   let b=window.ownerBusinessForPrint||{};
   let name=b.name||'Vaša firma';
-  let staffCount=Number(window.ownerStaffCountForPrint||0);
-  let subtitle=staffCount>1
-    ? 'Bez poziva — izaberite uslugu, radnika i slobodan termin.'
-    : 'Bez poziva — izaberite uslugu i slobodan termin.';
   let phones=ownerPhoneParts(b.phone);
   let place=[];
   if(b.city)place.push(b.city);
   if(b.instagram)place.push(b.instagram);
-  let footerLines=[];
+
+  const svgEsc=(v)=>String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const splitFixedPoster=(value,max)=>{
+    const out=[];
+    let rest=String(value||'');
+    while(rest.length>max){
+      out.push(rest.slice(0,max));
+      rest=rest.slice(max);
+    }
+    if(rest.trim())out.push(rest);
+    return out;
+  };
+
+  const staffCount=Number(b.staff_count||b.staffCount||0);
+  const subtitle=staffCount>1
+    ? 'Bez poziva — izaberite uslugu, radnika i slobodan termin.'
+    : 'Bez poziva — izaberite uslugu i slobodan termin.';
+
+  const linkLines=splitFixedPoster(link,38).slice(0,3);
+  const footerLines=[];
   if(phones.length)footerLines.push('Telefoni: '+phones.join('  •  '));
   if(place.length)footerLines.push(place.join('  •  '));
-  let footerHtml=footerLines.slice(0,3).flatMap(line=>splitPosterText(line,68).slice(0,2)).map(line=>`<div>${htmlEsc(line)}</div>`).join('');
+
+  let footerSvg='';
+  let footerY=772;
+  footerLines.slice(0,3).forEach(line=>{
+    splitFixedPoster(line,68).slice(0,2).forEach(safeLine=>{
+      footerSvg += `<text x="297.5" y="${footerY}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#111827">${svgEsc(safeLine)}</text>`;
+      footerY += 15;
+    });
+  });
+
+  let linkSvg='';
+  let linkY=728;
+  linkLines.forEach(line=>{
+    linkSvg += `<text x="297.5" y="${linkY}" text-anchor="middle" font-size="10.5" fill="#374151">${svgEsc(line)}</text>`;
+    linkY += 14;
+  });
+
   let qr=ownerQrObjectUrl||ownerQrPreview.src;
   let w=window.open('','_blank');
   if(!w)throw Error('Browser je blokirao prozor za štampanje.');
   w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>A4 poster</title>
   <style>
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif}
+    html,body{margin:0;background:white;color:#111827;font-family:Arial,Helvetica,sans-serif}
     .no-print{position:fixed;right:16px;top:16px;z-index:5}
-    .no-print button{background:#111827;color:#fff;border:0;padding:12px 18px;font-weight:900;cursor:pointer;border-radius:8px}
-    .page{position:relative;width:210mm;height:297mm;margin:0 auto;background:#fff;overflow:hidden}
-    .poster-border{position:absolute;left:9.9mm;top:9.9mm;width:190.1mm;height:277.3mm;border:1.06mm solid #111827;border-radius:6.35mm}
-    .header{position:absolute;left:16.2mm;top:16.2mm;width:177.5mm;height:38.5mm;background:#111827;color:#fff;border-radius:6.35mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-    .header .line1{font-size:10.2mm;line-height:12.3mm;font-weight:900;letter-spacing:.15mm}
-    .header .line2{font-size:8.8mm;line-height:10.5mm;font-weight:900;letter-spacing:.12mm}
-    .business{position:absolute;left:16mm;top:67.8mm;width:178mm;margin:0;text-align:center;font-size:9.5mm;line-height:10.5mm;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#111827}
-    .subtitle{position:absolute;left:14mm;top:80.2mm;width:182mm;margin:0;text-align:center;font-size:5.3mm;line-height:6.2mm;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .qr-card{position:absolute;left:37.0mm;top:91.7mm;width:135.8mm;height:135.8mm;border:0.7mm solid #d1d5db;border-radius:8.5mm;background:#f9fafb}
-    .qr-card img{position:absolute;left:15.9mm;top:13.4mm;width:104.1mm;height:104.1mm;background:#fff;image-rendering:pixelated}
-    .instruction{position:absolute;left:12mm;top:236.0mm;width:186mm;margin:0;text-align:center;font-size:5.65mm;line-height:7mm;font-weight:900;color:#111827}
-    .link-title{position:absolute;left:12mm;top:247.0mm;width:186mm;margin:0;text-align:center;font-size:4.05mm;line-height:5mm;color:#374151}
-    .link{position:absolute;left:22.5mm;top:255.0mm;width:165mm;margin:0;text-align:center;font-size:3.7mm;line-height:4.95mm;word-break:break-all;color:#374151}
-    .footer{position:absolute;left:13mm;top:270.5mm;width:184mm;text-align:center;font-size:4.05mm;line-height:5.3mm;font-weight:900;color:#111827;word-break:break-word}
+    .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
+    .page{width:210mm;height:297mm;margin:0 auto;background:white;display:flex;align-items:center;justify-content:center}
+    svg.poster-svg{width:210mm;height:297mm;display:block;background:white}
     @page{size:A4;margin:0}
-    @media print{.no-print{display:none}body{background:#fff}.page{margin:0}}
+    @media print{
+      .no-print{display:none}
+      html,body{width:210mm;height:297mm}
+      .page{width:210mm;height:297mm;margin:0}
+      svg.poster-svg{width:210mm;height:297mm}
+    }
   </style></head><body>
    <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
    <div class="page">
-    <div class="poster-border"></div>
-    <div class="header"><div class="line1">SKENIRAJTE I ZAKAŽITE</div><div class="line2">TERMIN ONLINE</div></div>
-    <h2 class="business">${htmlEsc(name)}</h2>
-    <p class="subtitle">${htmlEsc(subtitle)}</p>
-    <div class="qr-card"><img src="${qr}" alt="QR kod"></div>
-    <p class="instruction">Otvorite kameru telefona i skenirajte QR kod</p>
-    <p class="link-title">Link za zakazivanje:</p>
-    <p class="link">${htmlEsc(link)}</p>
-    ${footerHtml?`<div class="footer">${footerHtml}</div>`:''}
+    <svg class="poster-svg" viewBox="0 0 595 842" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="595" height="842" fill="#ffffff"/>
+      <rect x="28" y="28" width="539" height="786" rx="18" ry="18" fill="none" stroke="#111827" stroke-width="3"/>
+      <rect x="46" y="46" width="503" height="109" rx="18" ry="18" fill="#111827"/>
+      <text x="297.5" y="93" text-anchor="middle" font-size="29" font-weight="700" fill="#ffffff">SKENIRAJTE I ZAKAŽITE</text>
+      <text x="297.5" y="128" text-anchor="middle" font-size="25" font-weight="700" fill="#ffffff">TERMIN ONLINE</text>
+
+      <text x="297.5" y="205" text-anchor="middle" font-size="27" font-weight="700" fill="#111827">${svgEsc(name)}</text>
+      <text x="297.5" y="233" text-anchor="middle" font-size="15" fill="#374151">${svgEsc(subtitle)}</text>
+
+      <rect x="105" y="260" width="385" height="385" rx="24" ry="24" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+      <image href="${qr}" x="150" y="298" width="295" height="295" preserveAspectRatio="none"/>
+
+      <text x="297.5" y="680" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Otvorite kameru telefona i skenirajte QR kod</text>
+      <text x="297.5" y="708" text-anchor="middle" font-size="11.5" fill="#374151">Link za zakazivanje:</text>
+      ${linkSvg}
+      ${footerSvg}
+    </svg>
    </div>
    <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
   </body></html>`);
   w.document.close();
  }catch(e){msg(e.message,'err')}
 }
+
 if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{await loadBookingLink();printA4DoorPoster()};
 
 
