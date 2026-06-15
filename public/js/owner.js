@@ -200,6 +200,7 @@ async function loadBookingLink(){
  try{
   let d=await api('/api/owner/dashboard');
   window.ownerBusinessForPrint=d.business||{};
+  window.ownerStaffCountForPrint=(d.cards&&d.cards.staff)||0;
   if(typeof bookingUrlInput!=='undefined')bookingUrlInput.value=d.business.booking_url;
   if(typeof openPublicLink!=='undefined')openPublicLink.href=d.business.booking_url;
   if(typeof bookingLinkBusinessName!=='undefined')bookingLinkBusinessName.textContent=d.business.name||'Firma';
@@ -326,8 +327,8 @@ async function printQrPdfList(){
         const imgTop=y+32;
         const imgY=pageH-imgTop-qrSize;
         content += `q ${qrSize} 0 0 ${qrSize} ${imgX} ${imgY} cm /Im0 Do Q\n`;
-        centeredText(cx,y+132,10.8,true,'Link za zakazivanje:');
-        linkLines.forEach((ln,idx)=>centeredText(cx,y+147+idx*12,10.4,false,ln));
+        centeredText(cx,y+140,10.8,true,'Link za zakazivanje:');
+        linkLines.forEach((ln,idx)=>centeredText(cx,y+155+idx*12,10.4,false,ln));
       }
     }
 
@@ -401,11 +402,31 @@ async function printQrPdfList(){
 }
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
 
+function splitPosterText(value,max){
+  const words=String(value||'').split(/\s+/).filter(Boolean);
+  const lines=[];
+  let line='';
+  for(const w of words){
+    if((line+' '+w).trim().length>max){
+      if(line)lines.push(line);
+      line=w;
+    }else{
+      line=(line+' '+w).trim();
+    }
+  }
+  if(line)lines.push(line);
+  return lines;
+}
+
 function printA4DoorPoster(){
  try{
   let link=bookingUrlInput.value;
   let b=window.ownerBusinessForPrint||{};
   let name=b.name||'Vaša firma';
+  let staffCount=Number(window.ownerStaffCountForPrint||0);
+  let subtitle=staffCount>1
+    ? 'Bez poziva — izaberite uslugu, radnika i slobodan termin.'
+    : 'Bez poziva — izaberite uslugu i slobodan termin.';
   let phones=ownerPhoneParts(b.phone);
   let place=[];
   if(b.city)place.push(b.city);
@@ -413,31 +434,44 @@ function printA4DoorPoster(){
   let footerLines=[];
   if(phones.length)footerLines.push('Telefoni: '+phones.join('  •  '));
   if(place.length)footerLines.push(place.join('  •  '));
-  let footer=footerLines.join('<br>');
+  let footerHtml=footerLines.slice(0,3).flatMap(line=>splitPosterText(line,68).slice(0,2)).map(line=>`<div>${htmlEsc(line)}</div>`).join('');
   let qr=ownerQrObjectUrl||ownerQrPreview.src;
   let w=window.open('','_blank');
   if(!w)throw Error('Browser je blokirao prozor za štampanje.');
   w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>A4 poster</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;background:white;color:#111827;font-family:Arial,Helvetica,sans-serif}
-    .page{width:210mm;min-height:297mm;margin:0 auto;padding:14mm 13mm;display:flex;align-items:center;justify-content:center}
-    .poster{width:100%;min-height:266mm;border:3px solid #111827;border-radius:18px;padding:18px;text-align:center;display:flex;flex-direction:column}
-    .header{background:#111827;color:white;border-radius:18px;padding:22px 16px;margin-bottom:28px}
-    .header h1{margin:0;font-size:38px;line-height:1.12;letter-spacing:.5px}
-    .business{font-size:31px;line-height:1.2;font-weight:900;margin:0 0 8px}
-    .subtitle{font-size:18px;color:#374151;margin:0 0 28px}
-    .qr-card{margin:0 auto 22px;width:132mm;min-height:132mm;border:2px solid #d1d5db;border-radius:24px;background:#f9fafb;display:flex;align-items:center;justify-content:center;padding:16px}
-    .qr-card img{width:112mm;height:112mm;background:white}.instruction{font-size:21px;font-weight:900;margin:6px 0 20px}
-    .link-title{font-size:15px;color:#374151;margin:0 0 8px}.link{max-width:165mm;margin:0 auto;font-size:14px;line-height:1.35;word-break:break-all;color:#374151}
-    .footer{margin-top:auto;color:#111827;padding:8px 16px 0;font-size:15px;font-weight:800;word-break:break-word;line-height:1.45}
-    .no-print{position:fixed;right:16px;top:16px}.no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
-    @page{size:A4;margin:0}@media print{.no-print{display:none}.page{width:210mm;min-height:297mm;margin:0;padding:12mm}.poster{min-height:273mm}}
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif}
+    .no-print{position:fixed;right:16px;top:16px;z-index:5}
+    .no-print button{background:#111827;color:#fff;border:0;padding:12px 18px;font-weight:900;cursor:pointer;border-radius:8px}
+    .page{position:relative;width:210mm;height:297mm;margin:0 auto;background:#fff;overflow:hidden}
+    .poster-border{position:absolute;left:9.9mm;top:9.9mm;width:190.1mm;height:277.3mm;border:1.06mm solid #111827;border-radius:6.35mm}
+    .header{position:absolute;left:16.2mm;top:16.2mm;width:177.5mm;height:38.5mm;background:#111827;color:#fff;border-radius:6.35mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .header .line1{font-size:10.2mm;line-height:12.3mm;font-weight:900;letter-spacing:.15mm}
+    .header .line2{font-size:8.8mm;line-height:10.5mm;font-weight:900;letter-spacing:.12mm}
+    .business{position:absolute;left:16mm;top:67.8mm;width:178mm;margin:0;text-align:center;font-size:9.5mm;line-height:10.5mm;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#111827}
+    .subtitle{position:absolute;left:14mm;top:80.2mm;width:182mm;margin:0;text-align:center;font-size:5.3mm;line-height:6.2mm;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .qr-card{position:absolute;left:37.0mm;top:91.7mm;width:135.8mm;height:135.8mm;border:0.7mm solid #d1d5db;border-radius:8.5mm;background:#f9fafb}
+    .qr-card img{position:absolute;left:15.9mm;top:13.4mm;width:104.1mm;height:104.1mm;background:#fff;image-rendering:pixelated}
+    .instruction{position:absolute;left:12mm;top:236.0mm;width:186mm;margin:0;text-align:center;font-size:5.65mm;line-height:7mm;font-weight:900;color:#111827}
+    .link-title{position:absolute;left:12mm;top:247.0mm;width:186mm;margin:0;text-align:center;font-size:4.05mm;line-height:5mm;color:#374151}
+    .link{position:absolute;left:22.5mm;top:255.0mm;width:165mm;margin:0;text-align:center;font-size:3.7mm;line-height:4.95mm;word-break:break-all;color:#374151}
+    .footer{position:absolute;left:13mm;top:270.5mm;width:184mm;text-align:center;font-size:4.05mm;line-height:5.3mm;font-weight:900;color:#111827;word-break:break-word}
+    @page{size:A4;margin:0}
+    @media print{.no-print{display:none}body{background:#fff}.page{margin:0}}
   </style></head><body>
    <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
-   <div class="page"><section class="poster"><div class="header"><h1>SKENIRAJTE I ZAKAŽITE<br>TERMIN ONLINE</h1></div>
-   <h2 class="business">${htmlEsc(name)}</h2><p class="subtitle">Bez poziva — izaberite uslugu i slobodan termin.</p>
-   <div class="qr-card"><img src="${qr}" alt="QR kod"></div><p class="instruction">Otvorite kameru telefona i skenirajte QR kod</p>
-   <p class="link-title">Link za zakazivanje:</p><p class="link">${htmlEsc(link)}</p>${footer?`<div class="footer">${footer}</div>`:''}</section></div>
+   <div class="page">
+    <div class="poster-border"></div>
+    <div class="header"><div class="line1">SKENIRAJTE I ZAKAŽITE</div><div class="line2">TERMIN ONLINE</div></div>
+    <h2 class="business">${htmlEsc(name)}</h2>
+    <p class="subtitle">${htmlEsc(subtitle)}</p>
+    <div class="qr-card"><img src="${qr}" alt="QR kod"></div>
+    <p class="instruction">Otvorite kameru telefona i skenirajte QR kod</p>
+    <p class="link-title">Link za zakazivanje:</p>
+    <p class="link">${htmlEsc(link)}</p>
+    ${footerHtml?`<div class="footer">${footerHtml}</div>`:''}
+   </div>
    <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
   </body></html>`);
   w.document.close();
