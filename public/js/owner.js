@@ -200,6 +200,7 @@ async function loadBookingLink(){
  try{
   let d=await api('/api/owner/dashboard');
   window.ownerBusinessForPrint=d.business||{};
+  window.ownerStaffCount=(d.cards&&d.cards.staff)||0;
   if(typeof bookingUrlInput!=='undefined')bookingUrlInput.value=d.business.booking_url;
   if(typeof openPublicLink!=='undefined')openPublicLink.href=d.business.booking_url;
   if(typeof bookingLinkBusinessName!=='undefined')bookingLinkBusinessName.textContent=d.business.name||'Firma';
@@ -410,63 +411,47 @@ function printA4DoorPoster(){
   let place=[];
   if(b.city)place.push(b.city);
   if(b.instagram)place.push(b.instagram);
+  let footerLines=[];
+  if(phones.length)footerLines.push('Telefoni: '+phones.join('  •  '));
+  if(place.length)footerLines.push(place.join('  •  '));
+  let qr=ownerQrObjectUrl||ownerQrPreview.src;
+  let staffCount=Number(window.ownerStaffCount||b.staff_count||b.staffCount||0);
+  let posterSubtitle=staffCount>1
+   ? 'Bez poziva — izaberite uslugu, radnika i slobodan termin.'
+   : 'Bez poziva — izaberite uslugu i slobodan termin.';
 
-  const svgEsc=(v)=>String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const splitFixedPoster=(value,max)=>{
+  const splitPosterText=(text,max)=>{
     const out=[];
-    let rest=String(value||'');
-    while(rest.length>max){
-      out.push(rest.slice(0,max));
-      rest=rest.slice(max);
-    }
+    let rest=String(text||'');
+    while(rest.length>max){out.push(rest.slice(0,max));rest=rest.slice(max)}
     if(rest.trim())out.push(rest);
     return out;
   };
 
-  const staffCount=Number(b.staff_count||b.staffCount||0);
-  const subtitle=staffCount>1
-    ? 'Bez poziva — izaberite uslugu, radnika i slobodan termin.'
-    : 'Bez poziva — izaberite uslugu i slobodan termin.';
+  const linkLines=splitPosterText(link,38).slice(0,3);
+  const linkSvg=linkLines.map((ln,i)=>`<text x="297.5" y="${728+i*14}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="400" fill="#374151">${htmlEsc(ln)}</text>`).join('');
 
-  const linkLines=splitFixedPoster(link,38).slice(0,3);
-  const footerLines=[];
-  if(phones.length)footerLines.push('Telefoni: '+phones.join('  •  '));
-  if(place.length)footerLines.push(place.join('  •  '));
-
-  let footerSvg='';
   let footerY=772;
+  const footerSvg=[];
   footerLines.slice(0,3).forEach(line=>{
-    splitFixedPoster(line,68).slice(0,2).forEach(safeLine=>{
-      footerSvg += `<text x="297.5" y="${footerY}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#111827">${svgEsc(safeLine)}</text>`;
-      footerY += 15;
+    splitPosterText(line,68).slice(0,2).forEach(safeLine=>{
+      footerSvg.push(`<text x="297.5" y="${footerY}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="700" fill="#111827">${htmlEsc(safeLine)}</text>`);
+      footerY+=15;
     });
   });
 
-  let linkSvg='';
-  let linkY=728;
-  linkLines.forEach(line=>{
-    linkSvg += `<text x="297.5" y="${linkY}" text-anchor="middle" font-size="10.5" fill="#374151">${svgEsc(line)}</text>`;
-    linkY += 14;
-  });
-
-  let qr=ownerQrObjectUrl||ownerQrPreview.src;
   let w=window.open('','_blank');
   if(!w)throw Error('Browser je blokirao prozor za štampanje.');
   w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>A4 poster</title>
   <style>
     *{box-sizing:border-box}
-    html,body{margin:0;background:white;color:#111827;font-family:Arial,Helvetica,sans-serif}
-    .no-print{position:fixed;right:16px;top:16px;z-index:5}
-    .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
-    .page{width:210mm;height:297mm;margin:0 auto;background:white;display:flex;align-items:center;justify-content:center}
-    svg.poster-svg{width:210mm;height:297mm;display:block;background:white}
+    html,body{margin:0;padding:0;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif}
+    .no-print{position:fixed;right:16px;top:16px;z-index:10}
+    .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer;border-radius:8px}
+    .page{width:595pt;height:842pt;margin:0 auto;background:white;overflow:hidden}
+    .poster-svg{display:block;width:595pt;height:842pt;background:white}
     @page{size:A4;margin:0}
-    @media print{
-      .no-print{display:none}
-      html,body{width:210mm;height:297mm}
-      .page{width:210mm;height:297mm;margin:0}
-      svg.poster-svg{width:210mm;height:297mm}
-    }
+    @media print{.no-print{display:none}body{background:white}.page{margin:0;width:595pt;height:842pt}}
   </style></head><body>
    <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
    <div class="page">
@@ -474,19 +459,20 @@ function printA4DoorPoster(){
       <rect x="0" y="0" width="595" height="842" fill="#ffffff"/>
       <rect x="28" y="28" width="539" height="786" rx="18" ry="18" fill="none" stroke="#111827" stroke-width="3"/>
       <rect x="46" y="46" width="503" height="109" rx="18" ry="18" fill="#111827"/>
-      <text x="297.5" y="93" text-anchor="middle" font-size="29" font-weight="700" fill="#ffffff">SKENIRAJTE I ZAKAŽITE</text>
-      <text x="297.5" y="128" text-anchor="middle" font-size="25" font-weight="700" fill="#ffffff">TERMIN ONLINE</text>
 
-      <text x="297.5" y="205" text-anchor="middle" font-size="27" font-weight="700" fill="#111827">${svgEsc(name)}</text>
-      <text x="297.5" y="233" text-anchor="middle" font-size="15" fill="#374151">${svgEsc(subtitle)}</text>
+      <text x="297.5" y="93" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" fill="#ffffff">SKENIRAJTE I ZAKAŽITE</text>
+      <text x="297.5" y="128" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#ffffff">TERMIN ONLINE</text>
+
+      <text x="297.5" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#111827">${htmlEsc(name)}</text>
+      <text x="297.5" y="233" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#374151">${htmlEsc(posterSubtitle)}</text>
 
       <rect x="105" y="260" width="385" height="385" rx="24" ry="24" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
-      <image href="${qr}" x="150" y="298" width="295" height="295" preserveAspectRatio="none"/>
+      <image href="${htmlEsc(qr)}" x="150" y="298" width="295" height="295" preserveAspectRatio="none"/>
 
-      <text x="297.5" y="680" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Otvorite kameru telefona i skenirajte QR kod</text>
-      <text x="297.5" y="708" text-anchor="middle" font-size="11.5" fill="#374151">Link za zakazivanje:</text>
+      <text x="297.5" y="680" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#111827">Otvorite kameru telefona i skenirajte QR kod</text>
+      <text x="297.5" y="708" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="400" fill="#374151">Link za zakazivanje:</text>
       ${linkSvg}
-      ${footerSvg}
+      ${footerSvg.join('')}
     </svg>
    </div>
    <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
@@ -494,7 +480,6 @@ function printA4DoorPoster(){
   w.document.close();
  }catch(e){msg(e.message,'err')}
 }
-
 if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{await loadBookingLink();printA4DoorPoster()};
 
 
