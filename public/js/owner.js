@@ -223,7 +223,10 @@ async function printQrPdfList(){
   const b=window.ownerBusinessForPrint||{};
   const businessName=(b.name||'Vaša firma').trim();
 const phones=ownerPhoneParts(b.phone);
-const phoneText=(phones.join(' / ')||'Telefon nije unet').slice(0,58);
+const phoneList=(phones.length?phones:['Telefon nije unet'])
+  .map(p=>String(p).trim())
+  .filter(Boolean)
+  .slice(0,4);
 const locationText=((b.address?b.address.trim():'') + ((b.address&&b.city)?', ':'') + (b.city?b.city.trim():'')) || 'Lokacija nije uneta';
 const emailText=(b.email||'Email nije unet').trim();
   const splitWords=(value,maxChars,maxLines=3)=>{
@@ -353,7 +356,9 @@ const emailText=(b.email||'Email nije unet').trim();
 const nameMaxWidth=cardW*0.60-40;
 const nameLines=wrapTextToWidth(businessName,nameFontSize,true,nameMaxWidth,3);
 const locationLines=splitWords(locationText,36,3);
-const phoneLines=splitWords(phoneText,31,2);
+const phoneFontSize=7;
+const phoneLineGap=10;
+const phoneLines=phoneList;
 const emailLines=splitWords(emailText,24,2);
 
     const yPdf=(y)=>pageH-y;
@@ -386,13 +391,19 @@ const emailLines=splitWords(emailText,24,2);
 
         setFill(0,0,0);
         nameLines.forEach((ln,idx)=>{
-  text(x+15,y+24+idx*16,nameFontSize,true,ln);
-});
+        text(x+15,y+24+idx*16,nameFontSize,true,ln);
+        });
 
         const infoY=y+82;
-        phoneLines.forEach((ln,idx)=>text(x+15,infoY+idx*13,10.6,false,ln));
-        locationLines.forEach((ln,idx)=>text(x+15,infoY+31+idx*12,10.0,false,ln));
+        phoneLines.forEach((ln,idx)=>{
+        text(x+15,infoY+idx*phoneLineGap,phoneFontSize,false,ln);
+        });
 
+        const locationStartY=infoY+phoneLines.length*phoneLineGap+15;
+        locationLines.forEach((ln,idx)=>{
+        text(x+15,locationStartY+idx*11,9.4,false,ln);
+        });
+        
         centeredText(qrCenterX,y+28,8,true,'ZAKAŽITE TERMIN');
         centeredText(qrCenterX,y+39,8,true,'ONLINE');
 
