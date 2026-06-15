@@ -223,7 +223,7 @@ async function printQrPdfList(){
   const b=window.ownerBusinessForPrint||{};
   const businessName=(b.name||'Vaša firma').trim();
   const phones=ownerPhoneParts(b.phone);
-  const phoneText=(phones.join(' / ')||'Telefon nije unet').slice(0,60);
+  const phoneText=(phones.join(' / ')||'Telefon nije unet').slice(0,58);
   const locationText=((b.address?b.address.trim():'') + ((b.address&&b.city)?', ':'') + (b.city?b.city.trim():'')) || 'Lokacija nije uneta';
 
   const splitWords=(value,maxChars,maxLines=3)=>{
@@ -294,6 +294,7 @@ async function printQrPdfList(){
 
   const textMeasureCanvas=document.createElement('canvas');
   const textMeasureCtx=textMeasureCanvas.getContext('2d');
+
   function pdfTextWidthApprox(value,size,bold){
     textMeasureCtx.font=`${bold?'bold ':''}${size}px Helvetica, Arial, sans-serif`;
     return textMeasureCtx.measureText(String(value||'')).width;
@@ -306,11 +307,11 @@ async function printQrPdfList(){
     const gutterX=14, gutterY=10;
     const cardW=(pageW-marginX*2-gutterX)/cols;
     const cardH=(pageH-marginY*2-gutterY*(rows-1))/rows;
-    const qrSize=92;
+    const qrSize=90;
     const qrImage=await qrToRgbImage(qrSource);
-    const nameLines=splitWords(businessName,24,2);
-    const locationLines=splitWords(locationText,34,3);
-    const phoneLines=splitWords(phoneText,28,2);
+    const nameLines=splitWords(businessName,25,2);
+    const locationLines=splitWords(locationText,36,3);
+    const phoneLines=splitWords(phoneText,31,2);
 
     const yPdf=(y)=>pageH-y;
     let content='';
@@ -318,7 +319,9 @@ async function printQrPdfList(){
     const setStroke=(r,g,b)=>{ content += `${r} ${g} ${b} RG\n`; };
     const line=(x1,y1,x2,y2)=>{ content += `${x1.toFixed(2)} ${yPdf(y1).toFixed(2)} m ${x2.toFixed(2)} ${yPdf(y2).toFixed(2)} l S\n`; };
     const rectStroke=(x,y,w,h)=>{ content += `${x.toFixed(2)} ${yPdf(y+h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S\n`; };
-    const text=(x,y,size,bold,value)=>{ content += `BT /F${bold?2:1} ${size} Tf ${x.toFixed(2)} ${yPdf(y).toFixed(2)} Td (${escapePdfText(value)}) Tj ET\n`; };
+    const text=(x,y,size,bold,value)=>{
+      content += `BT /F${bold?2:1} ${size} Tf ${x.toFixed(2)} ${yPdf(y).toFixed(2)} Td (${escapePdfText(value)}) Tj ET\n`;
+    };
     const centeredText=(x,y,size,bold,value)=>{
       const approxWidth=pdfTextWidthApprox(value,size,bold);
       text(x-approxWidth/2,y,size,bold,value);
@@ -329,32 +332,31 @@ async function printQrPdfList(){
       for(let c=0;c<cols;c++){
         const x=marginX+c*(cardW+gutterX);
         const y=marginY+r*(cardH+gutterY);
-        const cx=x+cardW/2;
-        const dividerX=x+cardW*0.61;
+        const dividerX=x+cardW*0.60;
         const qrCenterX=x+cardW*0.80;
 
-        setStroke(0.73,0.73,0.73);
+        setStroke(0.72,0.72,0.72);
         rectStroke(x,y,cardW,cardH);
+
         setStroke(0.82,0.82,0.82);
         line(dividerX,y+18,dividerX,y+cardH-18);
 
         setFill(0,0,0);
-        const baseNameY=y+26;
         if(nameLines.length===1){
-          text(x+16,baseNameY,17.2,true,nameLines[0]);
+          text(x+15,y+27,17,true,nameLines[0]);
         }else{
-          text(x+16,baseNameY-2,15.2,true,nameLines[0]||businessName);
-          text(x+16,baseNameY+15,15.2,true,nameLines[1]||'');
+          text(x+15,y+22,14.5,true,nameLines[0]||businessName);
+          text(x+15,y+39,14.5,true,nameLines[1]||'');
         }
 
-        const leftTextY=Math.max(y+72, y+cardH-52);
-        phoneLines.forEach((ln,idx)=>text(x+16,leftTextY+idx*13,10.6,false,ln));
-        locationLines.forEach((ln,idx)=>text(x+16,leftTextY+30+idx*12,10.1,false,ln));
+        const infoY=y+76;
+        phoneLines.forEach((ln,idx)=>text(x+15,infoY+idx*13,10.6,false,ln));
+        locationLines.forEach((ln,idx)=>text(x+15,infoY+31+idx*12,10.0,false,ln));
 
-        centeredText(qrCenterX,y+23,11.4,true,'Zakažite termin online');
+        centeredText(qrCenterX,y+24,11.2,true,'Zakažite termin online');
 
         const imgX=qrCenterX-qrSize/2;
-        const imgTop=y+34;
+        const imgTop=y+36;
         const imgY=pageH-imgTop-qrSize;
         content += `q ${qrSize} 0 0 ${qrSize} ${imgX.toFixed(2)} ${imgY.toFixed(2)} cm /Im0 Do Q\n`;
       }
@@ -363,6 +365,7 @@ async function printQrPdfList(){
     const encoder=new TextEncoder();
     const objs=[];
     const add=(body)=>objs.push(typeof body==='string'?encoder.encode(body):body);
+
     add('<< /Type /Catalog /Pages 2 0 R >>');
     add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
     add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> /XObject << /Im0 6 0 R >> >> /Contents 7 0 R >>');
@@ -372,19 +375,27 @@ async function printQrPdfList(){
     const imgHeader=encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${qrImage.width} /Height ${qrImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ${qrImage.bytes.length} >>\nstream\n`);
     const imgFooter=encoder.encode('\nendstream');
     const imgObj=new Uint8Array(imgHeader.length+qrImage.bytes.length+imgFooter.length);
-    imgObj.set(imgHeader,0); imgObj.set(qrImage.bytes,imgHeader.length); imgObj.set(imgFooter,imgHeader.length+qrImage.bytes.length); add(imgObj);
+    imgObj.set(imgHeader,0);
+    imgObj.set(qrImage.bytes,imgHeader.length);
+    imgObj.set(imgFooter,imgHeader.length+qrImage.bytes.length);
+    add(imgObj);
 
     const contentBytes=encoder.encode(content);
     const contHeader=encoder.encode(`<< /Length ${contentBytes.length} >>\nstream\n`);
     const contFooter=encoder.encode('\nendstream');
     const contObj=new Uint8Array(contHeader.length+contentBytes.length+contFooter.length);
-    contObj.set(contHeader,0); contObj.set(contentBytes,contHeader.length); contObj.set(contFooter,contHeader.length+contentBytes.length); add(contObj);
+    contObj.set(contHeader,0);
+    contObj.set(contentBytes,contHeader.length);
+    contObj.set(contFooter,contHeader.length+contentBytes.length);
+    add(contObj);
 
     let parts=[encoder.encode('%PDF-1.4\n%TerminiPro\n')];
-    let offsets=[0], pos=parts[0].length;
+    let offsets=[0];
+    let pos=parts[0].length;
     for(let i=0;i<objs.length;i++){
       offsets.push(pos);
-      const head=encoder.encode(`${i+1} 0 obj\n`), tail=encoder.encode('\nendobj\n');
+      const head=encoder.encode(`${i+1} 0 obj\n`);
+      const tail=encoder.encode('\nendobj\n');
       parts.push(head,objs[i],tail);
       pos+=head.length+objs[i].length+tail.length;
     }
@@ -396,7 +407,8 @@ async function printQrPdfList(){
 
     const total=parts.reduce((s,p)=>s+p.length,0);
     const pdf=new Uint8Array(total);
-    let o=0; for(const p of parts){pdf.set(p,o);o+=p.length}
+    let o=0;
+    for(const p of parts){pdf.set(p,o);o+=p.length}
     return new Blob([pdf],{type:'application/pdf'});
   }
 
@@ -405,10 +417,16 @@ async function printQrPdfList(){
   const a=document.createElement('a');
   a.href=url;
   a.download='qr-vizit-kartice.pdf';
-  document.body.appendChild(a); a.click(); a.remove();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
   const w=window.open(url,'_blank');
-  if(!w){ msg('PDF je preuzet kao fajl qr-vizit-kartice.pdf. Otvori ga i štampaj.', 'ok'); }
-  else{ msg('Napravljen je PDF fajl sa QR vizit karticama.', 'ok'); }
+  if(!w){
+    msg('PDF je preuzet kao fajl qr-vizit-kartice.pdf. Otvori ga i štampaj.', 'ok');
+  }else{
+    msg('Napravljen je PDF fajl sa QR vizit karticama.', 'ok');
+  }
   setTimeout(()=>URL.revokeObjectURL(url),60000);
  }catch(e){msg(e.message,'err')}
 }
