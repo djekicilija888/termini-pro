@@ -262,7 +262,8 @@ app.post('/api/auth/test-owner-login',async(req,res)=>{
    message:'Test ulaz bez registracije je aktivan.'
   });
  }catch(e){
-  res.status(500).json({error:'Greška pri test ulazu bez registracije.'});
+  console.error('test-owner-login error', e);
+  res.status(500).json({error:'Greška pri test ulazu bez registracije: '+(e.message||'nepoznata greška')});
  }
 });
 
