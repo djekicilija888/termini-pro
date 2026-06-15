@@ -231,23 +231,36 @@ async function printQrPdfList(){
   `).join('');
   let w=window.open('','_blank');
   if(!w)throw Error('Browser je blokirao prozor za štampanje.');
+
   w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>QR kartice</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;background:white;color:#111827;font-family:Arial,Helvetica,sans-serif}
-    .page{width:210mm;min-height:297mm;margin:0 auto;padding:10mm 7mm}
-    h1{margin:0 0 4px;text-align:center;font-size:23px;line-height:1.2}
-    .top-text{margin:0 0 7mm;text-align:center;font-size:12px;color:#111827}
-    .grid{width:100%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);border-left:1px solid #111827;border-top:1px solid #111827}
-    .cut-card{height:56mm;border-right:1px solid #111827;border-bottom:1px solid #111827;padding:3mm 3mm 1mm;text-align:center;overflow:hidden;break-inside:avoid}
-    .card-title{font-size:15px;line-height:1.02;font-weight:900;margin-bottom:1.2mm}
-    .cut-card img{width:31mm;height:31mm;display:block;margin:0 auto 1.1mm}
-    .link-title{font-size:11.2px;font-weight:900;margin-bottom:.3mm}
-    .card-link{font-size:10.2px;line-height:1.08;word-break:break-all;color:#111827}
-    .no-print{position:fixed;right:16px;top:16px;z-index:9}.no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
-    @page{size:A4;margin:0}@media print{.no-print{display:none}.page{width:210mm;min-height:297mm;margin:0;padding:10mm 7mm}}
+    @page{size:A4;margin:0}
+    *{box-sizing:border-box}
+    html,body{width:210mm;height:297mm;margin:0;padding:0;background:white;color:#111827;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .sheet{width:210mm;height:297mm;margin:0 auto;padding:10mm 12mm 8mm;background:white;overflow:hidden}
+    h1{margin:0 0 2mm;text-align:center;font-size:18px;line-height:1.08;font-weight:900}
+    .top-text{margin:0 0 5mm;text-align:center;font-size:9px;line-height:1.1;color:#111827}
+    .grid{width:186mm;height:246mm;margin:0 auto;display:grid;grid-template-columns:repeat(3,62mm);grid-template-rows:repeat(4,61.5mm);border-left:1px solid #111827;border-top:1px solid #111827}
+    .cut-card{width:62mm;height:61.5mm;border-right:1px solid #111827;border-bottom:1px solid #111827;padding:3.2mm 3mm 2mm;text-align:center;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
+    .card-title{font-size:14.5px;line-height:1.02;font-weight:900;margin:0 0 1.6mm}
+    .cut-card img{width:31mm;height:31mm;display:block;margin:0 auto 1.3mm}
+    .link-title{font-size:10.8px;line-height:1.05;font-weight:900;margin:0 0 .5mm}
+    .card-link{font-size:9.8px;line-height:1.08;word-break:break-all;color:#111827;margin:0 auto;max-width:54mm}
+    .no-print{position:fixed;right:16px;top:16px;z-index:9}
+    .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
+    @media print{
+      html,body{width:210mm;height:297mm;overflow:hidden}
+      .no-print{display:none}
+      .sheet{width:210mm;height:297mm;margin:0;padding:10mm 12mm 8mm;page-break-after:avoid;break-after:avoid;overflow:hidden}
+    }
   </style></head><body>
     <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
-    <main class="page"><h1>QR kartice za zakazivanje termina</h1><p class="top-text">Odštampajte list, isecite kartice i podelite ih mušterijama.</p><section class="grid">${items}</section></main>
+    <main class="sheet">
+      <h1>QR kartice za zakazivanje termina</h1>
+      <p class="top-text">Odštampajte list, isecite kartice i podelite ih mušterijama.</p>
+      <section class="grid">${items}</section>
+    </main>
     <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
   </body></html>`);
   w.document.close();

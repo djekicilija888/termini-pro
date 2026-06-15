@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "8.3.0",
+  "version": "8.4.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Increase printable QR card title and link text"
+  "description": "Desktop QR printable PDF layout aligned with Android PDF"
 }
