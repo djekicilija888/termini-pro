@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "8.6.0",
+  "version": "8.7.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Fix desktop QR print to fit one A4 page"
+  "description": "Desktop QR button generates real fixed-coordinate PDF"
 }

@@ -220,7 +220,7 @@ async function printQrPdfList(){
  try{
   await loadBookingLink();
   const link=bookingUrlInput.value;
-  const qr=ownerQrObjectUrl||await fetchOwnerQrDataUrl();
+  const qrDataUrl=await fetchOwnerQrDataUrl();
 
   const splitFixed=(text,max)=>{
     const out=[];
@@ -232,82 +232,142 @@ async function printQrPdfList(){
     if(rest.trim())out.push(rest);
     return out;
   };
-  const escSvg=(value)=>String(value??'').replace(/[&<>"']/g,(ch)=>({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[ch]));
 
-  // Desktop štampa mora biti malo kompaktnija od Android preview-a,
-  // jer Chrome/Windows print dodaje zaokruživanje i ranije je izbacivao 2. praznu stranu.
-  // A4 viewBox ostaje 595x842, ali sadržaj je spušten i smanjen da sigurno stane u 1 stranu.
-  const cols=3, rows=4, startX=50, startY=78, cardW=165, cardH=166;
-  const qrSize=76;
-  const lines=splitFixed(link,24).slice(0,3);
+  const base64ToBytes=(b64)=>{
+    const bin=atob(b64);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return bytes;
+  };
+  const dataUrlToBytes=(dataUrl)=>{
+    const m=String(dataUrl).match(/^data:image\/png;base64,(.+)$/);
+    if(!m)throw Error('QR kod nije PNG data URL.');
+    return base64ToBytes(m[1]);
+  };
+  const escapePdfText=(value)=>String(value??'')
+    .replace(/\\/g,'\\\\')
+    .replace(/\(/g,'\\(')
+    .replace(/\)/g,'\\)')
+    .replace(/[čć]/g,'c')
+    .replace(/[ČĆ]/g,'C')
+    .replace(/[š]/g,'s')
+    .replace(/[Š]/g,'S')
+    .replace(/[ž]/g,'z')
+    .replace(/[Ž]/g,'Z')
+    .replace(/[đ]/g,'dj')
+    .replace(/[Đ]/g,'Dj');
 
-  let gridLines='';
-  for(let i=0;i<=cols;i++){
-    const x=startX+i*cardW;
-    gridLines+=`<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY+rows*cardH}" stroke="#111827" stroke-width="0.9"/>`;
-  }
-  for(let i=0;i<=rows;i++){
-    const y=startY+i*cardH;
-    gridLines+=`<line x1="${startX}" y1="${y}" x2="${startX+cols*cardW}" y2="${y}" stroke="#111827" stroke-width="0.9"/>`;
-  }
+  function makePdf(){
+    const pageW=595, pageH=842;
+    const cols=3, rows=4;
+    const startX=35, startY=82, cardW=175, cardH=181;
+    const qrSize=88;
+    const qrBytes=dataUrlToBytes(qrDataUrl);
+    const linkLines=splitFixed(link,25).slice(0,3);
 
-  let cards='';
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      const x=startX+c*cardW;
-      const y=startY+r*cardH;
-      const cx=x+cardW/2;
-      const textLines=lines.map((line,idx)=>`<text x="${cx}" y="${y+130+idx*10.5}" class="card-link">${escSvg(line)}</text>`).join('');
-      cards+=`
-        <g>
-          <text x="${cx}" y="${y+20}" class="card-title">Zakažite termin</text>
-          <image href="${qr}" x="${x+(cardW-qrSize)/2}" y="${y+30}" width="${qrSize}" height="${qrSize}" preserveAspectRatio="none"/>
-          <text x="${cx}" y="${y+120}" class="link-title">Link za zakazivanje:</text>
-          ${textLines}
-        </g>`;
+    const yPdf=(y)=>pageH-y;
+
+    let content='';
+    const line=(x1,y1,x2,y2)=>{ content += `${x1} ${yPdf(y1)} m ${x2} ${yPdf(y2)} l S\n`; };
+    const text=(x,y,size,bold,value)=>{
+      content += `BT /F${bold?2:1} ${size} Tf ${x} ${yPdf(y)} Td (${escapePdfText(value)}) Tj ET\n`;
+    };
+    const centeredText=(x,y,size,bold,value)=>{
+      const txt=escapePdfText(value);
+      const approxWidth=txt.length*size*(bold?0.56:0.50);
+      text(x-approxWidth/2,y,size,bold,value);
+    };
+
+    content += '0.0706 w\n0 0 0 RG\n0 0 0 rg\n';
+    centeredText(297.5,35,23,true,'QR kartice za zakazivanje termina');
+    centeredText(297.5,58,12,false,'Odstampajte list, isecite kartice i podelite ih musterijama.');
+
+    for(let i=0;i<=cols;i++){
+      const x=startX+i*cardW;
+      line(x,startY,x,startY+rows*cardH);
     }
+    for(let i=0;i<=rows;i++){
+      const y=startY+i*cardH;
+      line(startX,y,startX+cols*cardW,y);
+    }
+
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const x=startX+c*cardW;
+        const y=startY+r*cardH;
+        const cx=x+cardW/2;
+        centeredText(cx,y+21,14.5,true,'Zakazite termin');
+        const imgX=x+(cardW-qrSize)/2;
+        const imgTop=y+32;
+        const imgY=pageH-imgTop-qrSize;
+        content += `q ${qrSize} 0 0 ${qrSize} ${imgX} ${imgY} cm /Im0 Do Q\n`;
+        centeredText(cx,y+132,10.8,true,'Link za zakazivanje:');
+        linkLines.forEach((ln,idx)=>centeredText(cx,y+147+idx*12,10.4,false,ln));
+      }
+    }
+
+    const encoder=new TextEncoder();
+    const objs=[];
+    const add=(body)=>objs.push(typeof body==='string'?encoder.encode(body):body);
+
+    add('<< /Type /Catalog /Pages 2 0 R >>');
+    add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> /XObject << /Im0 6 0 R >> >> /Contents 7 0 R >>');
+    add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+
+    const imgHeader=encoder.encode(`<< /Type /XObject /Subtype /Image /Width 300 /Height 300 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ${qrBytes.length} >>\nstream\n`);
+    const imgFooter=encoder.encode('\nendstream');
+    const imgObj=new Uint8Array(imgHeader.length+qrBytes.length+imgFooter.length);
+    imgObj.set(imgHeader,0); imgObj.set(qrBytes,imgHeader.length); imgObj.set(imgFooter,imgHeader.length+qrBytes.length);
+    add(imgObj);
+
+    const contentBytes=encoder.encode(content);
+    const contHeader=encoder.encode(`<< /Length ${contentBytes.length} >>\nstream\n`);
+    const contFooter=encoder.encode('\nendstream');
+    const contObj=new Uint8Array(contHeader.length+contentBytes.length+contFooter.length);
+    contObj.set(contHeader,0); contObj.set(contentBytes,contHeader.length); contObj.set(contFooter,contHeader.length+contentBytes.length);
+    add(contObj);
+
+    let parts=[encoder.encode('%PDF-1.4\n%TerminiPro\n')];
+    let offsets=[0];
+    let pos=parts[0].length;
+    for(let i=0;i<objs.length;i++){
+      offsets.push(pos);
+      const head=encoder.encode(`${i+1} 0 obj\n`);
+      const tail=encoder.encode('\nendobj\n');
+      parts.push(head,objs[i],tail);
+      pos+=head.length+objs[i].length+tail.length;
+    }
+    const xrefPos=pos;
+    let xref=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;
+    for(let i=1;i<offsets.length;i++)xref+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+    xref+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+    parts.push(encoder.encode(xref));
+
+    const total=parts.reduce((s,p)=>s+p.length,0);
+    const pdf=new Uint8Array(total);
+    let o=0;
+    for(const p of parts){pdf.set(p,o);o+=p.length}
+    return new Blob([pdf],{type:'application/pdf'});
   }
 
-  let w=window.open('','_blank');
-  if(!w)throw Error('Browser je blokirao prozor za štampanje.');
-  w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>QR kartice</title>
-  <style>
-    @page{size:A4;margin:0}
-    *{box-sizing:border-box}
-    html,body{margin:0!important;padding:0!important;width:100%!important;height:100%!important;overflow:hidden!important;background:white!important}
-    body{font-family:Arial,Helvetica,sans-serif;color:#111827}
-    .sheet{position:fixed;left:0;top:0;width:210mm;height:296mm;margin:0!important;padding:0!important;overflow:hidden!important;background:white!important}
-    svg{display:block;width:210mm;height:296mm;margin:0!important;padding:0!important;overflow:hidden!important}
-    text{text-anchor:middle;fill:#111827}
-    .main-title{font-size:23px;font-weight:900;font-family:Arial,Helvetica,sans-serif}
-    .subtitle{font-size:12px;font-weight:400;font-family:Arial,Helvetica,sans-serif}
-    .card-title{font-size:14.8px;font-weight:900;font-family:'Arial Black',Arial,Helvetica,sans-serif}
-    .link-title{font-size:10.6px;font-weight:900;font-family:Arial,Helvetica,sans-serif}
-    .card-link{font-size:9.8px;font-weight:400;font-family:Arial,Helvetica,sans-serif}
-    .no-print{position:fixed;right:16px;top:16px;z-index:9}
-    .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
-    @media print{
-      html,body{width:210mm!important;height:296mm!important;overflow:hidden!important}
-      .no-print{display:none!important}
-      .sheet{position:fixed!important;left:0!important;top:0!important;width:210mm!important;height:296mm!important;overflow:hidden!important;page-break-after:avoid!important;break-after:avoid!important}
-      svg{width:210mm!important;height:296mm!important;overflow:hidden!important}
-    }
-  </style></head><body>
-    <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
-    <main class="sheet">
-      <svg xmlns="http://www.w3.org/2000/svg" width="595" height="839" viewBox="0 0 595 839">
-        <text x="297.5" y="34" class="main-title">QR kartice za zakazivanje termina</text>
-        <text x="297.5" y="56" class="subtitle">Odštampajte list, isecite kartice i podelite ih mušterijama.</text>
-        ${gridLines}
-        ${cards}
-      </svg>
-    </main>
-    <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
-  </body></html>`);
-  w.document.close();
-  msg('Otvoren je QR list. Sada je zaključan na jednu A4 stranu.','ok');
+  const blob=makePdf();
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='qr-kartice-termini.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  const w=window.open(url,'_blank');
+  if(!w){
+    msg('PDF je preuzet kao fajl qr-kartice-termini.pdf. Otvori ga i štampaj.', 'ok');
+  }else{
+    msg('Napravljen je pravi PDF fajl. Otvori ga i štampaj/sacuvaj.', 'ok');
+  }
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
  }catch(e){msg(e.message,'err')}
 }
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
