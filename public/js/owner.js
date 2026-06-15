@@ -219,40 +219,91 @@ if(typeof copyLinkBtn!=='undefined')copyLinkBtn.onclick=async()=>{
 async function printQrPdfList(){
  try{
   await loadBookingLink();
-  let link=bookingUrlInput.value;
-  let qr=ownerQrObjectUrl||await fetchOwnerQrDataUrl();
-  let items=Array.from({length:12}).map(()=>`
-    <div class="cut-card">
-      <div class="card-title">Zakažite termin</div>
-      <img src="${qr}" alt="QR kod">
-      <div class="link-title">Link za zakazivanje:</div>
-      <div class="card-link">${htmlEsc(link)}</div>
-    </div>
-  `).join('');
+  const link=bookingUrlInput.value;
+  const qr=ownerQrObjectUrl||await fetchOwnerQrDataUrl();
+
+  const splitFixed=(text,max)=>{
+    const out=[];
+    let rest=String(text||'');
+    while(rest.length>max){
+      out.push(rest.slice(0,max));
+      rest=rest.slice(max);
+    }
+    if(rest.trim())out.push(rest);
+    return out;
+  };
+  const escSvg=(value)=>String(value??'').replace(/[&<>"']/g,(ch)=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
+
+  // Iste mere kao Android PDF:
+  // A4 = 595 x 842 pt, grid 3 x 4, startX 35, startY 82, cardW 175, cardH 181.
+  const cols=3, rows=4, startX=35, startY=82, cardW=175, cardH=181;
+  const lines=splitFixed(link,25).slice(0,3);
+
+  let gridLines='';
+  for(let i=0;i<=cols;i++){
+    const x=startX+i*cardW;
+    gridLines+=`<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY+rows*cardH}" stroke="#111827" stroke-width="0.9"/>`;
+  }
+  for(let i=0;i<=rows;i++){
+    const y=startY+i*cardH;
+    gridLines+=`<line x1="${startX}" y1="${y}" x2="${startX+cols*cardW}" y2="${y}" stroke="#111827" stroke-width="0.9"/>`;
+  }
+
+  let cards='';
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const x=startX+c*cardW;
+      const y=startY+r*cardH;
+      const cx=x+cardW/2;
+      const textLines=lines.map((line,idx)=>`<text x="${cx}" y="${147+y+idx*12}" class="card-link">${escSvg(line)}</text>`).join('');
+      cards+=`
+        <g>
+          <text x="${cx}" y="${y+21}" class="card-title">Zakažite termin</text>
+          <image href="${qr}" x="${x+(cardW-88)/2}" y="${y+32}" width="88" height="88" preserveAspectRatio="none"/>
+          <text x="${cx}" y="${y+132}" class="link-title">Link za zakazivanje:</text>
+          ${textLines}
+        </g>`;
+    }
+  }
+
   let w=window.open('','_blank');
   if(!w)throw Error('Browser je blokirao prozor za štampanje.');
   w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>QR kartice</title>
   <style>
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;background:white;color:#111827;font-family:Arial,Helvetica,sans-serif}
-    .page{width:210mm;height:297mm;margin:0 auto;padding:8mm 10mm 0;overflow:hidden}
-    h1{margin:0 0 3px;text-align:center;font-size:23px;line-height:1.15}
-    .top-text{margin:0 0 5mm;text-align:center;font-size:12px;color:#111827}
-    .grid{width:186mm;margin:0 auto;display:grid;grid-template-columns:repeat(3,62mm);grid-template-rows:repeat(4,56mm);border-left:1px solid #111827;border-top:1px solid #111827;break-inside:avoid;page-break-inside:avoid}
-    .cut-card{height:56mm;border-right:1px solid #111827;border-bottom:1px solid #111827;padding:3mm 3mm 1mm;text-align:center;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
-    .card-title{font-family:'Arial Black',Arial,Helvetica,sans-serif;font-size:15px;line-height:1.02;font-weight:900;margin-bottom:1.2mm}
-    .cut-card img{width:31mm;height:31mm;display:block;margin:0 auto 1.1mm}
-    .link-title{font-size:11.2px;font-weight:900;margin-bottom:.3mm}
-    .card-link{font-size:10.2px;line-height:1.08;word-break:break-all;color:#111827}
-    .no-print{position:fixed;right:16px;top:16px;z-index:9}.no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
-    @page{size:A4;margin:0}@media print{html,body{width:210mm;height:297mm;overflow:hidden}.no-print{display:none}.page{width:210mm;height:297mm;margin:0 auto;padding:8mm 10mm 0;overflow:hidden;break-after:avoid;page-break-after:avoid}.grid{break-inside:avoid;page-break-inside:avoid}}
+    @page{size:A4;margin:0}
+    html,body{margin:0!important;padding:0!important;width:595pt!important;height:842pt!important;overflow:hidden!important;background:white!important}
+    body{font-family:Arial,Helvetica,sans-serif;color:#111827}
+    .sheet{width:595pt;height:842pt;margin:0!important;padding:0!important;overflow:hidden!important;page-break-after:avoid;break-after:avoid}
+    svg{display:block;width:595pt;height:842pt;margin:0!important;padding:0!important;overflow:hidden}
+    text{text-anchor:middle;fill:#111827}
+    .main-title{font-size:23px;font-weight:900;font-family:Arial,Helvetica,sans-serif}
+    .subtitle{font-size:12px;font-weight:400;font-family:Arial,Helvetica,sans-serif}
+    .card-title{font-size:14.5px;font-weight:900;font-family:'Arial Black',Arial,Helvetica,sans-serif}
+    .link-title{font-size:10.8px;font-weight:900;font-family:Arial,Helvetica,sans-serif}
+    .card-link{font-size:10.4px;font-weight:400;font-family:Arial,Helvetica,sans-serif}
+    .no-print{position:fixed;right:16px;top:16px;z-index:9}
+    .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
+    @media print{
+      .no-print{display:none!important}
+      html,body,.sheet{width:595pt!important;height:842pt!important;overflow:hidden!important}
+      .sheet{page-break-after:avoid!important;break-after:avoid!important}
+    }
   </style></head><body>
     <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
-    <main class="page"><h1>QR kartice za zakazivanje termina</h1><p class="top-text">Odštampajte list, isecite kartice i podelite ih mušterijama.</p><section class="grid">${items}</section></main>
+    <main class="sheet">
+      <svg xmlns="http://www.w3.org/2000/svg" width="595" height="842" viewBox="0 0 595 842">
+        <text x="297" y="35" class="main-title">QR kartice za zakazivanje termina</text>
+        <text x="297" y="58" class="subtitle">Odštampajte list, isecite kartice i podelite ih mušterijama.</text>
+        ${gridLines}
+        ${cards}
+      </svg>
+    </main>
     <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
   </body></html>`);
   w.document.close();
-  msg('Otvoren je list za štampanje. U print prozoru možeš izabrati Save as PDF.','ok');
+  msg('Otvoren je list za štampanje. Sada je desktop PDF podešen po istim merama kao Android.','ok');
  }catch(e){msg(e.message,'err')}
 }
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
