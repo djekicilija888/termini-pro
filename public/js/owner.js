@@ -354,8 +354,8 @@ const emailLines=splitWords(emailText,24,2);
         phoneLines.forEach((ln,idx)=>text(x+15,infoY+idx*13,10.6,false,ln));
         locationLines.forEach((ln,idx)=>text(x+15,infoY+31+idx*12,10.0,false,ln));
 
-        centeredText(qrCenterX,y+23,9.8,true,'ZAKAZITE TERMIN');
-        centeredText(qrCenterX,y+34,9.8,true,'ONLINE');
+        centeredText(qrCenterX,y+26,8,true,'ZAKAZITE TERMIN');
+        centeredText(qrCenterX,y+37,8,true,'ONLINE');
 
         const imgX=qrCenterX-qrSize/2;
         const imgTop=y+48;
