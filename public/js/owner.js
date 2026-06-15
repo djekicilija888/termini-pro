@@ -326,7 +326,7 @@ async function printQrPdfList(){
         const imgTop=y+33;
         const imgY=pageH-imgTop-qrSize;
         content += `q ${qrSize} 0 0 ${qrSize} ${imgX} ${imgY} cm /Im0 Do Q\n`;
-        centeredText(cx,y+147,11,true,'Link za zakazivanje:');
+        centeredText(cx,y+140,10.8,true,'Link za zakazivanje:');
         linkLines.forEach((ln,idx)=>centeredText(cx,y+161+idx*12,10.4,false,ln));
       }
     }
