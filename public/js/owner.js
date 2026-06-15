@@ -240,28 +240,23 @@ async function printQrPdfList(){
     img.src=src;
   });
 
-  const qrToPdfImageData=async(src,size)=>{
+  const qrToRgbImage=async(src)=>{
     const img=await loadImage(src);
+    const size=600;
     const canvas=document.createElement('canvas');
     canvas.width=size;
     canvas.height=size;
-    const ctx=canvas.getContext('2d');
-    ctx.imageSmoothingEnabled=false;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
     ctx.fillStyle='#ffffff';
     ctx.fillRect(0,0,size,size);
+    ctx.imageSmoothingEnabled=false;
     ctx.drawImage(img,0,0,size,size);
-
-    // PDF image streams cannot contain PNG bytes unless they are decoded first.
-    // Android draws a black/white Bitmap directly on PdfDocument; here we do
-    // the same for desktop: convert QR canvas pixels to raw DeviceRGB bytes.
-    const pixels=ctx.getImageData(0,0,size,size).data;
+    const rgba=ctx.getImageData(0,0,size,size).data;
     const bytes=new Uint8Array(size*size*3);
-    for(let i=0,j=0;i<pixels.length;i+=4,j+=3){
-      const lum=pixels[i]*0.299+pixels[i+1]*0.587+pixels[i+2]*0.114;
-      const v=lum<180?0:255;
-      bytes[j]=v;
-      bytes[j+1]=v;
-      bytes[j+2]=v;
+    for(let i=0,j=0;i<rgba.length;i+=4){
+      bytes[j++]=rgba[i];
+      bytes[j++]=rgba[i+1];
+      bytes[j++]=rgba[i+2];
     }
     return {width:size,height:size,bytes};
   };
@@ -270,13 +265,21 @@ async function printQrPdfList(){
     .replace(/\\/g,'\\\\')
     .replace(/\(/g,'\\(')
     .replace(/\)/g,'\\)')
-    .replace(/[ČčĆćŠšŽžĐđ]/g,ch=>({
-      'Č':'\\200','č':'\\201','Ć':'\\202','ć':'\\203','Š':'\\204','š':'\\205',
-      'Ž':'\\206','ž':'\\207','Đ':'\\210','đ':'\\211'
-    }[ch]||ch));
+    .replace(/[čć]/g,'c')
+    .replace(/[ČĆ]/g,'C')
+    .replace(/[š]/g,'s')
+    .replace(/[Š]/g,'S')
+    .replace(/[ž]/g,'z')
+    .replace(/[Ž]/g,'Z')
+    .replace(/[đ]/g,'dj')
+    .replace(/[Đ]/g,'Dj');
+
+  const textMeasureCanvas=document.createElement('canvas');
+  const textMeasureCtx=textMeasureCanvas.getContext('2d');
 
   function pdfTextWidthApprox(value,size,bold){
-    return String(value||'').length*size*(bold?0.56:0.50);
+    textMeasureCtx.font=`${bold?'bold ':''}${size}px Helvetica, Arial, sans-serif`;
+    return textMeasureCtx.measureText(String(value||'')).width;
   }
 
   async function makePdf(){
@@ -284,7 +287,7 @@ async function printQrPdfList(){
     const cols=3, rows=4;
     const startX=35, startY=82, cardW=175, cardH=181;
     const qrSize=88;
-    const qrPdfImage=await qrToPdfImageData(qrSource,qrSize);
+    const qrImage=await qrToRgbImage(qrSource);
     const linkLines=splitFixed(link,25).slice(0,3);
 
     const yPdf=(y)=>pageH-y;
@@ -295,13 +298,14 @@ async function printQrPdfList(){
       content += `BT /F${bold?2:1} ${size} Tf ${x.toFixed(2)} ${yPdf(y).toFixed(2)} Td (${escapePdfText(value)}) Tj ET\n`;
     };
     const centeredText=(x,y,size,bold,value)=>{
-      const approxWidth=pdfTextWidthApprox(value,size,bold);
+      const txt=escapePdfText(value);
+      const approxWidth=pdfTextWidthApprox(txt,size,bold);
       text(x-approxWidth/2,y,size,bold,value);
     };
 
     content += '0.9 w\n0 0 0 RG\n0 0 0 rg\n';
-    centeredText(297.5,35,23,true,'QR kartice za zakazivanje termina');
-    centeredText(297.5,58,12,false,'Odštampajte list, isecite kartice i podelite ih mušterijama.');
+    centeredText(297,35,23,true,'QR kartice za zakazivanje termina');
+    centeredText(297,58,12,false,'Odstampajte list, isecite kartice i podelite ih musterijama.');
 
     for(let i=0;i<=cols;i++){
       const x=startX+i*cardW;
@@ -317,7 +321,7 @@ async function printQrPdfList(){
         const x=startX+c*cardW;
         const y=startY+r*cardH;
         const cx=x+cardW/2;
-        centeredText(cx,y+21,14.5,true,'Zakažite termin');
+        centeredText(cx,y+21,14.5,true,'Zakazite termin');
         const imgX=x+(cardW-qrSize)/2;
         const imgTop=y+32;
         const imgY=pageH-imgTop-qrSize;
@@ -334,16 +338,15 @@ async function printQrPdfList(){
     add('<< /Type /Catalog /Pages 2 0 R >>');
     add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
     add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> /XObject << /Im0 6 0 R >> >> /Contents 7 0 R >>');
-    const srEncoding=' /Encoding << /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [128 /Ccaron /ccaron /Cacute /cacute /Scaron /scaron /Zcaron /zcaron /Dcroat /dcroat] >>';
-    add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica'+srEncoding+' >>');
-    add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold'+srEncoding+' >>');
+    add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
 
-    const imgHeader=encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${qrPdfImage.width} /Height ${qrPdfImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ${qrPdfImage.bytes.length} >>\nstream\n`);
+    const imgHeader=encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${qrImage.width} /Height ${qrImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ${qrImage.bytes.length} >>\nstream\n`);
     const imgFooter=encoder.encode('\nendstream');
-    const imgObj=new Uint8Array(imgHeader.length+qrPdfImage.bytes.length+imgFooter.length);
+    const imgObj=new Uint8Array(imgHeader.length+qrImage.bytes.length+imgFooter.length);
     imgObj.set(imgHeader,0);
-    imgObj.set(qrPdfImage.bytes,imgHeader.length);
-    imgObj.set(imgFooter,imgHeader.length+qrPdfImage.bytes.length);
+    imgObj.set(qrImage.bytes,imgHeader.length);
+    imgObj.set(imgFooter,imgHeader.length+qrImage.bytes.length);
     add(imgObj);
 
     const contentBytes=encoder.encode(content);
