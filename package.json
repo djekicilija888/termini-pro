@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Desktop QR printable PDF layout aligned with Android PDF"
+  "description": "Center printable QR cards on one page and bold card title"
 }
