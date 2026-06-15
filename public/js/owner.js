@@ -446,7 +446,7 @@ async function printQrPdfList(){
 
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
 
-function printA4DoorPoster(){
+async function printA4DoorPoster(){
  try{
   await loadBookingLink();
   const link=bookingUrlInput.value;
