@@ -220,7 +220,7 @@ async function printQrPdfList(){
  try{
   await loadBookingLink();
   const link=bookingUrlInput.value;
-  const qrDataUrl=await fetchOwnerQrDataUrl();
+  const qrSource=ownerQrObjectUrl || await fetchOwnerQrDataUrl();
 
   const splitFixed=(text,max)=>{
     const out=[];
@@ -233,17 +233,30 @@ async function printQrPdfList(){
     return out;
   };
 
-  const base64ToBytes=(b64)=>{
+  const loadImage=(src)=>new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error('Ne mogu da učitam QR sliku.'));
+    img.src=src;
+  });
+
+  const qrToPngBytes=async(src)=>{
+    const img=await loadImage(src);
+    const canvas=document.createElement('canvas');
+    canvas.width=300;
+    canvas.height=300;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,300,300);
+    ctx.drawImage(img,0,0,300,300);
+    const dataUrl=canvas.toDataURL('image/png');
+    const b64=dataUrl.split(',')[1];
     const bin=atob(b64);
     const bytes=new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
     return bytes;
   };
-  const dataUrlToBytes=(dataUrl)=>{
-    const m=String(dataUrl).match(/^data:image\/png;base64,(.+)$/);
-    if(!m)throw Error('QR kod nije PNG data URL.');
-    return base64ToBytes(m[1]);
-  };
+
   const escapePdfText=(value)=>String(value??'')
     .replace(/\\/g,'\\\\')
     .replace(/\(/g,'\\(')
@@ -257,12 +270,16 @@ async function printQrPdfList(){
     .replace(/[đ]/g,'dj')
     .replace(/[Đ]/g,'Dj');
 
-  function makePdf(){
+  function pdfTextWidthApprox(value,size,bold){
+    return String(value||'').length*size*(bold?0.56:0.50);
+  }
+
+  async function makePdf(){
     const pageW=595, pageH=842;
     const cols=3, rows=4;
     const startX=35, startY=82, cardW=175, cardH=181;
     const qrSize=88;
-    const qrBytes=dataUrlToBytes(qrDataUrl);
+    const qrPngBytes=await qrToPngBytes(qrSource);
     const linkLines=splitFixed(link,25).slice(0,3);
 
     const yPdf=(y)=>pageH-y;
@@ -270,15 +287,15 @@ async function printQrPdfList(){
     let content='';
     const line=(x1,y1,x2,y2)=>{ content += `${x1} ${yPdf(y1)} m ${x2} ${yPdf(y2)} l S\n`; };
     const text=(x,y,size,bold,value)=>{
-      content += `BT /F${bold?2:1} ${size} Tf ${x} ${yPdf(y)} Td (${escapePdfText(value)}) Tj ET\n`;
+      content += `BT /F${bold?2:1} ${size} Tf ${x.toFixed(2)} ${yPdf(y).toFixed(2)} Td (${escapePdfText(value)}) Tj ET\n`;
     };
     const centeredText=(x,y,size,bold,value)=>{
       const txt=escapePdfText(value);
-      const approxWidth=txt.length*size*(bold?0.56:0.50);
+      const approxWidth=pdfTextWidthApprox(txt,size,bold);
       text(x-approxWidth/2,y,size,bold,value);
     };
 
-    content += '0.0706 w\n0 0 0 RG\n0 0 0 rg\n';
+    content += '0.9 w\n0 0 0 RG\n0 0 0 rg\n';
     centeredText(297.5,35,23,true,'QR kartice za zakazivanje termina');
     centeredText(297.5,58,12,false,'Odstampajte list, isecite kartice i podelite ih musterijama.');
 
@@ -316,17 +333,21 @@ async function printQrPdfList(){
     add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
     add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
 
-    const imgHeader=encoder.encode(`<< /Type /XObject /Subtype /Image /Width 300 /Height 300 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ${qrBytes.length} >>\nstream\n`);
+    const imgHeader=encoder.encode(`<< /Type /XObject /Subtype /Image /Width 300 /Height 300 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ${qrPngBytes.length} >>\nstream\n`);
     const imgFooter=encoder.encode('\nendstream');
-    const imgObj=new Uint8Array(imgHeader.length+qrBytes.length+imgFooter.length);
-    imgObj.set(imgHeader,0); imgObj.set(qrBytes,imgHeader.length); imgObj.set(imgFooter,imgHeader.length+qrBytes.length);
+    const imgObj=new Uint8Array(imgHeader.length+qrPngBytes.length+imgFooter.length);
+    imgObj.set(imgHeader,0);
+    imgObj.set(qrPngBytes,imgHeader.length);
+    imgObj.set(imgFooter,imgHeader.length+qrPngBytes.length);
     add(imgObj);
 
     const contentBytes=encoder.encode(content);
     const contHeader=encoder.encode(`<< /Length ${contentBytes.length} >>\nstream\n`);
     const contFooter=encoder.encode('\nendstream');
     const contObj=new Uint8Array(contHeader.length+contentBytes.length+contFooter.length);
-    contObj.set(contHeader,0); contObj.set(contentBytes,contHeader.length); contObj.set(contFooter,contHeader.length+contentBytes.length);
+    contObj.set(contHeader,0);
+    contObj.set(contentBytes,contHeader.length);
+    contObj.set(contFooter,contHeader.length+contentBytes.length);
     add(contObj);
 
     let parts=[encoder.encode('%PDF-1.4\n%TerminiPro\n')];
@@ -352,7 +373,7 @@ async function printQrPdfList(){
     return new Blob([pdf],{type:'application/pdf'});
   }
 
-  const blob=makePdf();
+  const blob=await makePdf();
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
@@ -365,56 +386,201 @@ async function printQrPdfList(){
   if(!w){
     msg('PDF je preuzet kao fajl qr-kartice-termini.pdf. Otvori ga i štampaj.', 'ok');
   }else{
-    msg('Napravljen je pravi PDF fajl. Otvori ga i štampaj/sacuvaj.', 'ok');
+    msg('Napravljen je PDF fajl. Otvori ga i štampaj/sacuvaj.', 'ok');
   }
   setTimeout(()=>URL.revokeObjectURL(url),60000);
  }catch(e){msg(e.message,'err')}
 }
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
 
-function printA4DoorPoster(){
+async function printA4DoorPoster(){
  try{
-  let link=bookingUrlInput.value;
-  let b=window.ownerBusinessForPrint||{};
-  let name=b.name||'Vaša firma';
-  let phones=ownerPhoneParts(b.phone);
-  let place=[];
-  if(b.city)place.push(b.city);
-  if(b.instagram)place.push(b.instagram);
-  let footerLines=[];
-  if(phones.length)footerLines.push('Telefoni: '+phones.join('  •  '));
-  if(place.length)footerLines.push(place.join('  •  '));
-  let footer=footerLines.join('<br>');
-  let qr=ownerQrObjectUrl||ownerQrPreview.src;
-  let w=window.open('','_blank');
-  if(!w)throw Error('Browser je blokirao prozor za štampanje.');
-  w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>A4 poster</title>
-  <style>
-    *{box-sizing:border-box}body{margin:0;background:white;color:#111827;font-family:Arial,Helvetica,sans-serif}
-    .page{width:210mm;min-height:297mm;margin:0 auto;padding:14mm 13mm;display:flex;align-items:center;justify-content:center}
-    .poster{width:100%;min-height:266mm;border:3px solid #111827;border-radius:18px;padding:18px;text-align:center;display:flex;flex-direction:column}
-    .header{background:#111827;color:white;border-radius:18px;padding:22px 16px;margin-bottom:28px}
-    .header h1{margin:0;font-size:38px;line-height:1.12;letter-spacing:.5px}
-    .business{font-size:31px;line-height:1.2;font-weight:900;margin:0 0 8px}
-    .subtitle{font-size:18px;color:#374151;margin:0 0 28px}
-    .qr-card{margin:0 auto 22px;width:132mm;min-height:132mm;border:2px solid #d1d5db;border-radius:24px;background:#f9fafb;display:flex;align-items:center;justify-content:center;padding:16px}
-    .qr-card img{width:112mm;height:112mm;background:white}.instruction{font-size:21px;font-weight:900;margin:6px 0 20px}
-    .link-title{font-size:15px;color:#374151;margin:0 0 8px}.link{max-width:165mm;margin:0 auto;font-size:14px;line-height:1.35;word-break:break-all;color:#374151}
-    .footer{margin-top:auto;color:#111827;padding:8px 16px 0;font-size:15px;font-weight:800;word-break:break-word;line-height:1.45}
-    .no-print{position:fixed;right:16px;top:16px}.no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
-    @page{size:A4;margin:0}@media print{.no-print{display:none}.page{width:210mm;min-height:297mm;margin:0;padding:12mm}.poster{min-height:273mm}}
-  </style></head><body>
-   <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
-   <div class="page"><section class="poster"><div class="header"><h1>SKENIRAJTE I ZAKAŽITE<br>TERMIN ONLINE</h1></div>
-   <h2 class="business">${htmlEsc(name)}</h2><p class="subtitle">Bez poziva — izaberite uslugu i slobodan termin.</p>
-   <div class="qr-card"><img src="${qr}" alt="QR kod"></div><p class="instruction">Otvorite kameru telefona i skenirajte QR kod</p>
-   <p class="link-title">Link za zakazivanje:</p><p class="link">${htmlEsc(link)}</p>${footer?`<div class="footer">${footer}</div>`:''}</section></div>
-   <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
-  </body></html>`);
-  w.document.close();
+  await loadBookingLink();
+  const link=bookingUrlInput.value;
+  const b=window.ownerBusinessForPrint||{};
+  const name=b.name||'Vaša firma';
+  const qrSource=ownerQrObjectUrl||ownerQrPreview.src||await fetchOwnerQrDataUrl();
+
+  const staffCount=(typeof currentStaffCount!=='undefined'&&currentStaffCount)?currentStaffCount:1;
+  const subtitle=staffCount>1
+   ?'Bez poziva — izaberite uslugu, radnika i slobodan termin.'
+   :'Bez poziva — izaberite uslugu i slobodan termin.';
+
+  const splitFixed=(text,max)=>{
+   const out=[];
+   let rest=String(text||'');
+   while(rest.length>max){
+    out.push(rest.slice(0,max));
+    rest=rest.slice(max);
+   }
+   if(rest.trim())out.push(rest);
+   return out;
+  };
+
+  const loadImage=(src)=>new Promise((resolve,reject)=>{
+   const img=new Image();
+   img.onload=()=>resolve(img);
+   img.onerror=()=>reject(new Error('Ne mogu da učitam QR sliku.'));
+   img.src=src;
+  });
+
+  const jpegBytesFromDataUrl=(dataUrl)=>{
+   const b64=String(dataUrl).split(',')[1]||'';
+   const bin=atob(b64);
+   const bytes=new Uint8Array(bin.length);
+   for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+   return bytes;
+  };
+
+  const makePosterJpegBytes=async()=>{
+   const img=await loadImage(qrSource);
+   const canvas=document.createElement('canvas');
+   canvas.width=1190;
+   canvas.height=1684;
+   const ctx=canvas.getContext('2d');
+   const S=2;
+
+   function roundRect(x,y,w,h,r,fill,stroke,lineWidth){
+    x*=S;y*=S;w*=S;h*=S;r*=S;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    if(fill){ctx.fillStyle=fill;ctx.fill();}
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=(lineWidth||1)*S;ctx.stroke();}
+   }
+
+   function fitText(text,maxWidth,baseSize,bold){
+    let size=baseSize*S;
+    ctx.font=(bold?'900 ':'400 ')+size+'px Arial, Helvetica, sans-serif';
+    while(ctx.measureText(text).width>maxWidth*S && size>12*S){
+     size-=S;
+     ctx.font=(bold?'900 ':'400 ')+size+'px Arial, Helvetica, sans-serif';
+    }
+    return size/S;
+   }
+
+   function centered(text,x,y,size,color,bold){
+    ctx.fillStyle=color||'#111827';
+    ctx.textAlign='center';
+    ctx.textBaseline='alphabetic';
+    ctx.font=(bold?'900 ':'400 ')+(size*S)+'px Arial, Helvetica, sans-serif';
+    ctx.fillText(String(text||''),x*S,y*S);
+   }
+
+   // Android poster koordinate: A4 595x842, samo x2 zbog oštrine
+   ctx.fillStyle='#ffffff';
+   ctx.fillRect(0,0,canvas.width,canvas.height);
+
+   roundRect(28,28,539,786,18,'#ffffff','#111827',3);
+   roundRect(46,46,503,109,18,'#111827',null,0);
+
+   centered('SKENIRAJTE I ZAKAŽITE',297.5,93,29,'#ffffff',true);
+   centered('TERMIN ONLINE',297.5,128,25,'#ffffff',true);
+
+   const nameSize=fitText(name,460,27,true);
+   centered(name,297.5,205,nameSize,'#111827',true);
+
+   const subSize=fitText(subtitle,500,15,false);
+   centered(subtitle,297.5,233,subSize,'#374151',false);
+
+   roundRect(105,260,385,385,24,'#f9fafb','#d1d5db',2);
+
+   // QR belo polje kao Android
+   ctx.fillStyle='#ffffff';
+   ctx.fillRect(150*S,298*S,295*S,295*S);
+   ctx.imageSmoothingEnabled=false;
+   ctx.drawImage(img,150*S,298*S,295*S,295*S);
+   ctx.imageSmoothingEnabled=true;
+
+   centered('Otvorite kameru telefona i skenirajte QR kod',297.5,680,16,'#111827',true);
+   centered('Link za zakazivanje:',297.5,708,11.5,'#374151',false);
+
+   const lines=splitFixed(link,38).slice(0,3);
+   let y=728;
+   for(const line of lines){
+    centered(line,297.5,y,10.5,'#374151',false);
+    y+=14;
+   }
+
+   return jpegBytesFromDataUrl(canvas.toDataURL('image/jpeg',0.98));
+  };
+
+  function makeImagePdf(jpegBytes){
+   const enc=new TextEncoder();
+   const objs=[];
+   const add=(body)=>objs.push(typeof body==='string'?enc.encode(body):body);
+
+   add('<< /Type /Catalog /Pages 2 0 R >>');
+   add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+   add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Poster 4 0 R >> >> /Contents 5 0 R >>');
+
+   const imgHeader=enc.encode(`<< /Type /XObject /Subtype /Image /Width 1190 /Height 1684 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+   const imgFooter=enc.encode('\nendstream');
+   const imgObj=new Uint8Array(imgHeader.length+jpegBytes.length+imgFooter.length);
+   imgObj.set(imgHeader,0);
+   imgObj.set(jpegBytes,imgHeader.length);
+   imgObj.set(imgFooter,imgHeader.length+jpegBytes.length);
+   add(imgObj);
+
+   const content='q 595 0 0 842 0 0 cm /Poster Do Q\n';
+   const contentBytes=enc.encode(content);
+   const cHead=enc.encode(`<< /Length ${contentBytes.length} >>\nstream\n`);
+   const cFoot=enc.encode('\nendstream');
+   const cObj=new Uint8Array(cHead.length+contentBytes.length+cFoot.length);
+   cObj.set(cHead,0);
+   cObj.set(contentBytes,cHead.length);
+   cObj.set(cFoot,cHead.length+contentBytes.length);
+   add(cObj);
+
+   let parts=[enc.encode('%PDF-1.4\n%TerminiPro\n')];
+   let offsets=[0];
+   let pos=parts[0].length;
+   for(let i=0;i<objs.length;i++){
+    offsets.push(pos);
+    const head=enc.encode(`${i+1} 0 obj\n`);
+    const tail=enc.encode('\nendobj\n');
+    parts.push(head,objs[i],tail);
+    pos+=head.length+objs[i].length+tail.length;
+   }
+   const xrefPos=pos;
+   let xref=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;
+   for(let i=1;i<offsets.length;i++)xref+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+   xref+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+   parts.push(enc.encode(xref));
+   const total=parts.reduce((s,p)=>s+p.length,0);
+   const pdf=new Uint8Array(total);
+   let o=0;
+   for(const p of parts){pdf.set(p,o);o+=p.length}
+   return new Blob([pdf],{type:'application/pdf'});
+  }
+
+  const jpegBytes=await makePosterJpegBytes();
+  const blob=makeImagePdf(jpegBytes);
+  const url=URL.createObjectURL(blob);
+
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='poster-a4-termini.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  const w=window.open(url,'_blank');
+  if(!w)msg('PDF je preuzet kao fajl poster-a4-termini.pdf. Otvori ga i štampaj.', 'ok');
+  else msg('Napravljen je A4 poster PDF isti kao Android raspored.', 'ok');
+
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
  }catch(e){msg(e.message,'err')}
 }
-if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{await loadBookingLink();printA4DoorPoster()};
+if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=printA4DoorPoster;
 
 
 async function init(){from.value=today();to.value=add(30);if(!tok())return hide();try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}}init();
