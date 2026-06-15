@@ -321,12 +321,12 @@ async function printQrPdfList(){
         const x=startX+c*cardW;
         const y=startY+r*cardH;
         const cx=x+cardW/2;
-        centeredText(cx,y+21,14.5,true,'Zakazite termin');
+        centeredText(cx,y+21,14.6,true,'Zakazite termin');
         const imgX=x+(cardW-qrSize)/2;
-        const imgTop=y+32;
+        const imgTop=y+33;
         const imgY=pageH-imgTop-qrSize;
         content += `q ${qrSize} 0 0 ${qrSize} ${imgX} ${imgY} cm /Im0 Do Q\n`;
-        centeredText(cx,y+146,10.8,true,'Link za zakazivanje:');
+        centeredText(cx,y+147,11,true,'Link za zakazivanje:');
         linkLines.forEach((ln,idx)=>centeredText(cx,y+161+idx*12,10.4,false,ln));
       }
     }
