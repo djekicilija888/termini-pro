@@ -236,10 +236,12 @@ async function printQrPdfList(){
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[ch]));
 
-  // Iste mere kao Android PDF:
-  // A4 = 595 x 842 pt, grid 3 x 4, startX 35, startY 82, cardW 175, cardH 181.
-  const cols=3, rows=4, startX=35, startY=82, cardW=175, cardH=181;
-  const lines=splitFixed(link,25).slice(0,3);
+  // Desktop štampa mora biti malo kompaktnija od Android preview-a,
+  // jer Chrome/Windows print dodaje zaokruživanje i ranije je izbacivao 2. praznu stranu.
+  // A4 viewBox ostaje 595x842, ali sadržaj je spušten i smanjen da sigurno stane u 1 stranu.
+  const cols=3, rows=4, startX=50, startY=78, cardW=165, cardH=166;
+  const qrSize=76;
+  const lines=splitFixed(link,24).slice(0,3);
 
   let gridLines='';
   for(let i=0;i<=cols;i++){
@@ -257,12 +259,12 @@ async function printQrPdfList(){
       const x=startX+c*cardW;
       const y=startY+r*cardH;
       const cx=x+cardW/2;
-      const textLines=lines.map((line,idx)=>`<text x="${cx}" y="${147+y+idx*12}" class="card-link">${escSvg(line)}</text>`).join('');
+      const textLines=lines.map((line,idx)=>`<text x="${cx}" y="${y+130+idx*10.5}" class="card-link">${escSvg(line)}</text>`).join('');
       cards+=`
         <g>
-          <text x="${cx}" y="${y+21}" class="card-title">Zakažite termin</text>
-          <image href="${qr}" x="${x+(cardW-88)/2}" y="${y+32}" width="88" height="88" preserveAspectRatio="none"/>
-          <text x="${cx}" y="${y+132}" class="link-title">Link za zakazivanje:</text>
+          <text x="${cx}" y="${y+20}" class="card-title">Zakažite termin</text>
+          <image href="${qr}" x="${x+(cardW-qrSize)/2}" y="${y+30}" width="${qrSize}" height="${qrSize}" preserveAspectRatio="none"/>
+          <text x="${cx}" y="${y+120}" class="link-title">Link za zakazivanje:</text>
           ${textLines}
         </g>`;
     }
@@ -273,29 +275,31 @@ async function printQrPdfList(){
   w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>QR kartice</title>
   <style>
     @page{size:A4;margin:0}
-    html,body{margin:0!important;padding:0!important;width:595pt!important;height:842pt!important;overflow:hidden!important;background:white!important}
+    *{box-sizing:border-box}
+    html,body{margin:0!important;padding:0!important;width:100%!important;height:100%!important;overflow:hidden!important;background:white!important}
     body{font-family:Arial,Helvetica,sans-serif;color:#111827}
-    .sheet{width:595pt;height:842pt;margin:0!important;padding:0!important;overflow:hidden!important;page-break-after:avoid;break-after:avoid}
-    svg{display:block;width:595pt;height:842pt;margin:0!important;padding:0!important;overflow:hidden}
+    .sheet{position:fixed;left:0;top:0;width:210mm;height:296mm;margin:0!important;padding:0!important;overflow:hidden!important;background:white!important}
+    svg{display:block;width:210mm;height:296mm;margin:0!important;padding:0!important;overflow:hidden!important}
     text{text-anchor:middle;fill:#111827}
     .main-title{font-size:23px;font-weight:900;font-family:Arial,Helvetica,sans-serif}
     .subtitle{font-size:12px;font-weight:400;font-family:Arial,Helvetica,sans-serif}
-    .card-title{font-size:14.5px;font-weight:900;font-family:'Arial Black',Arial,Helvetica,sans-serif}
-    .link-title{font-size:10.8px;font-weight:900;font-family:Arial,Helvetica,sans-serif}
-    .card-link{font-size:10.4px;font-weight:400;font-family:Arial,Helvetica,sans-serif}
+    .card-title{font-size:14.8px;font-weight:900;font-family:'Arial Black',Arial,Helvetica,sans-serif}
+    .link-title{font-size:10.6px;font-weight:900;font-family:Arial,Helvetica,sans-serif}
+    .card-link{font-size:9.8px;font-weight:400;font-family:Arial,Helvetica,sans-serif}
     .no-print{position:fixed;right:16px;top:16px;z-index:9}
     .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
     @media print{
+      html,body{width:210mm!important;height:296mm!important;overflow:hidden!important}
       .no-print{display:none!important}
-      html,body,.sheet{width:595pt!important;height:842pt!important;overflow:hidden!important}
-      .sheet{page-break-after:avoid!important;break-after:avoid!important}
+      .sheet{position:fixed!important;left:0!important;top:0!important;width:210mm!important;height:296mm!important;overflow:hidden!important;page-break-after:avoid!important;break-after:avoid!important}
+      svg{width:210mm!important;height:296mm!important;overflow:hidden!important}
     }
   </style></head><body>
     <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
     <main class="sheet">
-      <svg xmlns="http://www.w3.org/2000/svg" width="595" height="842" viewBox="0 0 595 842">
-        <text x="297" y="35" class="main-title">QR kartice za zakazivanje termina</text>
-        <text x="297" y="58" class="subtitle">Odštampajte list, isecite kartice i podelite ih mušterijama.</text>
+      <svg xmlns="http://www.w3.org/2000/svg" width="595" height="839" viewBox="0 0 595 839">
+        <text x="297.5" y="34" class="main-title">QR kartice za zakazivanje termina</text>
+        <text x="297.5" y="56" class="subtitle">Odštampajte list, isecite kartice i podelite ih mušterijama.</text>
         ${gridLines}
         ${cards}
       </svg>
@@ -303,7 +307,7 @@ async function printQrPdfList(){
     <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
   </body></html>`);
   w.document.close();
-  msg('Otvoren je list za štampanje. Sada je desktop PDF podešen po istim merama kao Android.','ok');
+  msg('Otvoren je QR list. Sada je zaključan na jednu A4 stranu.','ok');
  }catch(e){msg(e.message,'err')}
 }
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;

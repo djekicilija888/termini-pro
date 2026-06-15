@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "8.5.0",
+  "version": "8.6.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Desktop QR PDF uses same fixed A4 layout as Android"
+  "description": "Fix desktop QR print to fit one A4 page"
 }
