@@ -242,7 +242,7 @@ async function printQrPdfList(){
 
   const qrToRgbImage=async(src)=>{
     const img=await loadImage(src);
-    const size=600;
+    const size=1200;
     const canvas=document.createElement('canvas');
     canvas.width=size;
     canvas.height=size;
@@ -250,6 +250,10 @@ async function printQrPdfList(){
     ctx.fillStyle='#ffffff';
     ctx.fillRect(0,0,size,size);
     ctx.imageSmoothingEnabled=false;
+    ctx.webkitImageSmoothingEnabled=false;
+    ctx.mozImageSmoothingEnabled=false;
+    ctx.msImageSmoothingEnabled=false;
+
     ctx.drawImage(img,0,0,size,size);
     const rgba=ctx.getImageData(0,0,size,size).data;
     const bytes=new Uint8Array(size*size*3);
