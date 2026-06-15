@@ -242,7 +242,7 @@ async function printQrPdfList(){
 
   const qrToRgbImage=async(src)=>{
     const img=await loadImage(src);
-    const size=1200;
+    const size=600;
     const canvas=document.createElement('canvas');
     canvas.width=size;
     canvas.height=size;
@@ -250,10 +250,6 @@ async function printQrPdfList(){
     ctx.fillStyle='#ffffff';
     ctx.fillRect(0,0,size,size);
     ctx.imageSmoothingEnabled=false;
-    ctx.webkitImageSmoothingEnabled=false;
-    ctx.mozImageSmoothingEnabled=false;
-    ctx.msImageSmoothingEnabled=false;
-
     ctx.drawImage(img,0,0,size,size);
     const rgba=ctx.getImageData(0,0,size,size).data;
     const bytes=new Uint8Array(size*size*3);
@@ -405,25 +401,22 @@ async function printQrPdfList(){
 }
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
 
-function printA4DoorPoster(){
+async function printA4DoorPoster(){
  try{
-  let link=bookingUrlInput.value;
-  let b=window.ownerBusinessForPrint||{};
-  let name=b.name||'Vaša firma';
-  let phones=ownerPhoneParts(b.phone);
-  let place=[];
+  await loadBookingLink();
+  const link=bookingUrlInput.value;
+  const b=window.ownerBusinessForPrint||{};
+  const name=b.name||'Vaša firma';
+  const phones=ownerPhoneParts(b.phone);
+  const place=[];
   if(b.city)place.push(b.city);
   if(b.instagram)place.push(b.instagram);
-  let footerLines=[];
-  if(phones.length)footerLines.push('Telefoni: '+phones.join('  •  '));
-  if(place.length)footerLines.push(place.join('  •  '));
-  let qr=ownerQrObjectUrl||ownerQrPreview.src;
-  let staffCount=Number(window.ownerStaffCount||b.staff_count||b.staffCount||0);
-  let posterSubtitle=staffCount>1
-   ? 'Bez poziva — izaberite uslugu, radnika i slobodan termin.'
-   : 'Bez poziva — izaberite uslugu i slobodan termin.';
+  const footerLines=[];
+  if(phones.length)footerLines.push('Telefoni: '+phones.join('  -  '));
+  if(place.length)footerLines.push(place.join('  -  '));
+  const qrSource=ownerQrObjectUrl || await fetchOwnerQrDataUrl();
 
-  const splitPosterText=(value,max)=>{
+  const splitFixed=(value,max)=>{
     const out=[];
     let rest=String(value||'');
     while(rest.length>max){out.push(rest.slice(0,max));rest=rest.slice(max)}
@@ -431,56 +424,206 @@ function printA4DoorPoster(){
     return out;
   };
 
-  const linkLines=splitPosterText(link,38).slice(0,3);
-  const linkSvg=linkLines.map((ln,i)=>`<text x="297.5" y="${728+i*14}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="400" fill="#374151">${htmlEsc(ln)}</text>`).join('');
-
-  let footerY=772;
-  const footerSvg=[];
-  footerLines.slice(0,3).forEach(line=>{
-    splitPosterText(line,68).slice(0,2).forEach(safeLine=>{
-      footerSvg.push(`<text x="297.5" y="${footerY}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="700" fill="#111827">${htmlEsc(safeLine)}</text>`);
-      footerY+=15;
-    });
+  const loadImage=(src)=>new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error('Ne mogu da učitam QR sliku.'));
+    img.src=src;
   });
 
-  let w=window.open('','_blank');
-  if(!w)throw Error('Browser je blokirao prozor za štampanje.');
-  w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>A4 poster</title>
-  <style>
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;width:210mm;height:297mm;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-    .no-print{position:fixed;right:16px;top:16px;z-index:10}
-    .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer;border-radius:8px}
-    .page{width:210mm;height:297mm;margin:0 auto;background:white;overflow:hidden;display:flex;align-items:center;justify-content:center}
-    .poster-svg{display:block;width:210mm;height:297mm;background:white;overflow:hidden}
-    @page{size:A4;margin:0}
-    @media print{.no-print{display:none}html,body{width:210mm;height:297mm;overflow:hidden}.page{margin:0;width:210mm;height:297mm;break-after:avoid;page-break-after:avoid}.poster-svg{width:210mm;height:297mm}}
-  </style></head><body>
-   <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
-   <div class="page">
-    <svg class="poster-svg" viewBox="0 0 595 842" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="595" height="842" fill="#ffffff"/>
-      <rect x="34" y="28" width="527" height="786" rx="18" ry="18" fill="none" stroke="#111827" stroke-width="3"/>
-      <rect x="52" y="46" width="491" height="109" rx="18" ry="18" fill="#111827"/>
+  const qrToRgbImage=async(src)=>{
+    const img=await loadImage(src);
+    const size=1200;
+    const canvas=document.createElement('canvas');
+    canvas.width=size;
+    canvas.height=size;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,size,size);
+    ctx.imageSmoothingEnabled=false;
+    ctx.webkitImageSmoothingEnabled=false;
+    ctx.mozImageSmoothingEnabled=false;
+    ctx.msImageSmoothingEnabled=false;
+    ctx.drawImage(img,0,0,size,size);
+    const rgba=ctx.getImageData(0,0,size,size).data;
+    const bytes=new Uint8Array(size*size*3);
+    for(let i=0,j=0;i<rgba.length;i+=4){
+      bytes[j++]=rgba[i];
+      bytes[j++]=rgba[i+1];
+      bytes[j++]=rgba[i+2];
+    }
+    return {width:size,height:size,bytes};
+  };
 
-      <text x="297.5" y="93" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" fill="#ffffff">SKENIRAJTE I ZAKAŽITE</text>
-      <text x="297.5" y="128" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#ffffff">TERMIN ONLINE</text>
+  const escapePdfText=(value)=>String(value??'')
+    .replace(/\\/g,'\\\\')
+    .replace(/\(/g,'\\(')
+    .replace(/\)/g,'\\)')
+    .replace(/[čć]/g,'c')
+    .replace(/[ČĆ]/g,'C')
+    .replace(/[š]/g,'s')
+    .replace(/[Š]/g,'S')
+    .replace(/[ž]/g,'z')
+    .replace(/[Ž]/g,'Z')
+    .replace(/[đ]/g,'dj')
+    .replace(/[Đ]/g,'Dj')
+    .replace(/[—–]/g,'-')
+    .replace(/•/g,'-');
 
-      <text x="297.5" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#111827">${htmlEsc(name)}</text>
-      <text x="297.5" y="233" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#374151">${htmlEsc(posterSubtitle)}</text>
+  const measureCanvas=document.createElement('canvas');
+  const measureCtx=measureCanvas.getContext('2d');
+  const textWidth=(value,size,bold)=>{
+    measureCtx.font=`${bold?'bold ':''}${size}px Helvetica, Arial, sans-serif`;
+    return measureCtx.measureText(String(value||'')).width;
+  };
 
-      <rect x="113" y="260" width="369" height="385" rx="24" ry="24" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
-      <image href="${htmlEsc(qr)}" x="150" y="298" width="295" height="295" preserveAspectRatio="none"/>
+  const makePdf=async()=>{
+    const pageW=595, pageH=842;
+    const yPdf=(y)=>pageH-y;
+    const qrImage=await qrToRgbImage(qrSource);
+    let content='';
 
-      <text x="297.5" y="680" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#111827">Otvorite kameru telefona i skenirajte QR kod</text>
-      <text x="297.5" y="708" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="400" fill="#374151">Link za zakazivanje:</text>
-      ${linkSvg}
-      ${footerSvg.join('')}
-    </svg>
-   </div>
-   <script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
-  </body></html>`);
-  w.document.close();
+    const setFill=(hex)=>{
+      const n=parseInt(hex.replace('#',''),16);
+      const r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;
+      content+=`${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)} rg\n`;
+    };
+    const setStroke=(hex)=>{
+      const n=parseInt(hex.replace('#',''),16);
+      const r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;
+      content+=`${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)} RG\n`;
+    };
+    const text=(x,y,size,bold,value)=>{
+      content+=`BT /F${bold?2:1} ${size} Tf ${x.toFixed(2)} ${yPdf(y).toFixed(2)} Td (${escapePdfText(value)}) Tj ET\n`;
+    };
+    const centeredText=(x,y,size,bold,value)=>{
+      const safe=escapePdfText(value);
+      const w=textWidth(safe,size,bold);
+      text(x-w/2,y,size,bold,value);
+    };
+    const roundRect=(x1,y1,x2,y2,r,op)=>{
+      const left=x1,right=x2,top=yPdf(y1),bottom=yPdf(y2),k=0.5522847498*r;
+      content+=`${(left+r).toFixed(2)} ${bottom.toFixed(2)} m `+
+        `${(right-r).toFixed(2)} ${bottom.toFixed(2)} l `+
+        `${(right-r+k).toFixed(2)} ${bottom.toFixed(2)} ${(right).toFixed(2)} ${(bottom+r-k).toFixed(2)} ${(right).toFixed(2)} ${(bottom+r).toFixed(2)} c `+
+        `${right.toFixed(2)} ${(top-r).toFixed(2)} l `+
+        `${right.toFixed(2)} ${(top-r+k).toFixed(2)} ${(right-r+k).toFixed(2)} ${top.toFixed(2)} ${(right-r).toFixed(2)} ${top.toFixed(2)} c `+
+        `${(left+r).toFixed(2)} ${top.toFixed(2)} l `+
+        `${(left+r-k).toFixed(2)} ${top.toFixed(2)} ${left.toFixed(2)} ${(top-r+k).toFixed(2)} ${left.toFixed(2)} ${(top-r).toFixed(2)} c `+
+        `${left.toFixed(2)} ${(bottom+r).toFixed(2)} l `+
+        `${left.toFixed(2)} ${(bottom+r-k).toFixed(2)} ${(left+r-k).toFixed(2)} ${bottom.toFixed(2)} ${(left+r).toFixed(2)} ${bottom.toFixed(2)} c h ${op}\n`;
+    };
+
+    // Exact A4 coordinate layout, centered like Android: equal left/right margins.
+    setFill('#ffffff');
+    content+=`0 0 ${pageW} ${pageH} re f\n`;
+
+    setStroke('#111827');
+    content+='3 w\n';
+    roundRect(28,28,567,814,18,'S');
+
+    setFill('#111827');
+    roundRect(46,46,549,155,18,'f');
+
+    setFill('#ffffff');
+    centeredText(297.5,93,29,true,'SKENIRAJTE I ZAKAZITE');
+    centeredText(297.5,128,25,true,'TERMIN ONLINE');
+
+    setFill('#111827');
+    centeredText(297.5,205,27,true,name);
+
+    setFill('#374151');
+    centeredText(297.5,233,15,false,'Bez poziva - izaberite uslugu i slobodan termin.');
+
+    setFill('#f9fafb');
+    roundRect(105,260,490,645,24,'f');
+    setStroke('#d1d5db');
+    content+='2 w\n';
+    roundRect(105,260,490,645,24,'S');
+
+    const qrX=150, qrTop=298, qrSize=295;
+    const qrY=pageH-qrTop-qrSize;
+    content+=`q ${qrSize} 0 0 ${qrSize} ${qrX} ${qrY} cm /Im0 Do Q\n`;
+
+    setFill('#111827');
+    centeredText(297.5,680,16,true,'Otvorite kameru telefona i skenirajte QR kod');
+
+    setFill('#374151');
+    centeredText(297.5,708,11.5,false,'Link za zakazivanje:');
+    const lines=splitFixed(link,38).slice(0,3);
+    lines.forEach((ln,idx)=>centeredText(297.5,728+idx*14,10.5,false,ln));
+
+    setFill('#111827');
+    let footerY=772;
+    footerLines.slice(0,3).forEach(line=>{
+      splitFixed(line,68).slice(0,2).forEach(safeLine=>{
+        centeredText(297.5,footerY,11.5,true,safeLine);
+        footerY+=15;
+      });
+    });
+
+    const encoder=new TextEncoder();
+    const objs=[];
+    const add=(body)=>objs.push(typeof body==='string'?encoder.encode(body):body);
+
+    add('<< /Type /Catalog /Pages 2 0 R >>');
+    add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> /XObject << /Im0 6 0 R >> >> /Contents 7 0 R >>');
+    add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+
+    const imgHeader=encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${qrImage.width} /Height ${qrImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ${qrImage.bytes.length} >>\nstream\n`);
+    const imgFooter=encoder.encode('\nendstream');
+    const imgObj=new Uint8Array(imgHeader.length+qrImage.bytes.length+imgFooter.length);
+    imgObj.set(imgHeader,0);
+    imgObj.set(qrImage.bytes,imgHeader.length);
+    imgObj.set(imgFooter,imgHeader.length+qrImage.bytes.length);
+    add(imgObj);
+
+    const contentBytes=encoder.encode(content);
+    const contHeader=encoder.encode(`<< /Length ${contentBytes.length} >>\nstream\n`);
+    const contFooter=encoder.encode('\nendstream');
+    const contObj=new Uint8Array(contHeader.length+contentBytes.length+contFooter.length);
+    contObj.set(contHeader,0);
+    contObj.set(contentBytes,contHeader.length);
+    contObj.set(contFooter,contHeader.length+contentBytes.length);
+    add(contObj);
+
+    let parts=[encoder.encode('%PDF-1.4\n%TerminiProPoster\n')];
+    let offsets=[0];
+    let pos=parts[0].length;
+    for(let i=0;i<objs.length;i++){
+      offsets.push(pos);
+      const head=encoder.encode(`${i+1} 0 obj\n`);
+      const tail=encoder.encode('\nendobj\n');
+      parts.push(head,objs[i],tail);
+      pos+=head.length+objs[i].length+tail.length;
+    }
+    const xrefPos=pos;
+    let xref=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;
+    for(let i=1;i<offsets.length;i++)xref+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+    xref+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+    parts.push(encoder.encode(xref));
+
+    const total=parts.reduce((s,p)=>s+p.length,0);
+    const pdf=new Uint8Array(total);
+    let o=0;
+    for(const p of parts){pdf.set(p,o);o+=p.length}
+    return new Blob([pdf],{type:'application/pdf'});
+  };
+
+  const blob=await makePdf();
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='poster-a4-termini.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  const w=window.open(url,'_blank');
+  if(!w)msg('A4 poster je preuzet kao PDF fajl.', 'ok');
+  else msg('Napravljen je A4 poster PDF.', 'ok');
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
  }catch(e){msg(e.message,'err')}
 }
 if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{await loadBookingLink();printA4DoorPoster()};
