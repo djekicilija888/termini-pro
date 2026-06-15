@@ -74,24 +74,41 @@ async function ensureTestOwner(){
  const testEmail=normalizeEmail(process.env.TEST_OWNER_EMAIL||'test@termini.local');
  const testName=clean(process.env.TEST_OWNER_NAME||'Test vlasnik',120);
  const businessName=clean(process.env.TEST_BUSINESS_NAME||'PREMIUM',160);
+
  let u=await get("SELECT * FROM users WHERE email=? AND role='owner'",[testEmail]);
+
  if(u&&u.business_id){
   let b=await get('SELECT * FROM businesses WHERE id=?',[u.business_id]);
   if(b)return {user:u,business:b};
  }
- let slug=await uniqueSlug(businessName);
- let r=await run(
-  "INSERT INTO businesses(name,slug,type,city,phone,subscription_plan,subscription_status,subscription_expires_at,active,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,1,?,?)",
-  [businessName,slug,'','','','basic','trial','2099-01-01',now(),now()]
- );
+
+ let b=null;
+ if(u&&u.business_id){
+  b=await get('SELECT * FROM businesses WHERE id=?',[u.business_id]);
+ }
+
+ if(!b){
+  let slug=await uniqueSlug(businessName);
+  let r=await run(
+   "INSERT INTO businesses(name,slug,type,city,phone,subscription_plan,subscription_status,subscription_expires_at,active,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,1,?,?)",
+   [businessName,slug,'','','','basic','trial','2099-01-01',now(),now()]
+  );
+  await defaults(r.lastID,testName);
+  b=await get('SELECT * FROM businesses WHERE id=?',[r.lastID]);
+
+  if(u){
+   await run('UPDATE users SET business_id=?,name=? WHERE id=?',[b.id,testName,u.id]);
+   u=await get('SELECT * FROM users WHERE id=?',[u.id]);
+   return {user:u,business:b};
+  }
+ }
+
  let h=await bcrypt.hash(crypto.randomBytes(18).toString('hex'),10);
  let created=await run(
   "INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(?,?,?,?,?,?)",
-  [r.lastID,testName,testEmail,h,'owner',now()]
+  [b.id,testName,testEmail,h,'owner',now()]
  );
- await defaults(r.lastID,testName);
  u=await get('SELECT * FROM users WHERE id=?',[created.lastID]);
- let b=await get('SELECT * FROM businesses WHERE id=?',[r.lastID]);
  return {user:u,business:b};
 }
 
