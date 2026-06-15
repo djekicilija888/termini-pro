@@ -238,11 +238,11 @@ async function printQrPdfList(){
     h1{margin:0 0 4px;text-align:center;font-size:23px;line-height:1.2}
     .top-text{margin:0 0 7mm;text-align:center;font-size:12px;color:#111827}
     .grid{width:100%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);border-left:1px solid #111827;border-top:1px solid #111827}
-    .cut-card{height:63mm;border-right:1px solid #111827;border-bottom:1px solid #111827;padding:4mm 3mm 3mm;text-align:center;overflow:hidden;break-inside:avoid}
-    .card-title{font-size:13px;line-height:1.1;font-weight:900;margin-bottom:2mm}
-    .cut-card img{width:31mm;height:31mm;display:block;margin:0 auto 2mm}
-    .link-title{font-size:10px;font-weight:900;margin-bottom:1mm}
-    .card-link{font-size:9.6px;line-height:1.22;word-break:break-all;color:#111827}
+    .cut-card{height:56mm;border-right:1px solid #111827;border-bottom:1px solid #111827;padding:3mm 3mm 1mm;text-align:center;overflow:hidden;break-inside:avoid}
+    .card-title{font-size:15px;line-height:1.02;font-weight:900;margin-bottom:1.2mm}
+    .cut-card img{width:31mm;height:31mm;display:block;margin:0 auto 1.1mm}
+    .link-title{font-size:11.2px;font-weight:900;margin-bottom:.3mm}
+    .card-link{font-size:10.2px;line-height:1.08;word-break:break-all;color:#111827}
     .no-print{position:fixed;right:16px;top:16px;z-index:9}.no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer}
     @page{size:A4;margin:0}@media print{.no-print{display:none}.page{width:210mm;min-height:297mm;margin:0;padding:10mm 7mm}}
   </style></head><body>
