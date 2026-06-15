@@ -42,13 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         });
 
-        if (data.role === 'admin') {
-          localStorage.setItem('token', data.token);
-          location.href = '/superadmin.html';
-        } else {
-          localStorage.setItem('terminiOwnerToken', data.token);
-          location.href = '/owner.html';
-        }
+       if (data.role === 'admin') {
+  localStorage.setItem('token', data.token);
+  location.href = '/superadmin.html';
+} 
+else {
+  localStorage.setItem('terminiOwnerToken', data.token);
+  location.href = '/owner.html';
+}
       } catch (err) {
         setMsg('loginMsg', err.message || 'Neuspešna prijava.');
       }
@@ -74,9 +75,9 @@ function addNoRegistrationTestButton(){
     setMsg('loginMsg', 'Ulazim bez registracije...');
     btn.disabled = true;
     try {
-      const data = await api('/api/auth/test-owner-login', { method: 'POST' });
-      localStorage.setItem('terminiOwnerToken', data.token);
-      location.href = '/owner.html';
+     const data = await api('/api/auth/test-owner-login', { method: 'POST' });
+     localStorage.setItem('terminiOwnerToken', data.token);
+     location.href = '/owner.html';
     } catch (err) {
       btn.disabled = false;
       setMsg('loginMsg', err.message || 'Neuspešan test ulaz.');
