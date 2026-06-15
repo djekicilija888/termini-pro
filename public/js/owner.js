@@ -401,7 +401,7 @@ async function printQrPdfList(){
 }
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
 
-async function printA4DoorPoster(){
+function printA4DoorPoster(){
  try{
   await loadBookingLink();
   const link=bookingUrlInput.value;
