@@ -200,7 +200,6 @@ async function loadBookingLink(){
  try{
   let d=await api('/api/owner/dashboard');
   window.ownerBusinessForPrint=d.business||{};
-  window.ownerStaffCount=(d.cards&&d.cards.staff)||0;
   if(typeof bookingUrlInput!=='undefined')bookingUrlInput.value=d.business.booking_url;
   if(typeof openPublicLink!=='undefined')openPublicLink.href=d.business.booking_url;
   if(typeof bookingLinkBusinessName!=='undefined')bookingLinkBusinessName.textContent=d.business.name||'Firma';
@@ -420,9 +419,9 @@ function printA4DoorPoster(){
    ? 'Bez poziva — izaberite uslugu, radnika i slobodan termin.'
    : 'Bez poziva — izaberite uslugu i slobodan termin.';
 
-  const splitPosterText=(text,max)=>{
+  const splitPosterText=(value,max)=>{
     const out=[];
-    let rest=String(text||'');
+    let rest=String(value||'');
     while(rest.length>max){out.push(rest.slice(0,max));rest=rest.slice(max)}
     if(rest.trim())out.push(rest);
     return out;
@@ -445,20 +444,20 @@ function printA4DoorPoster(){
   w.document.write(`<!doctype html><html lang="sr"><head><meta charset="UTF-8"><title>A4 poster</title>
   <style>
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif}
+    html,body{margin:0;padding:0;width:210mm;height:297mm;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
     .no-print{position:fixed;right:16px;top:16px;z-index:10}
     .no-print button{background:#111827;color:white;border:0;padding:12px 18px;font-weight:900;cursor:pointer;border-radius:8px}
-    .page{width:595pt;height:842pt;margin:0 auto;background:white;overflow:hidden}
-    .poster-svg{display:block;width:595pt;height:842pt;background:white}
+    .page{width:210mm;height:297mm;margin:0 auto;background:white;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .poster-svg{display:block;width:210mm;height:297mm;background:white;overflow:hidden}
     @page{size:A4;margin:0}
-    @media print{.no-print{display:none}body{background:white}.page{margin:0;width:595pt;height:842pt}}
+    @media print{.no-print{display:none}html,body{width:210mm;height:297mm;overflow:hidden}.page{margin:0;width:210mm;height:297mm;break-after:avoid;page-break-after:avoid}.poster-svg{width:210mm;height:297mm}}
   </style></head><body>
    <div class="no-print"><button onclick="window.print()">Štampaj / sačuvaj PDF</button></div>
    <div class="page">
     <svg class="poster-svg" viewBox="0 0 595 842" xmlns="http://www.w3.org/2000/svg">
       <rect x="0" y="0" width="595" height="842" fill="#ffffff"/>
-      <rect x="28" y="28" width="539" height="786" rx="18" ry="18" fill="none" stroke="#111827" stroke-width="3"/>
-      <rect x="46" y="46" width="503" height="109" rx="18" ry="18" fill="#111827"/>
+      <rect x="34" y="28" width="527" height="786" rx="18" ry="18" fill="none" stroke="#111827" stroke-width="3"/>
+      <rect x="52" y="46" width="491" height="109" rx="18" ry="18" fill="#111827"/>
 
       <text x="297.5" y="93" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" fill="#ffffff">SKENIRAJTE I ZAKAŽITE</text>
       <text x="297.5" y="128" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#ffffff">TERMIN ONLINE</text>
@@ -466,7 +465,7 @@ function printA4DoorPoster(){
       <text x="297.5" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#111827">${htmlEsc(name)}</text>
       <text x="297.5" y="233" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#374151">${htmlEsc(posterSubtitle)}</text>
 
-      <rect x="105" y="260" width="385" height="385" rx="24" ry="24" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+      <rect x="113" y="260" width="369" height="385" rx="24" ry="24" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
       <image href="${htmlEsc(qr)}" x="150" y="298" width="295" height="295" preserveAspectRatio="none"/>
 
       <text x="297.5" y="680" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#111827">Otvorite kameru telefona i skenirajte QR kod</text>
