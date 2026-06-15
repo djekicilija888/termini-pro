@@ -354,15 +354,15 @@ const emailLines=splitWords(emailText,24,2);
         phoneLines.forEach((ln,idx)=>text(x+15,infoY+idx*13,10.6,false,ln));
         locationLines.forEach((ln,idx)=>text(x+15,infoY+31+idx*12,10.0,false,ln));
 
-        centeredText(qrCenterX,y+26,8,true,'ZAKAZITE TERMIN');
-        centeredText(qrCenterX,y+37,8,true,'ONLINE');
+        centeredText(qrCenterX,y+28,8,true,'ZAKAZITE TERMIN');
+        centeredText(qrCenterX,y+39,8,true,'ONLINE');
 
         const imgX=qrCenterX-qrSize/2;
         const imgTop=y+48;
         const imgY=pageH-imgTop-qrSize;
         content += `q ${qrSize} 0 0 ${qrSize} ${imgX.toFixed(2)} ${imgY.toFixed(2)} cm /Im0 Do Q\n`;
 
-        emailLines.forEach((ln,idx)=>centeredText(qrCenterX,y+132+idx*8,8.2,false,ln));
+        emailLines.forEach((ln,idx)=>centeredText(qrCenterX,y+135+idx*8,8.2,false,ln));
       }
     }
 
