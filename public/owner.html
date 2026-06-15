@@ -1,0 +1,151 @@
+<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=desktop-qr-real-pdf-png-fix-v88"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
+  <p class="eyebrow">Pregled</p>
+  <h2 id="bn">Osnovna strana</h2>
+  <div id="cards" class="grid3 dashboard-stats"></div>
+  <h2>Najbliži termini</h2>
+  <div class="table"><table><tbody id="upcoming"></tbody></table></div>
+</section>
+
+
+<section id="bookinglink" class="tab card hidden">
+  <p class="eyebrow">Link / QR kod</p>
+  <h2>Link i QR kod za zakazivanje</h2>
+  <p class="muted">Vlasnik može da kopira link, otvori javnu stranicu ili odštampa PDF list sa više QR kodova za sečenje i deljenje.</p>
+
+  <div class="link-qr-layout">
+    <div class="booking-link-card">
+      <div>
+        <strong id="bookingLinkBusinessName">Firma</strong>
+        <p class="muted">Javni link za mušterije</p>
+      </div>
+      <input id="bookingUrlInput" readonly>
+      <div class="link-actions">
+        <button id="copyLinkBtn" class="btn small" type="button">Kopiraj link</button>
+        <a id="openPublicLink" class="btn small ghost" target="_blank">Otvori javnu stranicu</a>
+      </div>
+    </div>
+
+    <div class="qr-card">
+      <p class="eyebrow">QR kod</p>
+      <div class="qr-preview-box">
+        <img id="ownerQrPreview" alt="QR kod za zakazivanje">
+      </div>
+      <p class="muted">Mušterija skenira QR kod i odmah otvara stranicu za zakazivanje.</p>
+      <button id="printQrPdfBtn" class="btn small" type="button">Štampaj / preuzmi QR list</button>
+        <button id="printA4PosterBtn" class="btn small ghost" type="button">Štampaj / preuzmi A4 poster</button>
+    </div>
+  </div>
+</section>
+
+
+<section id="appointments" class="tab card hidden">
+  <p class="eyebrow">Termini</p>
+  <h2>Termini</h2>
+
+  <div class="card soft-card manual-appointment-card">
+    <button id="toggleManualAppointment" class="manual-toggle" type="button" aria-expanded="false">
+      <span class="manual-plus">+</span>
+      <span>Ručno dodaj termin za mušteriju</span>
+    </button>
+    <div id="manualAppointmentPanel" class="manual-panel hidden" role="dialog" aria-modal="true">
+      <div class="manual-modal-head"><div><h3>Ručno dodaj termin za mušteriju</h3><p class="muted">Ovde vlasnik može sam da ubaci mušteriju na spisak termina.</p></div><button id="closeManualAppointment" class="manual-close" type="button" aria-label="Zatvori">×</button></div>
+      <form id="manualForm" class="formgrid">
+      <label>Ime mušterije<input id="manualName" placeholder="Ime i prezime"></label>
+      <label>Telefon<input id="manualPhone" placeholder="Telefon"></label>
+      <label>Email, nije obavezno<input id="manualEmail" type="email" placeholder="email@example.com"></label>
+      <label>Usluga<select id="manualService"></select></label>
+      <label>Radnik<select id="manualStaff"><option value="">Bilo koji slobodan radnik</option></select></label>
+      <label>Datum<input id="manualDate" type="date"></label>
+      <label>Slobodno vreme<select id="manualTime"></select></label>
+      <label>Napomena<textarea id="manualNotes" placeholder="Napomena, nije obavezno"></textarea></label>
+      <div class="form-actions">
+        <button id="manualSlotRefresh" type="button" class="btn small ghost">Osveži slobodna vremena</button>
+        <button class="btn small" type="submit">Dodaj termin</button>
+      </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card soft-card">
+    <h3>Lista termina</h3>
+    <div class="formgrid">
+      <input id="from" type="date">
+      <input id="to" type="date">
+      <select id="status">
+        <option value="">Svi</option>
+        <option value="booked">Zakazani</option>
+        <option value="completed">Završeni</option>
+        <option value="cancelled">Otkazani</option>
+        <option value="no_show">Nije došao</option>
+      </select>
+      <button id="loadA" class="btn small">Učitaj</button>
+    </div>
+    <div class="table"><table><tbody id="appointmentsBody"></tbody></table></div>
+  </div>
+</section><section id="staff" class="tab card hidden"><h2>Radnici</h2><form id="staffForm" class="formgrid"><input id="staffId" type="hidden"><label>Ime<input id="staffName"></label><label>Titula<input id="staffTitle"></label><label>Telefon<input id="staffPhone"></label><label>Email<input id="staffEmail"></label><label>Redosled<input id="staffSort" type="number" value="0"></label><label><input id="staffActive" type="checkbox" checked> Aktivan</label><button class="btn small">Sačuvaj</button><button id="resetStaff" type="button" class="btn small ghost">Poništi</button></form><div id="staffList" class="stack"></div></section><section id="services" class="tab card hidden"><h2>Usluge</h2><form id="serviceForm" class="formgrid"><input id="serviceId" type="hidden"><label>Naziv<input id="serviceName"></label><label>Trajanje<input id="serviceDuration" type="number" value="30"></label><label>Cena<input id="servicePrice" type="number" value="1000"></label><label>Redosled<input id="serviceSort" type="number" value="0"></label><label>Opis<textarea id="serviceDesc"></textarea></label><label><input id="serviceActive" type="checkbox" checked> Aktivna</label><button class="btn small">Sačuvaj</button><button id="resetService" type="button" class="btn small ghost">Poništi</button></form><div id="serviceList" class="stack"></div></section><section id="hours" class="tab card hidden">
+  <p class="eyebrow">Radno vreme</p>
+  <h2>Radno vreme</h2>
+  <p class="muted">Ovde podešavaš kada firma radi. Pauze i neradni dani automatski blokiraju zakazivanje.</p>
+
+  <div class="card soft-card">
+    <h3>Redovno radno vreme i pauze</h3>
+    <p class="muted">Za svaki dan možeš uneti vreme rada i pauzu, npr. 12:00–13:00.</p>
+    <div id="hoursForm" class="stack"></div>
+    <button id="saveHours" class="btn small">Sačuvaj radno vreme</button>
+  </div>
+
+  <div class="card soft-card">
+    <h3>Neradni dani i zauzeti periodi</h3>
+    <p class="muted">Ako ostaviš vreme prazno, blokira se ceo dan. Ako uneseš vreme od/do, blokira se samo taj period.</p>
+    <form id="blockedForm" class="formgrid">
+      <label>Datum<input id="blockedDate" type="date"></label>
+      <label>Od<input id="blockedStart" type="time"></label>
+      <label>Do<input id="blockedEnd" type="time"></label>
+      <label>Razlog<input id="blockedReason" placeholder="Odmor, pauza, privatna obaveza..."></label>
+      <button class="btn small" type="submit">Dodaj neradno</button>
+    </form>
+    <div id="blockedList" class="stack"></div>
+  </div>
+</section><section id="settings" class="tab card hidden">
+  <p class="eyebrow">Profil firme</p>
+  <h2>Podešavanje profila firme</h2>
+  <p class="muted">Podaci koje mušterije vide na javnoj stranici.</p>
+
+  <form id="settingsForm" class="stack">
+    <div class="card soft-card">
+      <h3>Podaci firme</h3>
+      <div class="formgrid">
+        <label>Naziv firme<input id="setName"></label>
+        <label>Delatnost<input id="setType"></label>
+        <label>Grad<input id="setCity"></label>
+        <label>Telefoni firme, najviše 10 brojeva<textarea id="setPhone" rows="5" placeholder="Svaki broj u novi red"></textarea></label>
+        <label>Instagram/Facebook link<input id="setInstagram"></label>
+        <label>Adresa<input id="setAddress"></label>
+        <label>Website<input id="setWebsite"></label>
+        <label>Opis firme<textarea id="setDesc"></textarea></label>
+      </div>
+    </div>
+
+    <div class="card soft-card">
+      <h3>Automatske poruke za mušterije</h3>
+      <label>Poruka posle zakazivanja<textarea id="setMsgBooking" rows="3"></textarea></label>
+      <label>Poruka kod otkazivanja<textarea id="setMsgCancel" rows="3"></textarea></label>
+      <label>Napomena za mušterije<textarea id="setCustomerNote" rows="3"></textarea></label>
+    </div>
+
+    <div class="card soft-card">
+      <h3>Podešavanja termina</h3>
+      <div class="formgrid">
+        <label>Interval<input id="setInterval" type="number"></label>
+        <label>Min najava sati<input id="setMin" type="number"></label>
+        <label>Max dana<input id="setMax" type="number"></label>
+        <label><input id="nCust" type="checkbox"> Email mušteriji</label>
+        <label><input id="nOwner" type="checkbox"> Email vlasniku</label>
+        <label><input id="nSms" type="checkbox"> SMS log</label>
+        <label><input id="nViber" type="checkbox"> Viber log</label>
+      </div>
+    </div>
+
+    <button class="btn small">Sačuvaj</button>
+  </form>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=desktop-qr-real-pdf-png-fix-v88"></script></body></html>
