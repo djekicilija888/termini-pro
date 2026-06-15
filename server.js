@@ -68,6 +68,33 @@ async function init(){await run('PRAGMA foreign_keys=ON');
 await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
  let se=email(process.env.SUPERADMIN_EMAIL||'admin@platform.local');if(!await get('SELECT id FROM users WHERE email=?',[se])){let h=await bcrypt.hash(process.env.SUPERADMIN_PASSWORD||'platform123',12);await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(NULL,'Super Admin',?,?,'superadmin',?)",[se,h,now()])}}
 async function defaults(bid,ownerName){await run('INSERT INTO settings(business_id,updated_at) VALUES(?,?)',[bid,now()]);for(let r of [[0,0,'09:00','17:00'],[1,1,'09:00','17:00'],[2,1,'09:00','17:00'],[3,1,'09:00','17:00'],[4,1,'09:00','17:00'],[5,1,'09:00','17:00'],[6,1,'09:00','14:00']])await run('INSERT INTO hours(business_id,day,is_open,open_time,close_time,break_start,break_end) VALUES(?,?,?,?,?,?,?)',[bid,...r,'','']);await run("INSERT INTO staff(business_id,name,title,active,sort_order,created_at,updated_at) VALUES(?,?,'Majstor',1,1,?,?)",[bid,ownerName||'Glavni majstor',now(),now()]);await run("INSERT INTO services(business_id,name,description,duration,price,active,sort_order,created_at,updated_at) VALUES(?,'Osnovna usluga','Promeni naziv i cenu u panelu.',30,1000,1,1,?,?)",[bid,now(),now()])}
+
+/* Owner No Registration Test v81 */
+async function ensureTestOwner(){
+ const testEmail=normalizeEmail(process.env.TEST_OWNER_EMAIL||'test@termini.local');
+ const testName=clean(process.env.TEST_OWNER_NAME||'Test vlasnik',120);
+ const businessName=clean(process.env.TEST_BUSINESS_NAME||'PREMIUM',160);
+ let u=await get("SELECT * FROM users WHERE email=? AND role='owner'",[testEmail]);
+ if(u&&u.business_id){
+  let b=await get('SELECT * FROM businesses WHERE id=?',[u.business_id]);
+  if(b)return {user:u,business:b};
+ }
+ let slug=await uniqueSlug(businessName);
+ let r=await run(
+  "INSERT INTO businesses(name,slug,type,city,phone,subscription_plan,subscription_status,subscription_expires_at,active,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,1,?,?)",
+  [businessName,slug,'','','','basic','trial','2099-01-01',now(),now()]
+ );
+ let h=await bcrypt.hash(crypto.randomBytes(18).toString('hex'),10);
+ let created=await run(
+  "INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(?,?,?,?,?,?)",
+  [r.lastID,testName,testEmail,h,'owner',now()]
+ );
+ await defaults(r.lastID,testName);
+ u=await get('SELECT * FROM users WHERE id=?',[created.lastID]);
+ let b=await get('SELECT * FROM businesses WHERE id=?',[r.lastID]);
+ return {user:u,business:b};
+}
+
 async function bizPlanOk(bid){let b=await get('SELECT * FROM businesses WHERE id=?',[bid]);if(!b)return {ok:false,reason:'Firma nije pronađena.'};let st=b.subscription_status||'trial';if(!['trial','active','manual_active'].includes(st))return {ok:false,reason:'Pretplata nije aktivna.'};if(b.subscription_expires_at&&b.subscription_expires_at<today())return {ok:false,reason:'Pretplata je istekla.'};return {ok:true,plan:b.subscription_plan||'basic'}}
 async function slots(bid,date,service,staffId=null,opts={}){
  if(!(await bizPlanOk(bid)).ok)return[];
@@ -204,6 +231,22 @@ app.get('/api/google-play/status',async(req,res)=>{
   let used=await ownerBusinessCountByEmail(email);
   res.json({email,allowed_businesses:allowed,used_businesses:used,can_create_more:used<allowed});
  }catch(e){res.status(500).json({error:'Greška pri proveri statusa.'})}
+});
+
+
+app.post('/api/auth/test-owner-login',async(req,res)=>{
+ try{
+  let data=await ensureTestOwner();
+  let u=data.user;
+  res.json({
+   token:sign(u),
+   user:{id:u.id,business_id:u.business_id,name:u.name,email:u.email,role:u.role},
+   business:{...pubBiz(data.business),booking_url:bookUrl(req,data.business.slug)},
+   message:'Test ulaz bez registracije je aktivan.'
+  });
+ }catch(e){
+  res.status(500).json({error:'Greška pri test ulazu bez registracije.'});
+ }
 });
 
 app.post('/api/auth/login',async(req,res)=>{try{let u=await get('SELECT * FROM users WHERE email=?',[email(req.body.email)]);if(!u||!await bcrypt.compare(String(req.body.password||''),u.password_hash))return res.status(401).json({error:'Pogrešan email ili lozinka.'});res.json({token:sign(u),user:{id:u.id,business_id:u.business_id,name:u.name,email:u.email,role:u.role}})}catch{res.status(500).json({error:'Greška pri prijavi.'})}});

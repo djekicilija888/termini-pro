@@ -26,6 +26,7 @@ async function loadPlatform() {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadPlatform();
+  addNoRegistrationTestButton();
 
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
@@ -54,3 +55,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
+
+/* Owner No Registration Test v81 */
+function addNoRegistrationTestButton(){
+  const loginForm = document.getElementById('loginForm');
+  if (!loginForm || document.getElementById('testOwnerLoginBtn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'testOwnerLoginBtn';
+  btn.type = 'button';
+  btn.className = 'btn ghost';
+  btn.style.marginTop = '10px';
+  btn.textContent = 'Uđi bez registracije';
+
+  btn.addEventListener('click', async () => {
+    setMsg('loginMsg', 'Ulazim bez registracije...');
+    btn.disabled = true;
+    try {
+      const data = await api('/api/auth/test-owner-login', { method: 'POST' });
+      localStorage.setItem('token', data.token);
+      location.href = '/owner.html';
+    } catch (err) {
+      btn.disabled = false;
+      setMsg('loginMsg', err.message || 'Neuspešan test ulaz.');
+    }
+  });
+
+  loginForm.insertAdjacentElement('afterend', btn);
+}
