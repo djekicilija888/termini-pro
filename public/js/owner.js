@@ -356,7 +356,7 @@ const emailText=(b.email||'Email nije unet').trim();
 const nameMaxWidth=cardW*0.60-40;
 const nameLines=wrapTextToWidth(businessName,nameFontSize,true,nameMaxWidth,3);
 const locationLines=splitWords(locationText,36,3);
-const phoneFontSize=7;
+const phoneFontSize=8;
 const phoneLineGap=10;
 const phoneLines=phoneList;
 const emailLines=splitWords(emailText,24,2);
@@ -403,7 +403,7 @@ const emailLines=splitWords(emailText,24,2);
         locationLines.forEach((ln,idx)=>{
         text(x+15,locationStartY+idx*11,9.4,false,ln);
         });
-        
+
         centeredText(qrCenterX,y+28,8,true,'ZAKAŽITE TERMIN');
         centeredText(qrCenterX,y+39,8,true,'ONLINE');
 
