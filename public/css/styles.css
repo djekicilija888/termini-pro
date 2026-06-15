@@ -638,3 +638,127 @@ body{
 [data-badge="novo"]{
   display:none !important;
 }
+
+
+/* Owner Manual Modal Center v79 */
+body.manual-modal-body-open{
+  overflow:hidden !important;
+}
+.manual-panel.manual-modal-open{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:5000 !important;
+  width:100vw !important;
+  height:100vh !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:rgba(17,24,39,.46) !important;
+  box-sizing:border-box !important;
+}
+.manual-panel.manual-modal-open .manual-modal-head,
+.manual-panel.manual-modal-open #manualForm{
+  width:min(980px, calc(100vw - 56px)) !important;
+  background:#ffffff !important;
+  box-sizing:border-box !important;
+}
+.manual-panel.manual-modal-open .manual-modal-head{
+  border-radius:22px 22px 0 0 !important;
+  padding:14px 18px 8px !important;
+  border:1px solid #e5e7eb !important;
+  border-bottom:0 !important;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:18px !important;
+}
+.manual-panel.manual-modal-open .manual-modal-head h3{
+  margin:0 0 4px !important;
+  font-size:21px !important;
+}
+.manual-panel.manual-modal-open .manual-modal-head p{
+  margin:0 !important;
+  font-size:14px !important;
+}
+.manual-close{
+  width:38px;
+  height:38px;
+  border-radius:999px;
+  border:0;
+  background:#111827;
+  color:#ffffff;
+  font-size:25px;
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+  flex:0 0 auto;
+}
+.manual-panel.manual-modal-open #manualForm{
+  border:1px solid #e5e7eb !important;
+  border-top:0 !important;
+  border-radius:0 0 22px 22px !important;
+  padding:8px 18px 16px !important;
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+  gap:9px 12px !important;
+  max-height:calc(100vh - 112px) !important;
+  overflow:hidden !important;
+}
+.manual-panel.manual-modal-open #manualForm label{
+  margin:0 !important;
+  font-size:14px !important;
+}
+.manual-panel.manual-modal-open #manualForm input,
+.manual-panel.manual-modal-open #manualForm select,
+.manual-panel.manual-modal-open #manualForm textarea{
+  min-height:40px !important;
+  padding:8px 11px !important;
+  font-size:15px !important;
+}
+.manual-panel.manual-modal-open #manualNotes{
+  min-height:78px !important;
+}
+.manual-panel.manual-modal-open #manualForm label:has(#manualNotes){
+  grid-column:span 2 !important;
+}
+.manual-panel.manual-modal-open #manualForm .form-actions{
+  grid-column:1 / -1 !important;
+  display:flex !important;
+  gap:10px !important;
+  justify-content:flex-start !important;
+}
+.manual-panel.manual-modal-open #manualForm .form-actions .btn{
+  min-height:40px !important;
+}
+@media(max-width:900px){
+  .manual-panel.manual-modal-open .manual-modal-head,
+  .manual-panel.manual-modal-open #manualForm{
+    width:calc(100vw - 20px) !important;
+  }
+  .manual-panel.manual-modal-open #manualForm{
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+    max-height:calc(100vh - 90px) !important;
+    gap:8px !important;
+  }
+  .manual-panel.manual-modal-open .manual-modal-head{
+    padding:12px 14px 8px !important;
+  }
+}
+@media(max-width:620px){
+  .manual-panel.manual-modal-open{
+    justify-content:flex-start !important;
+    padding-top:10px !important;
+  }
+  .manual-panel.manual-modal-open #manualForm{
+    grid-template-columns:1fr !important;
+    overflow:auto !important;
+  }
+  .manual-panel.manual-modal-open #manualForm label:has(#manualNotes){
+    grid-column:auto !important;
+  }
+}

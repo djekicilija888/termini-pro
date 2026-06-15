@@ -490,3 +490,97 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
   document.addEventListener('DOMContentLoaded',()=>{setTimeout(removeNovoBadges,100);setTimeout(removeNovoBadges,800)});
   document.addEventListener('click',()=>setTimeout(removeNovoBadges,80),true);
 })();
+
+
+
+/* Owner Manual Modal Center v79 */
+(function(){
+  function isOpen(){
+    const panel = document.getElementById('manualAppointmentPanel');
+    return !!panel && !panel.classList.contains('hidden');
+  }
+
+  function openModal(){
+    const btn = document.getElementById('toggleManualAppointment');
+    const panel = document.getElementById('manualAppointmentPanel');
+    if(!btn || !panel) return;
+
+    panel.classList.remove('hidden');
+    panel.classList.add('manual-modal-open');
+    document.body.classList.add('manual-modal-body-open');
+    btn.setAttribute('aria-expanded','true');
+    btn.classList.add('open');
+
+    const plus = btn.querySelector('.manual-plus');
+    if(plus) plus.textContent = '−';
+
+    setTimeout(() => {
+      const first = document.getElementById('manualName');
+      if(first) first.focus({preventScroll:true});
+    }, 120);
+
+    if(typeof loadManualOptions === 'function'){
+      try{ loadManualOptions(); }catch(e){}
+    }
+  }
+
+  function closeModal(){
+    const btn = document.getElementById('toggleManualAppointment');
+    const panel = document.getElementById('manualAppointmentPanel');
+    if(!btn || !panel) return;
+
+    panel.classList.add('hidden');
+    panel.classList.remove('manual-modal-open');
+    document.body.classList.remove('manual-modal-body-open');
+    btn.setAttribute('aria-expanded','false');
+    btn.classList.remove('open');
+
+    const plus = btn.querySelector('.manual-plus');
+    if(plus) plus.textContent = '+';
+  }
+
+  function install(){
+    const btn = document.getElementById('toggleManualAppointment');
+    const panel = document.getElementById('manualAppointmentPanel');
+    const close = document.getElementById('closeManualAppointment');
+    if(!btn || !panel) return;
+
+    if(!btn.dataset.modalCenterReady){
+      btn.dataset.modalCenterReady = '1';
+      btn.addEventListener('click', function(ev){
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        if(isOpen()) closeModal();
+        else openModal();
+      }, true);
+    }
+
+    if(close && !close.dataset.modalCenterReady){
+      close.dataset.modalCenterReady = '1';
+      close.addEventListener('click', function(ev){
+        ev.preventDefault();
+        closeModal();
+      });
+    }
+
+    if(!panel.dataset.backdropReady){
+      panel.dataset.backdropReady = '1';
+      panel.addEventListener('mousedown', function(ev){
+        if(ev.target === panel) closeModal();
+      });
+    }
+  }
+
+  document.addEventListener('keydown', function(ev){
+    if(ev.key === 'Escape' && isOpen()) closeModal();
+  });
+
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(install, 200);
+    setTimeout(install, 1000);
+  });
+
+  document.addEventListener('click', function(){
+    setTimeout(install, 80);
+  }, true);
+})();

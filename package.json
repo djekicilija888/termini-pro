@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "7.8.0",
+  "version": "7.9.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Remove NOVO badge from manual appointment section"
+  "description": "Manual appointment form opens centered as modal"
 }

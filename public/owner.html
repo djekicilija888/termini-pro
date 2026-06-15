@@ -1,4 +1,4 @@
-<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=owner-remove-novo-badge-v78"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
+<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=owner-manual-modal-center-v79"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
   <p class="eyebrow">Pregled</p>
   <h2 id="bn">Osnovna strana</h2>
   <div id="cards" class="grid3 dashboard-stats"></div>
@@ -47,8 +47,8 @@
       <span class="manual-plus">+</span>
       <span>Ručno dodaj termin za mušteriju</span>
     </button>
-    <div id="manualAppointmentPanel" class="manual-panel hidden">
-      <p class="muted">Ovde vlasnik može sam da ubaci mušteriju na spisak termina.</p>
+    <div id="manualAppointmentPanel" class="manual-panel hidden" role="dialog" aria-modal="true">
+      <div class="manual-modal-head"><div><h3>Ručno dodaj termin za mušteriju</h3><p class="muted">Ovde vlasnik može sam da ubaci mušteriju na spisak termina.</p></div><button id="closeManualAppointment" class="manual-close" type="button" aria-label="Zatvori">×</button></div>
       <form id="manualForm" class="formgrid">
       <label>Ime mušterije<input id="manualName" placeholder="Ime i prezime"></label>
       <label>Telefon<input id="manualPhone" placeholder="Telefon"></label>
@@ -148,4 +148,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=owner-remove-novo-badge-v78"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=owner-manual-modal-center-v79"></script></body></html>
