@@ -222,11 +222,16 @@ async function printQrPdfList(){
   const qrSource=ownerQrObjectUrl || await fetchOwnerQrDataUrl();
   const b=window.ownerBusinessForPrint||{};
   const businessName=(b.name||'Vaša firma').trim();
-const phones=ownerPhoneParts(b.phone);
-const phoneList=(phones.length?phones:['Telefon nije unet'])
-  .map(p=>String(p).trim())
-  .filter(Boolean)
-  .slice(0,4);
+  
+const rawPhoneText=String(b.phone||'').trim();
+
+const phoneList=rawPhoneText
+  ? rawPhoneText
+      .split(/[\n,;|/]+/)
+      .map(p=>p.trim())
+      .filter(Boolean)
+      .slice(0,4)
+  : ['Telefon nije unet'];
 const locationText=((b.address?b.address.trim():'') + ((b.address&&b.city)?', ':'') + (b.city?b.city.trim():'')) || 'Lokacija nije uneta';
 const emailText=(b.email||'Email nije unet').trim();
   const splitWords=(value,maxChars,maxLines=3)=>{
@@ -357,7 +362,7 @@ const nameMaxWidth=cardW*0.60-40;
 const nameLines=wrapTextToWidth(businessName,nameFontSize,true,nameMaxWidth,3);
 const locationLines=splitWords(locationText,36,3);
 const phoneFontSize=8;
-const phoneLineGap=10;
+const phoneLineGap=9;
 const phoneLines=phoneList;
 const emailLines=splitWords(emailText,24,2);
 
