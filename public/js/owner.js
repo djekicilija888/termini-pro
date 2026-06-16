@@ -202,7 +202,7 @@ function ownerPhoneParts(value){
  return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10);
 }
 
-let ownerQrObjectUrl='', ownerLocationsCache=[], profileLocationEditIndex=null;
+let ownerQrObjectUrl='', ownerLocationsCache=[], profileLocationEditIndex=null, profileLocationSaving=false;
 function safeFileName(value){return String(value||'lokacija').toLowerCase().replace(/[š]/g,'s').replace(/[đ]/g,'dj').replace(/[čć]/g,'c').replace(/[ž]/g,'z').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'lokacija'}
 function ownerLocationTitle(l,idx){return (l&&l.name)||('Lokacija '+((idx||0)+1))}
 function ownerLocId(l){return l&&String(l.id||'').startsWith('new-')?'':(l&&l.id?String(l.id):'')}
@@ -350,25 +350,19 @@ function openProfileLocationModal(idx=null){
  profileLocationEditIndex=idx;
  const loc=idx===null?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[idx]||makeEmptyProfileLocation(idx+1));
  if(typeof profileLocationModalTitle!=='undefined')profileLocationModalTitle.textContent=idx===null?'Dodaj lokaciju':'Uredi lokaciju '+(idx+1);
- if(typeof profileModalSaveBtn!=='undefined')profileModalSaveBtn.textContent=idx===null?'Dodaj i sačuvaj':'Sačuvaj';
+ if(typeof profileModalSaveBtn!=='undefined')profileModalSaveBtn.textContent=idx===null?'Dodaj u listu':'Sačuvaj u listu';
  if(typeof profileModalCity!=='undefined')profileModalCity.value=loc.city||'';
  if(typeof profileModalAddress!=='undefined')profileModalAddress.value=loc.address||'';
  if(typeof profileModalPhone!=='undefined')profileModalPhone.value=loc.phone||'';
  if(typeof profileModalActive!=='undefined')profileModalActive.checked=loc.active!==0;
  if(typeof profileLocationModal!=='undefined'){
   profileLocationModal.classList.remove('hidden');
-  profileLocationModal.classList.add('manual-modal-open');
-  document.body.classList.add('manual-modal-body-open');
   setTimeout(()=>{try{profileModalCity.focus()}catch(_e){}},50);
  }
 }
 function closeProfileLocationModalFn(){
  profileLocationEditIndex=null;
- if(typeof profileLocationModal!=='undefined'){
-  profileLocationModal.classList.add('hidden');
-  profileLocationModal.classList.remove('manual-modal-open');
-  document.body.classList.remove('manual-modal-body-open');
- }
+ if(typeof profileLocationModal!=='undefined')profileLocationModal.classList.add('hidden');
 }
 async function saveProfileLocations(silent=false){
  if(!ownerHasWrittenLocation() && !profileUsingFullLocations())return;
@@ -491,45 +485,45 @@ if(typeof profileAddLocationBtn!=='undefined')profileAddLocationBtn.onclick=()=>
 };
 if(typeof setCity!=='undefined')setCity.addEventListener('input',refreshProfileAddLocationButton);
 if(typeof setAddress!=='undefined')setAddress.addEventListener('input',refreshProfileAddLocationButton);
-if(typeof profileLocationForm!=='undefined')profileLocationForm.onsubmit=async e=>{
- e.preventDefault();
-
- const wasEditing=profileLocationEditIndex!==null;
- const index=wasEditing?profileLocationEditIndex:(ownerLocationsCache||[]).length;
- const loc=wasEditing
-  ? (ownerLocationsCache[index]||makeEmptyProfileLocation(index+1))
-  : makeEmptyProfileLocation(index+1);
-
- loc.city=profileModalCity.value.trim();
- loc.address=profileModalAddress.value.trim();
- loc.phone=profileModalPhone.value.trim();
- loc.active=profileModalActive.checked?1:0;
- loc.name=loc.name||('Lokacija '+(index+1));
- loc.sort_order=index+1;
-
- if(!loc.city)return msg('Upiši grad lokacije.','err');
- if(!loc.address)return msg('Upiši adresu lokacije.','err');
-
- if(wasEditing)ownerLocationsCache[index]=loc;
- else ownerLocationsCache.push(loc);
-
- profileLocationsMode='all';
- closeProfileLocationModalFn();
- renderProfileExtraLocations();
- refreshProfileAddLocationButton();
-
+async function saveProfileLocationFromModal(e){
+ if(e){e.preventDefault();e.stopPropagation();}
+ if(profileLocationSaving)return;
+ const isNew=profileLocationEditIndex===null;
+ const editIndex=profileLocationEditIndex;
+ const btn=(typeof profileModalSaveBtn!=='undefined')?profileModalSaveBtn:null;
+ const oldBtnText=btn?btn.textContent:'';
+ profileLocationSaving=true;
+ if(btn){btn.disabled=true;btn.textContent='Čuvam...';}
  try{
-  await saveProfileLocations(true);
-  await ensureOwnerLocationsLoaded();
+  const loc=isNew?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[editIndex]||makeEmptyProfileLocation(editIndex+1));
+  loc.city=profileModalCity.value;
+  loc.address=profileModalAddress.value;
+  loc.phone=profileModalPhone.value;
+  loc.active=profileModalActive.checked?1:0;
+  loc.name=loc.name||('Lokacija '+((isNew?(ownerLocationsCache||[]).length:editIndex)+1));
+  loc.sort_order=isNew?(ownerLocationsCache||[]).length+1:editIndex+1;
+  if(isNew)ownerLocationsCache.push(loc);
+  else ownerLocationsCache[editIndex]=loc;
   profileLocationsMode='all';
+  closeProfileLocationModalFn();
   renderProfileExtraLocations();
   refreshProfileAddLocationButton();
   if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
-  msg(wasEditing?'Lokacija je sačuvana.':'Lokacija je dodata i sačuvana.','ok');
+  await saveProfileLocations(true);
+  await loadBookingLink(false);
+  renderProfileExtraLocations();
+  refreshProfileAddLocationButton();
+  if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
+  msg(isNew?'Lokacija je dodata i sačuvana.':'Lokacija je sačuvana.','ok');
  }catch(err){
-  msg(err.message,'err');
+  msg((err&&err.message)||'Greška pri čuvanju lokacije.','err');
+ }finally{
+  profileLocationSaving=false;
+  if(btn){btn.disabled=false;btn.textContent=oldBtnText||'Dodaj u listu';}
  }
-};
+}
+if(typeof profileLocationForm!=='undefined')profileLocationForm.addEventListener('submit',saveProfileLocationFromModal);
+if(typeof profileModalSaveBtn!=='undefined')profileModalSaveBtn.addEventListener('click',saveProfileLocationFromModal);
 if(typeof closeProfileLocationModal!=='undefined')closeProfileLocationModal.onclick=closeProfileLocationModalFn;
 if(typeof cancelProfileLocationModal!=='undefined')cancelProfileLocationModal.onclick=closeProfileLocationModalFn;
 if(typeof profileLocationModal!=='undefined')profileLocationModal.addEventListener('mousedown',ev=>{
