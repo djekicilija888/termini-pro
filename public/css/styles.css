@@ -799,3 +799,35 @@ body.manual-modal-body-open{
 .public-phone-chip{background:#eef2ff;color:#1e3a8a;border-radius:999px;padding:7px 10px;font-weight:800;font-size:13px;text-decoration:none}
 @media(max-width:850px){.location-actions .btn,.link-actions .btn{width:100%}}
 
+
+.profile-wide-field{
+  grid-column:1 / -1;
+}
+.profile-locations-list{
+  padding-bottom:0;
+}
+.profile-location-card{
+  display:grid;
+  gap:12px;
+  box-shadow:none;
+}
+.profile-location-card h4{
+  margin:0;
+  font-size:18px;
+}
+.profile-location-card .muted{
+  margin:0;
+}
+.profile-location-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+@media(max-width:850px){
+  .profile-wide-field{
+    grid-column:auto;
+  }
+  .profile-location-actions .btn{
+    width:100%;
+  }
+}
