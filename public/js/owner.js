@@ -1,4 +1,4 @@
-const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'];let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}function msg(t,c=''){om.textContent=t;om.className='msg '+c}function show(){login.classList.add('hidden');app.classList.remove('hidden')}function hide(){login.classList.remove('hidden');app.classList.add('hidden')}loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};logout.onclick=()=>{localStorage.removeItem(T);localStorage.removeItem('token');hide()};document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));function tab(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
+const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'];let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}function msg(t,c=''){om.textContent=t;om.className='msg '+c}function show(){login.classList.add('hidden');app.classList.remove('hidden')}function hide(){login.classList.remove('hidden');app.classList.add('hidden')}loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};logout.onclick=()=>{localStorage.removeItem(T);localStorage.removeItem('token');hide()};document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));function tab(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
 let ownerServiceCache=[], ownerStaffCache=[];
 
 async function loadManualOptions(){
@@ -44,13 +44,14 @@ async function loadAppointments(){
   if(status.value)p.set('status',status.value);
   let rows=await api('/api/owner/appointments?'+p);
 
-  appointmentsBody.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Status</th><th>Promeni</th></tr>'+rows.map(a=>`
+  appointmentsBody.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th><th>Promeni</th></tr>'+rows.map(a=>`
     <tr>
       <td>${a.date}</td>
       <td>${a.start_time}-${a.end_time}</td>
       <td>${htmlEsc(a.customer_name)}<br>${htmlEsc(a.phone)}</td>
       <td>${htmlEsc(a.service_name)}</td>
       <td>${htmlEsc(a.staff_name||'-')}</td>
+      <td>${htmlEsc(a.location_name||'-')}</td>
       <td>${htmlEsc(a.status)}</td>
       <td>
         <select data-id="${a.id}">
@@ -167,6 +168,7 @@ async function loadSettings(){
  if(typeof setMsgBooking!=='undefined')setMsgBooking.value=s.msg_booking||'Hvala, vaš termin je uspešno zakazan.';
  if(typeof setMsgCancel!=='undefined')setMsgCancel.value=s.msg_cancel||'Vaš termin je otkazan.';
  if(typeof setCustomerNote!=='undefined')setCustomerNote.value=s.customer_note||'Molimo vas da dođete 5 minuta ranije.';
+ try{ await ensureOwnerLocationsLoaded(); }catch(_e){ refreshProfileAddLocationButton(); }
 }
 settingsForm.onsubmit=async e=>{
  e.preventDefault();
@@ -179,6 +181,7 @@ settingsForm.onsubmit=async e=>{
   msg_cancel:typeof setMsgCancel!=='undefined'?setMsgCancel.value:undefined,
   customer_note:typeof setCustomerNote!=='undefined'?setCustomerNote.value:undefined
  })});
+ try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
  msg('Podešavanja sačuvana.','ok')
 };async function loadLogs(){let rows=await api('/api/owner/notifications');logList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.channel} · ${x.status}</h3><p>${x.created_at} · ${x.recipient||''}</p><p class="muted">${(x.body||'').slice(0,220)}</p></article>`).join('')||'<p class="muted">Nema logova.</p>'}
 
@@ -187,16 +190,122 @@ function ownerPhoneParts(value){
  return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10);
 }
 
-let ownerQrObjectUrl='';
-async function fetchOwnerQrDataUrl(){
+let ownerQrObjectUrl='', ownerLocationsCache=[];
+function safeFileName(value){return String(value||'lokacija').toLowerCase().replace(/[š]/g,'s').replace(/[đ]/g,'dj').replace(/[čć]/g,'c').replace(/[ž]/g,'z').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'lokacija'}
+function ownerLocationTitle(l,idx){return (l&&l.name)||('Lokacija '+((idx||0)+1))}
+function ownerLocId(l){return l&&String(l.id||'').startsWith('new-')?'':(l&&l.id?String(l.id):'')}
+function ownerHasWrittenLocation(){
+ return (ownerLocationsCache||[]).some(l=>{
+  if(!ownerLocId(l))return false;
+  return !!String((l&&l.name)||'').trim() || !!String((l&&l.city)||'').trim() || !!String((l&&l.address)||'').trim() || !!String((l&&l.phone)||'').trim() || !!String((l&&l.email)||'').trim();
+ });
+}
+function refreshProfileAddLocationButton(){
+ if(typeof profileAddLocationWrap==='undefined')return;
+ profileAddLocationWrap.classList.toggle('hidden', !ownerHasWrittenLocation());
+}
+function ownerActiveLocationCount(){
+ return (ownerLocationsCache||[]).filter(l=>l&&l.active!==0).length;
+}
+async function ensureOwnerLocationsLoaded(){
+ ownerLocationsCache=await api('/api/owner/locations');
+ refreshProfileAddLocationButton();
+ return ownerLocationsCache;
+}
+async function fetchOwnerQrDataUrl(locationId=''){
  let h={};
  if(tok())h.Authorization='Bearer '+tok();
- let r=await fetch('/api/owner/qr',{headers:h});
+ let url='/api/owner/qr';
+ if(locationId)url+='?location_id='+encodeURIComponent(locationId);
+ let r=await fetch(url,{headers:h});
  if(!r.ok)throw Error('Ne mogu da učitam QR kod.');
  let svg=await r.text();
  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
-async function loadBookingLink(){
+async function downloadOwnerQrCode(locationArg){
+ try{
+  await loadBookingLink(false);
+  const loc=locationArg&&locationArg.id?locationArg:null;
+  const id=ownerLocId(loc);
+  let h={};if(tok())h.Authorization='Bearer '+tok();
+  let url='/api/owner/qr'+(id?'?location_id='+encodeURIComponent(id):'');
+  let r=await fetch(url,{headers:h});
+  if(!r.ok)throw Error('Ne mogu da preuzmem QR kod.');
+  let svg=await r.text();
+  const blob=new Blob([svg],{type:'image/svg+xml'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='qr-kod-'+safeFileName(loc?loc.name:'glavni-link')+'.svg';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),30000);
+  msg('QR kod je preuzet.','ok');
+ }catch(e){msg(e.message,'err')}
+}
+function renderOwnerLocations(){
+ if(typeof ownerLocationsList==='undefined')return;
+ ownerLocationsList.innerHTML=ownerLocationsCache.map((l,idx)=>`
+  <article class="item owner-location-card" data-id="${htmlEsc(l.id||('new-'+idx))}">
+    <div class="location-title-row">
+      <h3>${htmlEsc(ownerLocationTitle(l,idx))}</h3>
+      <label class="inline-check"><input class="loc-active" type="checkbox" ${l.active!==0?'checked':''}> Aktivna</label>
+    </div>
+    <div class="formgrid">
+      <label>Naziv lokacije<input class="loc-name" value="${htmlEsc(l.name||('Lokacija '+(idx+1)))}"></label>
+      <label>Grad<input class="loc-city" value="${htmlEsc(l.city||'')}"></label>
+      <label>Adresa<input class="loc-address" value="${htmlEsc(l.address||'')}"></label>
+      <label>Email<input class="loc-email" type="email" value="${htmlEsc(l.email||'')}"></label>
+      <label>Telefoni, najviše 4 broja<textarea class="loc-phone" rows="4" placeholder="Svaki broj u novi red">${htmlEsc(l.phone||'')}</textarea></label>
+      <label>Redosled<input class="loc-sort" type="number" value="${Number(l.sort_order||idx+1)}"></label>
+    </div>
+    <label>Link lokacije<input class="loc-url" readonly value="${htmlEsc(l.booking_url||'')}"></label>
+    <div class="location-actions">
+      <button class="btn small ghost loc-copy" type="button" data-idx="${idx}">Kopiraj link</button>
+      <a class="btn small ghost" target="_blank" href="${htmlEsc(l.booking_url||'#')}">Otvori</a>
+      <button class="btn small" type="button" data-action="qr" data-idx="${idx}">Preuzmi samo QR</button>
+      <button class="btn small" type="button" data-action="cards" data-idx="${idx}">Štampaj/preuzmi QR vizit karte</button>
+      <button class="btn small" type="button" data-action="stickers" data-idx="${idx}">Štampaj/preuzmi QR nalepnice</button>
+      <button class="btn small danger loc-delete" type="button" data-idx="${idx}">Obriši</button>
+    </div>
+  </article>`).join('');
+ ownerLocationsList.querySelectorAll('[data-action]').forEach(btn=>btn.onclick=()=>{
+  const loc=ownerLocationsCache[Number(btn.dataset.idx)];
+  if(btn.dataset.action==='qr')downloadOwnerQrCode(loc);
+  if(btn.dataset.action==='cards')printQrPdfList(loc);
+  if(btn.dataset.action==='stickers')printQrStickerPdf(loc);
+ });
+ ownerLocationsList.querySelectorAll('.loc-copy').forEach(btn=>btn.onclick=async()=>{let loc=ownerLocationsCache[Number(btn.dataset.idx)];await navigator.clipboard.writeText(loc.booking_url||'');msg('Link lokacije je kopiran.','ok')});
+ ownerLocationsList.querySelectorAll('.loc-delete').forEach(btn=>btn.onclick=async()=>{
+  const idx=Number(btn.dataset.idx), loc=ownerLocationsCache[idx];
+  if(ownerLocationsCache.length<=1)return msg('Mora ostati bar jedna lokacija.','err');
+  if(String(loc.id||'').startsWith('new-')){ownerLocationsCache.splice(idx,1);renderOwnerLocations();return}
+  await api('/api/owner/locations/'+loc.id,{method:'DELETE'});msg('Lokacija je obrisana.','ok');await loadBookingLink(false);
+ });
+}
+function collectOwnerLocations(){
+ if(typeof ownerLocationsList==='undefined')return [];
+ return [...ownerLocationsList.querySelectorAll('.owner-location-card')].map((card,idx)=>({
+  id:card.dataset.id,
+  name:card.querySelector('.loc-name').value,
+  city:card.querySelector('.loc-city').value,
+  address:card.querySelector('.loc-address').value,
+  email:card.querySelector('.loc-email').value,
+  phone:card.querySelector('.loc-phone').value,
+  sort_order:Number(card.querySelector('.loc-sort').value||idx+1),
+  active:card.querySelector('.loc-active').checked
+ }));
+}
+async function saveOwnerLocations(){
+ try{
+  for(const loc of collectOwnerLocations()){
+   const body=JSON.stringify(loc);
+   if(String(loc.id||'').startsWith('new-'))await api('/api/owner/locations',{method:'POST',body});
+   else await api('/api/owner/locations/'+loc.id,{method:'PUT',body});
+  }
+  msg('Lokacije su sačuvane.','ok');
+  await loadBookingLink(false);
+  refreshProfileAddLocationButton();
+ }catch(e){msg(e.message,'err')}
+}
+async function loadBookingLink(render=true){
  try{
   let d=await api('/api/owner/dashboard');
   window.ownerBusinessForPrint=d.business||{};
@@ -207,54 +316,50 @@ async function loadBookingLink(){
    ownerQrObjectUrl=await fetchOwnerQrDataUrl();
    ownerQrPreview.src=ownerQrObjectUrl;
   }
+  if(typeof ownerLocationsList!=='undefined'){
+   await ensureOwnerLocationsLoaded();
+   if(render)renderOwnerLocations();
+  }else{
+   try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
+  }
  }catch(e){msg(e.message,'err')}
 }
+if(typeof addLocationBtn!=='undefined')addLocationBtn.onclick=()=>{ownerLocationsCache.push({id:'new-'+Date.now(),name:'Lokacija '+(ownerLocationsCache.length+1),city:'',address:'',phone:'',email:'',active:1,sort_order:ownerLocationsCache.length+1,booking_url:''});renderOwnerLocations();refreshProfileAddLocationButton()};
+if(typeof profileAddLocationBtn!=='undefined')profileAddLocationBtn.onclick=async()=>{
+ try{
+  await ensureOwnerLocationsLoaded();
+  if(!ownerHasWrittenLocation())return msg('Prvo upiši i sačuvaj prvu lokaciju.','err');
+  const n=(ownerLocationsCache||[]).length+1;
+  await api('/api/owner/locations',{method:'POST',body:JSON.stringify({name:'Lokacija '+n,city:'',address:'',phone:'',email:'',active:true,sort_order:n})});
+  msg('Nova lokacija je dodata i prikazana u Link / QR.','ok');
+  await loadBookingLink(true);
+  tab('bookinglink');
+ }catch(e){msg(e.message,'err')}
+};
+if(typeof saveLocationsBtn!=='undefined')saveLocationsBtn.onclick=saveOwnerLocations;
 if(typeof copyLinkBtn!=='undefined')copyLinkBtn.onclick=async()=>{
  try{
-  await loadBookingLink();
+  await loadBookingLink(false);
   await navigator.clipboard.writeText(bookingUrlInput.value);
-  msg('Link je kopiran.','ok');
+  msg('Glavni link je kopiran.','ok');
  }catch(e){msg('Ne mogu da kopiram link. Označi ga ručno.','err')}
 };
-async function printQrPdfList(){
+async function printQrPdfList(locationArg=null){
  try{
-  await loadBookingLink();
-  const qrSource=ownerQrObjectUrl || await fetchOwnerQrDataUrl();
+  await loadBookingLink(false);
+  const loc=(locationArg&&locationArg.id)?locationArg:null;
+  const locId=ownerLocId(loc);
+  const qrSource=locId?await fetchOwnerQrDataUrl(locId):(ownerQrObjectUrl || await fetchOwnerQrDataUrl());
   const b=window.ownerBusinessForPrint||{};
   const businessName=(b.name||'Vaša firma').trim();
-  
-function makePhoneList(value){
-  const raw=String(value||'').trim();
-  if(!raw)return ['Telefon nije unet'];
-
-  const normalized=raw
-    .replace(/\\r\\n/g,'\n')
-    .replace(/\\n/g,'\n')
-    .replace(/\\r/g,'\n');
-
-  let parts=normalized
-    .split(/[\r\n,;|/]+/)
-    .map(p=>p.trim())
-    .filter(Boolean);
-
-  if(parts.length<2){
-    const matches=normalized.match(/(?:\+?381|0)[\s.\-]*\d{2}[\s.\-]*\d{3,4}[\s.\-]*\d{3,4}/g);
-    if(matches&&matches.length>1)parts=matches.map(p=>p.trim());
-  }
-
-  if(parts.length<2){
-    const groups=normalized.split(/\s+/).map(p=>p.trim()).filter(p=>/\d{6,}/.test(p));
-    if(groups.length>1)parts=groups;
-  }
-
-  return (parts.length?parts:['Telefon nije unet'])
-    .filter((p,i,a)=>a.indexOf(p)===i)
-    .slice(0,4);
-}
-
-const phoneList=makePhoneList(b.phone);
-const locationText=((b.address?b.address.trim():'') + ((b.address&&b.city)?', ':'') + (b.city?b.city.trim():'')) || 'Lokacija nije uneta';
-const emailText=(b.email||'Email nije unet').trim();
+  const rawPhoneText=String((loc&&loc.phone)||b.phone||'').trim();
+  const phoneList=rawPhoneText
+    ? rawPhoneText.split(/[\n,;|/]+/).map(p=>p.trim()).filter(Boolean).slice(0,4)
+    : ['Telefon nije unet'];
+  const locCity=(loc&&loc.city)||b.city||'';
+  const locAddress=(loc&&loc.address)||b.address||'';
+  const locationText=((locAddress?locAddress.trim():'') + ((locAddress&&locCity)?', ':'') + (locCity?locCity.trim():'')) || 'Lokacija nije uneta';
+  const emailText=((loc&&loc.email)||b.email||'Email nije unet').trim();
   const splitWords=(value,maxChars,maxLines=3)=>{
     const words=String(value||'').trim().split(/\s+/).filter(Boolean);
     if(!words.length)return [];
@@ -367,14 +472,6 @@ const emailText=(b.email||'Email nije unet').trim();
   return lines.slice(0,maxLines);
 }
 
-function fitFontSizeToWidth(value, size, bold, maxWidth, minSize=6.2){
-  let s=size;
-  while(s>minSize && pdfTextWidthApprox(value,s,bold)>maxWidth){
-    s-=0.2;
-  }
-  return Math.max(minSize, Math.round(s*10)/10);
-}
-
 
 
   async function makePdf(){
@@ -390,9 +487,9 @@ function fitFontSizeToWidth(value, size, bold, maxWidth, minSize=6.2){
 const nameMaxWidth=cardW*0.60-40;
 const nameLines=wrapTextToWidth(businessName,nameFontSize,true,nameMaxWidth,3);
 const locationLines=splitWords(locationText,36,3);
-const phoneFontSize=7.6;
-const phoneLineGap=8.4;
-const phoneLines=phoneList.slice(0,4);
+const phoneFontSize=8;
+const phoneLineGap=9;
+const phoneLines=phoneList;
 const emailLines=splitWords(emailText,24,2);
 
     const yPdf=(y)=>pageH-y;
@@ -428,17 +525,14 @@ const emailLines=splitWords(emailText,24,2);
         text(x+15,y+24+idx*16,nameFontSize,true,ln);
         });
 
-        const leftTextX=x+15;
-        const phoneMaxWidth=dividerX-leftTextX-12;
-        const infoY=y+77;
+        const infoY=y+82;
         phoneLines.forEach((ln,idx)=>{
-          const phoneSize=fitFontSizeToWidth(ln,phoneFontSize,false,phoneMaxWidth,6.2);
-          text(leftTextX,infoY+idx*phoneLineGap,phoneSize,false,ln);
+        text(x+15,infoY+idx*phoneLineGap,phoneFontSize,false,ln);
         });
 
-        const locationStartY=infoY+phoneLines.length*phoneLineGap+14;
+        const locationStartY=infoY+phoneLines.length*phoneLineGap+15;
         locationLines.forEach((ln,idx)=>{
-          text(leftTextX,locationStartY+idx*10.5,9.0,false,ln);
+        text(x+15,locationStartY+idx*11,9.4,false,ln);
         });
 
         centeredText(qrCenterX,y+28,8,true,'ZAKAŽITE TERMIN');
@@ -507,7 +601,7 @@ const emailLines=splitWords(emailText,24,2);
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
-  a.download='qr-vizit-kartice.pdf';
+  a.download='qr-vizit-kartice-'+safeFileName(loc?loc.name:'glavni-link')+'.pdf';
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -522,7 +616,49 @@ const emailLines=splitWords(emailText,24,2);
  }catch(e){msg(e.message,'err')}
 }
 
-if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=printQrPdfList;
+if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=()=>printQrPdfList(ownerLocationsCache[0]||null);
+
+
+async function printQrStickerPdf(locationArg=null){
+ try{
+  await loadBookingLink(false);
+  const loc=(locationArg&&locationArg.id)?locationArg:null;
+  const locId=ownerLocId(loc);
+  const qrSource=locId?await fetchOwnerQrDataUrl(locId):(ownerQrObjectUrl || await fetchOwnerQrDataUrl());
+  const title=(loc&&loc.name)||((window.ownerBusinessForPrint||{}).name)||'Lokacija';
+
+  const loadImage=(src)=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Ne mogu da učitam QR sliku.'));img.src=src;});
+  const qrToRgbImage=async(src)=>{const img=await loadImage(src);const size=1200;const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#ffffff';ctx.fillRect(0,0,size,size);ctx.imageSmoothingEnabled=false;ctx.drawImage(img,0,0,size,size);const rgba=ctx.getImageData(0,0,size,size).data;const bytes=new Uint8Array(size*size*3);for(let i=0,j=0;i<rgba.length;i+=4){bytes[j++]=rgba[i];bytes[j++]=rgba[i+1];bytes[j++]=rgba[i+2]}return {width:size,height:size,bytes}};
+  const escapePdfText=(value)=>String(value??'').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/[čć]/g,'c').replace(/[ČĆ]/g,'C').replace(/[š]/g,'s').replace(/[Š]/g,'S').replace(/[ž]/g,'z').replace(/[Ž]/g,'Z').replace(/[đ]/g,'dj').replace(/[Đ]/g,'Dj');
+  const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+  const wtxt=(v,s,b)=>{ctx.font=`${b?'bold ':''}${s}px Helvetica, Arial, sans-serif`;return ctx.measureText(String(v||'')).width};
+  const pageW=595,pageH=842,cols=4,rows=7,marginX=28,marginY=28,gx=10,gy=10;
+  const cellW=(pageW-marginX*2-gx*(cols-1))/cols,cellH=(pageH-marginY*2-gy*(rows-1))/rows,qrSize=58;
+  const qrImage=await qrToRgbImage(qrSource);
+  const yPdf=y=>pageH-y;
+  let content='0.7 w\n';
+  const text=(x,y,size,bold,value)=>{content+=`BT /F${bold?2:1} ${size} Tf ${x.toFixed(2)} ${yPdf(y).toFixed(2)} Td (${escapePdfText(value)}) Tj ET\n`};
+  const centeredText=(x,y,size,bold,value)=>text(x-wtxt(value,size,bold)/2,y,size,bold,value);
+  const rect=(x,y,w,h)=>{content+=`0.82 0.82 0.82 RG ${x.toFixed(2)} ${yPdf(y+h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S\n`};
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const x=marginX+c*(cellW+gx), y=marginY+r*(cellH+gy), cx=x+cellW/2;
+    rect(x,y,cellW,cellH);
+    centeredText(cx,y+15,8.5,true,'ZAKAZITE ONLINE');
+    const imgX=cx-qrSize/2,imgTop=y+22,imgY=pageH-imgTop-qrSize;
+    content+=`q ${qrSize} 0 0 ${qrSize} ${imgX.toFixed(2)} ${imgY.toFixed(2)} cm /Im0 Do Q\n`;
+    centeredText(cx,y+88,7,false,title.slice(0,26));
+  }
+  const encoder=new TextEncoder(),objs=[];const add=b=>objs.push(typeof b==='string'?encoder.encode(b):b);
+  add('<< /Type /Catalog /Pages 2 0 R >>');add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> /XObject << /Im0 6 0 R >> >> /Contents 7 0 R >>');add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const ih=encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${qrImage.width} /Height ${qrImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ${qrImage.bytes.length} >>\nstream\n`),ifoot=encoder.encode('\nendstream'),iobj=new Uint8Array(ih.length+qrImage.bytes.length+ifoot.length);iobj.set(ih,0);iobj.set(qrImage.bytes,ih.length);iobj.set(ifoot,ih.length+qrImage.bytes.length);add(iobj);
+  const cb=encoder.encode(content),ch=encoder.encode(`<< /Length ${cb.length} >>\nstream\n`),cf=encoder.encode('\nendstream'),cobj=new Uint8Array(ch.length+cb.length+cf.length);cobj.set(ch,0);cobj.set(cb,ch.length);cobj.set(cf,ch.length+cb.length);add(cobj);
+  let parts=[encoder.encode('%PDF-1.4\n%TerminiPro\n')],offsets=[0],pos=parts[0].length;
+  for(let i=0;i<objs.length;i++){offsets.push(pos);let head=encoder.encode(`${i+1} 0 obj\n`),tail=encoder.encode('\nendobj\n');parts.push(head,objs[i],tail);pos+=head.length+objs[i].length+tail.length}
+  const xrefPos=pos;let xref=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)xref+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';xref+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;parts.push(encoder.encode(xref));
+  const total=parts.reduce((s,p)=>s+p.length,0),pdf=new Uint8Array(total);let off=0;for(const p of parts){pdf.set(p,off);off+=p.length}
+  const blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='qr-nalepnice-'+safeFileName(title)+'.pdf';document.body.appendChild(a);a.click();a.remove();window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);msg('Napravljen je PDF sa QR nalepnicama.','ok');
+ }catch(e){msg(e.message,'err')}
+}
 
 async function printA4DoorPoster(){
  try{
@@ -538,7 +674,6 @@ async function printA4DoorPoster(){
   if(phones.length)footerLines.push('Telefoni: '+phones.join('  -  '));
   if(place.length)footerLines.push(place.join('  -  '));
   const qrSource=ownerQrObjectUrl || await fetchOwnerQrDataUrl();
-
   const splitFixed=(value,max)=>{
     const out=[];
     let rest=String(value||'');

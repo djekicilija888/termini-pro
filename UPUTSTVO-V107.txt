@@ -1,0 +1,7 @@
+V107 izmene:
+- Ispod univerzalnog QR koda u odeljku Link / QR stoji tekst.
+- Ako postoji jedna lokacija: 'Skenirajte QR'.
+- Ako postoji više aktivnih lokacija: 'Skenirajte i zakažite na više lokacija'.
+- Isti tekst ide ispod QR koda na univerzalnom A4 posteru.
+- Nije menjana registracija, server, poslovni sajt za mušterije, ni QR vizit kartice.
+- Menjani su samo public/owner.html, public/js/owner.js i public/css/styles.css.

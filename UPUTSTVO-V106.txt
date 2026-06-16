@@ -1,0 +1,8 @@
+V106 izmene:
+- U Profil firme, kod adrese, dodat je znak plus / dugme '+ Dodaj još jednu lokaciju'.
+- Dugme se prikazuje samo kada postoji već sačuvana lokacija.
+- Klik na dugme dodaje novu lokaciju i odmah otvara Link / QR.
+- U Link / QR lokacije se automatski prikazuju.
+- Pored svake lokacije dugme za vizit kartu sada piše 'Štampaj vizit kartu'.
+- A4 poster nije diran i ostaje univerzalan.
+- Menjani su samo public/owner.html i public/js/owner.js.

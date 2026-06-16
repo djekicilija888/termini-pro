@@ -786,3 +786,16 @@ body.manual-modal-body-open{
     width:calc(100vw - 24px) !important;
   }
 }
+
+
+/* lokacije-v105 */
+.owner-location-card{display:grid;gap:12px}
+.location-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.inline-check{display:flex;align-items:center;gap:8px;font-weight:850}
+.inline-check input{width:auto}
+.location-actions,.link-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.location-actions .btn{white-space:nowrap}
+.public-phone-list{display:flex;flex-wrap:wrap;gap:8px}
+.public-phone-chip{background:#eef2ff;color:#1e3a8a;border-radius:999px;padding:7px 10px;font-weight:800;font-size:13px;text-decoration:none}
+@media(max-width:850px){.location-actions .btn,.link-actions .btn{width:100%}}
+

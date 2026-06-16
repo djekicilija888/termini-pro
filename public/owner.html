@@ -9,30 +9,39 @@
 
 <section id="bookinglink" class="tab card hidden">
   <p class="eyebrow">Link / QR kod</p>
-  <h2>Link i QR kod za zakazivanje</h2>
-  <p class="muted">Vlasnik može da kopira link, otvori javnu stranicu ili odštampa PDF list sa više QR kodova za sečenje i deljenje.</p>
+  <h2>Linkovi i QR kodovi za lokacije</h2>
+  <p class="muted">Za svaku lokaciju može poseban link, QR kod, QR vizit kartice i QR nalepnice. A4 poster je jedan, univerzalan za štampu.</p>
 
   <div class="link-qr-layout">
     <div class="booking-link-card">
       <div>
         <strong id="bookingLinkBusinessName">Firma</strong>
-        <p class="muted">Javni link za mušterije</p>
+        <p class="muted">Glavni javni link za mušterije</p>
       </div>
       <input id="bookingUrlInput" readonly>
       <div class="link-actions">
-        <button id="copyLinkBtn" class="btn small" type="button">Kopiraj link</button>
+        <button id="copyLinkBtn" class="btn small" type="button">Kopiraj glavni link</button>
         <a id="openPublicLink" class="btn small ghost" target="_blank">Otvori javnu stranicu</a>
+        <button id="printA4PosterBtn" class="btn small ghost" type="button">Štampaj/preuzmi A4 poster</button>
       </div>
     </div>
 
     <div class="qr-card">
-      <p class="eyebrow">QR kod</p>
+      <p class="eyebrow">Univerzalni QR</p>
       <div class="qr-preview-box">
         <img id="ownerQrPreview" alt="QR kod za zakazivanje">
       </div>
-      <p class="muted">Mušterija skenira QR kod i odmah otvara stranicu za zakazivanje.</p>
-      <button id="printQrPdfBtn" class="btn small" type="button">Štampaj / preuzmi QR list</button>
-        <button id="printA4PosterBtn" class="btn small ghost" type="button">Štampaj / preuzmi A4 poster</button>
+      <p class="muted">Ovaj QR vodi na glavnu stranicu. Ako ima više lokacija, mušterija bira lokaciju na sajtu.</p>
+    </div>
+  </div>
+
+  <div class="card soft-card">
+    <h3>Lokacije</h3>
+    <p class="muted">Svaka lokacija ima svoj link. Telefoni za lokaciju: najviše 4 broja, svaki u novi red.</p>
+    <div id="ownerLocationsList" class="stack"></div>
+    <div class="link-actions">
+      <button id="addLocationBtn" class="btn small ghost" type="button">Dodaj lokaciju</button>
+      <button id="saveLocationsBtn" class="btn small" type="button">Sačuvaj lokacije</button>
     </div>
   </div>
 </section>
@@ -121,6 +130,10 @@
         <label>Telefoni firme, najviše 10 brojeva<textarea id="setPhone" rows="5" placeholder="Svaki broj u novi red"></textarea></label>
         <label>Instagram/Facebook link<input id="setInstagram"></label>
         <label>Adresa<input id="setAddress"></label>
+        <div id="profileAddLocationWrap" class="profile-add-location hidden">
+          <button id="profileAddLocationBtn" class="btn small ghost" type="button">+ Dodaj još jednu lokaciju</button>
+          <p class="muted">Nova lokacija će se automatski pojaviti u odeljku Link / QR.</p>
+        </div>
         <label>Website<input id="setWebsite"></label>
         <label>Opis firme<textarea id="setDesc"></textarea></label>
       </div>
@@ -148,4 +161,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=registration-ulaz-fix-v97"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=tekst-ispod-qr-v107"></script></body></html>
