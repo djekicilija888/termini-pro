@@ -223,15 +223,36 @@ async function printQrPdfList(){
   const b=window.ownerBusinessForPrint||{};
   const businessName=(b.name||'Vaša firma').trim();
   
-const rawPhoneText=String(b.phone||'').trim();
+function makePhoneList(value){
+  const raw=String(value||'').trim();
+  if(!raw)return ['Telefon nije unet'];
 
-const phoneList=rawPhoneText
-  ? rawPhoneText
-      .split(/[\n,;|/]+/)
-      .map(p=>p.trim())
-      .filter(Boolean)
-      .slice(0,4)
-  : ['Telefon nije unet'];
+  const normalized=raw
+    .replace(/\\r\\n/g,'\n')
+    .replace(/\\n/g,'\n')
+    .replace(/\\r/g,'\n');
+
+  let parts=normalized
+    .split(/[\r\n,;|/]+/)
+    .map(p=>p.trim())
+    .filter(Boolean);
+
+  if(parts.length<2){
+    const matches=normalized.match(/(?:\+?381|0)[\s.\-]*\d{2}[\s.\-]*\d{3,4}[\s.\-]*\d{3,4}/g);
+    if(matches&&matches.length>1)parts=matches.map(p=>p.trim());
+  }
+
+  if(parts.length<2){
+    const groups=normalized.split(/\s+/).map(p=>p.trim()).filter(p=>/\d{6,}/.test(p));
+    if(groups.length>1)parts=groups;
+  }
+
+  return (parts.length?parts:['Telefon nije unet'])
+    .filter((p,i,a)=>a.indexOf(p)===i)
+    .slice(0,4);
+}
+
+const phoneList=makePhoneList(b.phone);
 const locationText=((b.address?b.address.trim():'') + ((b.address&&b.city)?', ':'') + (b.city?b.city.trim():'')) || 'Lokacija nije uneta';
 const emailText=(b.email||'Email nije unet').trim();
   const splitWords=(value,maxChars,maxLines=3)=>{
@@ -346,6 +367,14 @@ const emailText=(b.email||'Email nije unet').trim();
   return lines.slice(0,maxLines);
 }
 
+function fitFontSizeToWidth(value, size, bold, maxWidth, minSize=6.2){
+  let s=size;
+  while(s>minSize && pdfTextWidthApprox(value,s,bold)>maxWidth){
+    s-=0.2;
+  }
+  return Math.max(minSize, Math.round(s*10)/10);
+}
+
 
 
   async function makePdf(){
@@ -361,9 +390,9 @@ const emailText=(b.email||'Email nije unet').trim();
 const nameMaxWidth=cardW*0.60-40;
 const nameLines=wrapTextToWidth(businessName,nameFontSize,true,nameMaxWidth,3);
 const locationLines=splitWords(locationText,36,3);
-const phoneFontSize=8;
-const phoneLineGap=9;
-const phoneLines=phoneList;
+const phoneFontSize=7.6;
+const phoneLineGap=8.4;
+const phoneLines=phoneList.slice(0,4);
 const emailLines=splitWords(emailText,24,2);
 
     const yPdf=(y)=>pageH-y;
@@ -399,14 +428,17 @@ const emailLines=splitWords(emailText,24,2);
         text(x+15,y+24+idx*16,nameFontSize,true,ln);
         });
 
-        const infoY=y+82;
+        const leftTextX=x+15;
+        const phoneMaxWidth=dividerX-leftTextX-12;
+        const infoY=y+77;
         phoneLines.forEach((ln,idx)=>{
-        text(x+15,infoY+idx*phoneLineGap,phoneFontSize,false,ln);
+          const phoneSize=fitFontSizeToWidth(ln,phoneFontSize,false,phoneMaxWidth,6.2);
+          text(leftTextX,infoY+idx*phoneLineGap,phoneSize,false,ln);
         });
 
-        const locationStartY=infoY+phoneLines.length*phoneLineGap+15;
+        const locationStartY=infoY+phoneLines.length*phoneLineGap+14;
         locationLines.forEach((ln,idx)=>{
-        text(x+15,locationStartY+idx*11,9.4,false,ln);
+          text(leftTextX,locationStartY+idx*10.5,9.0,false,ln);
         });
 
         centeredText(qrCenterX,y+28,8,true,'ZAKAŽITE TERMIN');
