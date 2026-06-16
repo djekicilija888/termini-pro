@@ -1,4 +1,4 @@
-<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=desktop-qr-sharp-centered-v90"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
+<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=lokacije-modal-v117-vidljivo"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
   <p class="eyebrow">Pregled</p>
   <h2 id="bn">Osnovna strana</h2>
   <div id="cards" class="grid3 dashboard-stats"></div>
@@ -151,8 +151,8 @@
         <div class="location-modal-head-v115">
           <div>
             <p class="eyebrow">Lokacija firme</p>
-            <h3 id="profileLocationModalTitle">Dodaj lokaciju</h3>
-            <p class="muted">Unesi grad, adresu i telefone. Lokacija se čuva odmah kada klikneš dugme.</p>
+            <h3 id="profileLocationModalTitle">Nova lokacija</h3>
+            <p class="muted">Unesi podatke lokacije. Klik na zeleno dugme odmah snima lokaciju.</p>
           </div>
           <button id="closeProfileLocationModal" class="location-modal-close-v115" type="button" aria-label="Zatvori">×</button>
         </div>
@@ -175,7 +175,7 @@
           </label>
           <div class="location-modal-actions-v115">
             <button id="cancelProfileLocationModal" type="button" class="btn small ghost">Otkaži</button>
-            <button id="profileModalSaveBtn" class="btn small" type="submit">Dodaj u listu</button>
+            <button id="profileModalSaveBtn" class="btn small save-location-now-v117" type="submit">Sačuvaj lokaciju odmah</button>
           </div>
         </form>
       </div>
@@ -203,4 +203,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=lokacije-popup-auto-save-v116"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=lokacije-modal-v117-vidljivo"></script></body></html>
