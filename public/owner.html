@@ -150,16 +150,29 @@
       <div class="location-modal-box-v115">
         <div class="location-modal-head-v115">
           <div>
+            <p class="eyebrow">Lokacija firme</p>
             <h3 id="profileLocationModalTitle">Dodaj lokaciju</h3>
-            <p class="muted">Unesi samo podatke lokacije: grad, adresu i telefone.</p>
+            <p class="muted">Unesi grad, adresu i telefone. Lokacija se čuva odmah kada klikneš dugme.</p>
           </div>
-          <button id="closeProfileLocationModal" class="manual-close" type="button" aria-label="Zatvori">×</button>
+          <button id="closeProfileLocationModal" class="location-modal-close-v115" type="button" aria-label="Zatvori">×</button>
         </div>
         <form id="profileLocationForm" class="location-modal-form-v115">
-          <label>Grad<input id="profileModalCity"></label>
-          <label>Adresa<input id="profileModalAddress"></label>
-          <label>Telefoni lokacije, najviše 4 broja<textarea id="profileModalPhone" rows="4" placeholder="Svaki broj u novi red"></textarea></label>
-          <label class="inline-check location-modal-check-v115"><input id="profileModalActive" type="checkbox" checked> Aktivna lokacija</label>
+          <label class="location-modal-field-v115">
+            <span>Grad</span>
+            <input id="profileModalCity" placeholder="Na primer: Beograd">
+          </label>
+          <label class="location-modal-field-v115">
+            <span>Adresa</span>
+            <input id="profileModalAddress" placeholder="Ulica i broj">
+          </label>
+          <label class="location-modal-field-v115 location-modal-phone-v115">
+            <span>Telefoni lokacije, najviše 4 broja</span>
+            <textarea id="profileModalPhone" rows="4" placeholder="Svaki broj u novi red"></textarea>
+          </label>
+          <label class="location-modal-check-v115">
+            <input id="profileModalActive" type="checkbox" checked>
+            <span>Aktivna lokacija</span>
+          </label>
           <div class="location-modal-actions-v115">
             <button id="cancelProfileLocationModal" type="button" class="btn small ghost">Otkaži</button>
             <button id="profileModalSaveBtn" class="btn small" type="submit">Dodaj u listu</button>
@@ -190,4 +203,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=lokacije-popup-redovi-v115"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=lokacije-popup-auto-save-v116"></script></body></html>

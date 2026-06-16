@@ -485,22 +485,40 @@ if(typeof profileAddLocationBtn!=='undefined')profileAddLocationBtn.onclick=()=>
 };
 if(typeof setCity!=='undefined')setCity.addEventListener('input',refreshProfileAddLocationButton);
 if(typeof setAddress!=='undefined')setAddress.addEventListener('input',refreshProfileAddLocationButton);
-if(typeof profileLocationForm!=='undefined')profileLocationForm.onsubmit=e=>{
+if(typeof profileLocationForm!=='undefined')profileLocationForm.onsubmit=async e=>{
  e.preventDefault();
- const loc=profileLocationEditIndex===null?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[profileLocationEditIndex]||makeEmptyProfileLocation(profileLocationEditIndex+1));
+
+ const wasEditing=profileLocationEditIndex!==null;
+ const index=wasEditing?profileLocationEditIndex:(ownerLocationsCache||[]).length;
+ const loc=wasEditing
+  ? (ownerLocationsCache[index]||makeEmptyProfileLocation(index+1))
+  : makeEmptyProfileLocation(index+1);
+
  loc.city=profileModalCity.value;
  loc.address=profileModalAddress.value;
  loc.phone=profileModalPhone.value;
  loc.active=profileModalActive.checked?1:0;
- loc.name=loc.name||('Lokacija '+((profileLocationEditIndex===null?(ownerLocationsCache||[]).length:profileLocationEditIndex)+1));
- loc.sort_order=profileLocationEditIndex===null?(ownerLocationsCache||[]).length+1:profileLocationEditIndex+1;
- if(profileLocationEditIndex===null)ownerLocationsCache.push(loc);
- else ownerLocationsCache[profileLocationEditIndex]=loc;
+ loc.name=loc.name||('Lokacija '+(index+1));
+ loc.sort_order=index+1;
+
+ if(!String(loc.city||'').trim())return msg('Upiši grad lokacije.','err');
+ if(!String(loc.address||'').trim())return msg('Upiši adresu lokacije.','err');
+
+ if(wasEditing)ownerLocationsCache[index]=loc;
+ else ownerLocationsCache.push(loc);
+
  profileLocationsMode='all';
  closeProfileLocationModalFn();
  renderProfileExtraLocations();
  refreshProfileAddLocationButton();
- msg('Lokacija je dodata u listu. Klikni Sačuvaj da ostane upisana.','ok');
+
+ try{
+  await saveProfileLocations(true);
+  await loadBookingLink(false);
+  msg(wasEditing?'Lokacija je sačuvana.':'Lokacija je dodata i sačuvana.','ok');
+ }catch(err){
+  msg(err.message,'err');
+ }
 };
 if(typeof closeProfileLocationModal!=='undefined')closeProfileLocationModal.onclick=closeProfileLocationModalFn;
 if(typeof cancelProfileLocationModal!=='undefined')cancelProfileLocationModal.onclick=closeProfileLocationModalFn;

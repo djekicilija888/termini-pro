@@ -949,3 +949,161 @@ body.manual-modal-body-open{
     grid-template-columns:1fr;
   }
 }
+
+/* v116 professional location modal */
+.location-modal-v115{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:9000 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:24px !important;
+  background:rgba(15,23,42,.72) !important;
+  backdrop-filter:blur(7px) !important;
+}
+.location-modal-v115.hidden{
+  display:none !important;
+}
+.location-modal-box-v115{
+  width:min(760px, calc(100vw - 40px)) !important;
+  background:#ffffff !important;
+  border:1px solid rgba(226,232,240,.95) !important;
+  border-radius:24px !important;
+  box-shadow:0 30px 90px rgba(15,23,42,.42) !important;
+  overflow:hidden !important;
+}
+.location-modal-head-v115{
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:18px !important;
+  padding:22px 24px 16px !important;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%) !important;
+  border-bottom:1px solid #e5e7eb !important;
+}
+.location-modal-head-v115 .eyebrow{
+  margin:0 0 6px !important;
+  letter-spacing:.12em !important;
+}
+.location-modal-head-v115 h3{
+  margin:0 0 6px !important;
+  font-size:26px !important;
+  line-height:1.12 !important;
+}
+.location-modal-head-v115 p.muted{
+  margin:0 !important;
+  max-width:520px !important;
+}
+.location-modal-close-v115{
+  width:38px !important;
+  height:38px !important;
+  border:0 !important;
+  border-radius:999px !important;
+  background:#111827 !important;
+  color:#fff !important;
+  font-size:25px !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+  cursor:pointer !important;
+  display:grid !important;
+  place-items:center !important;
+  flex:0 0 auto !important;
+}
+.location-modal-form-v115{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:14px !important;
+  padding:20px 24px 22px !important;
+  background:#ffffff !important;
+}
+.location-modal-field-v115{
+  margin:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:7px !important;
+  font-weight:900 !important;
+}
+.location-modal-field-v115 span{
+  display:block !important;
+  font-size:14px !important;
+  color:#111827 !important;
+}
+.location-modal-field-v115 input,
+.location-modal-field-v115 textarea{
+  width:100% !important;
+  box-sizing:border-box !important;
+  border:1px solid #d0d5dd !important;
+  border-radius:14px !important;
+  background:#fff !important;
+  min-height:46px !important;
+  padding:11px 13px !important;
+  font-size:16px !important;
+  font-weight:700 !important;
+  outline:none !important;
+  box-shadow:0 1px 2px rgba(16,24,40,.04) !important;
+}
+.location-modal-field-v115 input:focus,
+.location-modal-field-v115 textarea:focus{
+  border-color:#111827 !important;
+  box-shadow:0 0 0 4px rgba(17,24,39,.08) !important;
+}
+.location-modal-phone-v115{
+  grid-column:1 / -1 !important;
+}
+.location-modal-phone-v115 textarea{
+  min-height:118px !important;
+  resize:vertical !important;
+}
+.location-modal-check-v115{
+  margin:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  font-weight:900 !important;
+  min-height:44px !important;
+}
+.location-modal-check-v115 input{
+  width:18px !important;
+  height:18px !important;
+}
+.location-modal-actions-v115{
+  display:flex !important;
+  justify-content:flex-end !important;
+  align-items:center !important;
+  gap:10px !important;
+}
+.location-row-v115{
+  border:1px solid #e5e7eb !important;
+  border-radius:18px !important;
+  background:#fff !important;
+  padding:15px 16px !important;
+  box-shadow:0 10px 26px rgba(17,24,39,.06) !important;
+}
+.location-row-v115:hover{
+  border-color:#cbd5e1 !important;
+  box-shadow:0 14px 32px rgba(17,24,39,.09) !important;
+}
+@media(max-width:760px){
+  .location-modal-v115{
+    align-items:flex-end !important;
+    padding:12px !important;
+  }
+  .location-modal-box-v115{
+    width:100% !important;
+    border-radius:22px !important;
+  }
+  .location-modal-form-v115{
+    grid-template-columns:1fr !important;
+    padding:16px !important;
+  }
+  .location-modal-head-v115{
+    padding:18px 16px 12px !important;
+  }
+  .location-modal-actions-v115{
+    justify-content:stretch !important;
+  }
+  .location-modal-actions-v115 .btn{
+    flex:1 !important;
+  }
+}
