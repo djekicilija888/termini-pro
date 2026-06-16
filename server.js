@@ -94,6 +94,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
  await addColumnIfMissing('settings','msg_cancel',`TEXT DEFAULT 'Vaš termin je otkazan.'`);
  await addColumnIfMissing('settings','customer_note',`TEXT DEFAULT 'Molimo vas da dođete 5 minuta ranije.'`);
  await addColumnIfMissing('appointments','location_id',`INTEGER`);
+ await addColumnIfMissing('blocked_periods','location_id',`INTEGER`);
 
  await run(`CREATE TABLE IF NOT EXISTS google_play_entitlements(
   email TEXT PRIMARY KEY,
@@ -104,7 +105,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
   order_id TEXT DEFAULT '',
   updated_at TEXT
  )`);
-await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_location_business ON business_locations(business_id,sort_order,id)');await run('CREATE INDEX IF NOT EXISTS idx_location_hours ON location_hours(business_id,location_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
+await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_location_business ON business_locations(business_id,sort_order,id)');await run('CREATE INDEX IF NOT EXISTS idx_location_hours ON location_hours(business_id,location_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_blocked_periods_scope ON blocked_periods(business_id,location_id,date)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
  let se=email(process.env.SUPERADMIN_EMAIL||'admin@platform.local');if(!await get('SELECT id FROM users WHERE email=?',[se])){let h=await bcrypt.hash(process.env.SUPERADMIN_PASSWORD||'platform123',12);await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(NULL,'Super Admin',?,?,'superadmin',?)",[se,h,now()])}}
 async function defaults(bid,ownerName){await run('INSERT INTO settings(business_id,updated_at) VALUES(?,?)',[bid,now()]);for(let r of [[0,0,'09:00','17:00'],[1,1,'09:00','17:00'],[2,1,'09:00','17:00'],[3,1,'09:00','17:00'],[4,1,'09:00','17:00'],[5,1,'09:00','17:00'],[6,1,'09:00','14:00']])await run('INSERT INTO hours(business_id,day,is_open,open_time,close_time,break_start,break_end) VALUES(?,?,?,?,?,?,?)',[bid,...r,'','']);await run("INSERT INTO staff(business_id,name,title,active,sort_order,created_at,updated_at) VALUES(?,?,'Majstor',1,1,?,?)",[bid,ownerName||'Glavni majstor',now(),now()]);await run("INSERT INTO services(business_id,name,description,duration,price,active,sort_order,created_at,updated_at) VALUES(?,'Osnovna usluga','Promeni naziv i cenu u panelu.',30,1000,1,1,?,?)",[bid,now(),now()])}
 
@@ -178,11 +179,16 @@ async function slots(bid,date,service,staffId=null,opts={}){
  if(!validDate(date)||date<t||date>max)return[];
 
  if(await get('SELECT 1 FROM blocked WHERE business_id=? AND date=?',[bid,date]))return[];
- let blockedPeriods=await all('SELECT * FROM blocked_periods WHERE business_id=? AND date=? ORDER BY start_time,end_time',[bid,date]);
+ let locationId=Number(opts.locationId||0)||0;
+ let blockedSql='SELECT * FROM blocked_periods WHERE business_id=? AND date=? AND (location_id IS NULL OR location_id=0';
+ let blockedParams=[bid,date];
+ if(locationId){blockedSql+=' OR location_id=?';blockedParams.push(locationId)}
+ blockedSql+=') ORDER BY start_time,end_time';
+ let blockedPeriods=await all(blockedSql,blockedParams);
  if(blockedPeriods.some(x=>!x.start_time||!x.end_time))return[];
 
  let h=null;
- if(opts.locationId)h=await get('SELECT * FROM location_hours WHERE business_id=? AND location_id=? AND day=?',[bid,Number(opts.locationId),dow(date)]);
+ if(locationId)h=await get('SELECT * FROM location_hours WHERE business_id=? AND location_id=? AND day=?',[bid,locationId,dow(date)]);
  if(!h)h=await get('SELECT * FROM hours WHERE business_id=? AND day=?',[bid,dow(date)]);
  if(!h||!h.is_open)return[];
 
@@ -373,8 +379,8 @@ app.post('/api/businesses/:slug/appointments',async(req,res)=>{try{
  res.status(201).json({message:set.msg_booking||'Termin je zakazan.',customer_note:set.customer_note||'',manage_url:manageUrl(req,tok),appointment:{...a,service_name:srv.name,staff_name:st.name,location_name:selectedLocation?selectedLocation.name:''}})
 }catch(e){res.status(500).json({error:'Greška pri zakazivanju.'})}});
 app.get('/api/manage/:tok',async(req,res)=>{let a=await get(`SELECT a.*,b.name business_name,b.slug business_slug,s.name service_name,s.duration,st.name staff_name FROM appointments a JOIN businesses b ON b.id=a.business_id JOIN services s ON s.id=a.service_id LEFT JOIN staff st ON st.id=a.staff_id WHERE a.appt_token=?`,[clean(req.params.tok,80)]);if(!a)return res.status(404).json({error:'Termin nije pronađen.'});res.json({appointment:a,booking_url:bookUrl(req,a.business_slug)})});
-app.get('/api/manage/:tok/available-slots',async(req,res)=>{let a=await get('SELECT * FROM appointments WHERE appt_token=?',[clean(req.params.tok,80)]);if(!a)return res.status(404).json({error:'Termin nije pronađen.'});let srv=await get('SELECT * FROM services WHERE id=?',[a.service_id]);res.json(await slots(a.business_id,clean(req.query.date,20),srv,a.staff_id))});
-app.patch('/api/manage/:tok/reschedule',async(req,res)=>{let a=await get('SELECT * FROM appointments WHERE appt_token=?',[clean(req.params.tok,80)]);if(!a||a.status!=='booked')return res.status(400).json({error:'Termin nije aktivan.'});let srv=await get('SELECT * FROM services WHERE id=?',[a.service_id]),ss=await slots(a.business_id,clean(req.body.date,20),srv,req.body.staff_id?Number(req.body.staff_id):a.staff_id),sel=ss.find(x=>x.start_time===clean(req.body.start_time,10));if(!sel)return res.status(409).json({error:'Termin nije slobodan.'});await run('UPDATE appointments SET date=?,start_time=?,end_time=?,staff_id=?,updated_at=? WHERE appt_token=?',[clean(req.body.date,20),sel.start_time,sel.end_time,sel.staff_id,now(),clean(req.params.tok,80)]);await logN({business_id:a.business_id,appointment_id:a.id,channel:'system',subject:'Promena termina',body:`Promenjeno na ${req.body.date} ${sel.start_time}`,status:'logged'});res.json({message:'Termin je promenjen.'})});
+app.get('/api/manage/:tok/available-slots',async(req,res)=>{let a=await get('SELECT * FROM appointments WHERE appt_token=?',[clean(req.params.tok,80)]);if(!a)return res.status(404).json({error:'Termin nije pronađen.'});let srv=await get('SELECT * FROM services WHERE id=?',[a.service_id]);res.json(await slots(a.business_id,clean(req.query.date,20),srv,a.staff_id,{locationId:a.location_id}))});
+app.patch('/api/manage/:tok/reschedule',async(req,res)=>{let a=await get('SELECT * FROM appointments WHERE appt_token=?',[clean(req.params.tok,80)]);if(!a||a.status!=='booked')return res.status(400).json({error:'Termin nije aktivan.'});let srv=await get('SELECT * FROM services WHERE id=?',[a.service_id]),ss=await slots(a.business_id,clean(req.body.date,20),srv,req.body.staff_id?Number(req.body.staff_id):a.staff_id,{locationId:a.location_id}),sel=ss.find(x=>x.start_time===clean(req.body.start_time,10));if(!sel)return res.status(409).json({error:'Termin nije slobodan.'});await run('UPDATE appointments SET date=?,start_time=?,end_time=?,staff_id=?,updated_at=? WHERE appt_token=?',[clean(req.body.date,20),sel.start_time,sel.end_time,sel.staff_id,now(),clean(req.params.tok,80)]);await logN({business_id:a.business_id,appointment_id:a.id,channel:'system',subject:'Promena termina',body:`Promenjeno na ${req.body.date} ${sel.start_time}`,status:'logged'});res.json({message:'Termin je promenjen.'})});
 app.patch('/api/manage/:tok/cancel',async(req,res)=>{let a=await get('SELECT * FROM appointments WHERE appt_token=?',[clean(req.params.tok,80)]);if(!a||a.status!=='booked')return res.status(400).json({error:'Termin nije aktivan.'});await run("UPDATE appointments SET status='cancelled',notes=notes||?,updated_at=? WHERE appt_token=?",[`\nOtkazano: ${clean(req.body.reason,300)}`,now(),clean(req.params.tok,80)]);await logN({business_id:a.business_id,appointment_id:a.id,channel:'system',subject:'Otkazivanje termina',body:'Termin otkazan preko linka.',status:'logged'});let st=await get('SELECT msg_cancel FROM settings WHERE business_id=?',[a.business_id])||{};res.json({message:st.msg_cancel||'Termin je otkazan.'})});
 app.get('/api/owner/dashboard',auth,owner,async(req,res)=>{let bid=req.user.business_id,b=await get('SELECT * FROM businesses WHERE id=?',[bid]);await ensureDefaultLocation(bid);let d=today(),w=addDays(d,7);let cards={today:(await get("SELECT COUNT(*) total FROM appointments WHERE business_id=? AND date=? AND status='booked'",[bid,d])).total,week:(await get("SELECT COUNT(*) total FROM appointments WHERE business_id=? AND date>=? AND date<=? AND status='booked'",[bid,d,w])).total,services:(await get('SELECT COUNT(*) total FROM services WHERE business_id=? AND active=1',[bid])).total,staff:(await get('SELECT COUNT(*) total FROM staff WHERE business_id=? AND active=1',[bid])).total};let upcoming=await all(`SELECT a.*,s.name service_name,st.name staff_name,bl.name location_name FROM appointments a JOIN services s ON s.id=a.service_id LEFT JOIN staff st ON st.id=a.staff_id LEFT JOIN business_locations bl ON bl.id=a.location_id WHERE a.business_id=? AND a.date>=? ORDER BY a.date,a.start_time LIMIT 10`,[bid,d]);res.json({business:{...pubBiz(b),booking_url:bookUrl(req,b.slug)},cards,upcoming})});
 app.get('/api/owner/qr',auth,owner,async(req,res)=>{
@@ -407,6 +413,7 @@ app.delete('/api/owner/locations/:id',auth,owner,async(req,res)=>{
  let cnt=await get('SELECT COUNT(*) total FROM business_locations WHERE business_id=?',[req.user.business_id]);
  if(cnt&&Number(cnt.total)<=1)return res.status(400).json({error:'Mora ostati bar jedna lokacija.'});
  await run('DELETE FROM location_hours WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
+ await run('DELETE FROM blocked_periods WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
  await run('DELETE FROM business_locations WHERE business_id=? AND id=?',[req.user.business_id,Number(req.params.id)]);
  res.json({message:'Lokacija je obrisana.'});
 });
@@ -469,15 +476,28 @@ app.put('/api/owner/location-working-hours/:id',auth,owner,async(req,res)=>{
 app.get('/api/owner/working-hours',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM hours WHERE business_id=? ORDER BY day',[req.user.business_id])));
 app.put('/api/owner/working-hours',auth,owner,async(req,res)=>{for(let r of req.body.rows||[])await run('UPDATE hours SET is_open=?,open_time=?,close_time=?,break_start=?,break_end=? WHERE business_id=? AND day=?',[r.is_open?1:0,clean(r.open_time,10),clean(r.close_time,10),clean(r.break_start,10),clean(r.break_end,10),req.user.business_id,Number(r.day)]);res.json({message:'Radno vreme je sačuvano.'})});
 app.get('/api/owner/blocked-dates',auth,owner,async(req,res)=>{
- let legacy=(await all('SELECT date,reason,created_at FROM blocked WHERE business_id=? ORDER BY date',[req.user.business_id])).map(x=>({...x,key:'legacy:'+x.date,start_time:'',end_time:''}));
- let periods=(await all('SELECT id,date,start_time,end_time,reason,created_at FROM blocked_periods WHERE business_id=? ORDER BY date,start_time,id',[req.user.business_id])).map(x=>({...x,key:String(x.id)}));
- res.json([...legacy,...periods].sort((a,b)=>(a.date+a.start_time).localeCompare(b.date+b.start_time)));
+ let locationId=Number(req.query.location_id||0)||0;
+ if(locationId){
+  let loc=await get('SELECT id FROM business_locations WHERE business_id=? AND id=?',[req.user.business_id,locationId]);
+  if(!loc)return res.status(404).json({error:'Lokacija nije pronađena.'});
+ }
+ let legacy=(await all('SELECT date,reason,created_at FROM blocked WHERE business_id=? ORDER BY date',[req.user.business_id])).map(x=>({...x,key:'legacy:'+x.date,start_time:'',end_time:'',location_id:null,scope:'global'}));
+ let periodsSql='SELECT id,location_id,date,start_time,end_time,reason,created_at FROM blocked_periods WHERE business_id=?';
+ let params=[req.user.business_id];
+ if(locationId){periodsSql+=' AND (location_id=? OR location_id IS NULL OR location_id=0)';params.push(locationId)}
+ periodsSql+=' ORDER BY date,start_time,id';
+ let periods=(await all(periodsSql,params)).map(x=>({...x,key:'period:'+x.id,scope:x.location_id?'location':'global'}));
+ res.json([...legacy,...periods].sort((a,b)=>(a.date+(a.start_time||'')).localeCompare(b.date+(b.start_time||''))));
 });
 app.post('/api/owner/blocked-dates',auth,owner,async(req,res)=>{
- let date=clean(req.body.date,20),st=clean(req.body.start_time,10),en=clean(req.body.end_time,10);
+ let date=clean(req.body.date,20),st=clean(req.body.start_time,10),en=clean(req.body.end_time,10),locationId=Number(req.body.location_id||0)||null;
+ if(locationId){
+  let loc=await get('SELECT id FROM business_locations WHERE business_id=? AND id=?',[req.user.business_id,locationId]);
+  if(!loc)return res.status(404).json({error:'Lokacija nije pronađena.'});
+ }
  if(!validDate(date))return res.status(400).json({error:'Izaberi datum.'});
  if((st||en)&&!(validTime(st)&&validTime(en)&&tm(st)<tm(en)))return res.status(400).json({error:'Za period unesi ispravno vreme od/do.'});
- await run('INSERT INTO blocked_periods(business_id,date,start_time,end_time,reason,created_at) VALUES(?,?,?,?,?,?)',[req.user.business_id,date,st,en,clean(req.body.reason,255),now()]);
+ await run('INSERT INTO blocked_periods(business_id,location_id,date,start_time,end_time,reason,created_at) VALUES(?,?,?,?,?,?,?)',[req.user.business_id,locationId,date,st,en,clean(req.body.reason,255),now()]);
  res.status(201).json({message:st&&en?'Period je blokiran.':'Dan je blokiran.'});
 });
 app.delete('/api/owner/blocked-dates/:key',auth,owner,async(req,res)=>{
@@ -485,6 +505,7 @@ app.delete('/api/owner/blocked-dates/:key',auth,owner,async(req,res)=>{
  if(key.startsWith('legacy:')){
   await run('DELETE FROM blocked WHERE business_id=? AND date=?',[req.user.business_id,key.slice(7)]);
  }else{
+  if(key.startsWith('period:'))key=key.slice(7);
   await run('DELETE FROM blocked_periods WHERE business_id=? AND id=?',[req.user.business_id,Number(key)]);
  }
  res.json({message:'Neradno vreme je obrisano.'});

@@ -99,7 +99,7 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   await loadAppointments();
 };
 
-function resetSt(){staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true}resetStaff.onclick=resetSt;staffForm.onsubmit=async e=>{e.preventDefault();let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked};await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});msg('Radnik sačuvan.','ok');resetSt();loadStaff()};async function loadStaff(){let rows=await api('/api/owner/staff');staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.name}</h3><p>${x.title||''} ${x.phone||''}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span></div><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');staffList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active})}function resetSv(){serviceId.value='';serviceName.value='';serviceDesc.value='';serviceDuration.value=30;servicePrice.value=1000;serviceSort.value=0;serviceActive.checked=true}resetService.onclick=resetSv;serviceForm.onsubmit=async e=>{e.preventDefault();let id=serviceId.value,p={name:serviceName.value,description:serviceDesc.value,duration:+serviceDuration.value,price:+servicePrice.value,sort_order:+serviceSort.value,active:serviceActive.checked};await api(id?'/api/owner/services/'+id:'/api/owner/services',{method:id?'PUT':'POST',body:JSON.stringify(p)});msg('Usluga sačuvana.','ok');resetSv();loadServices()};async function loadServices(){let rows=await api('/api/owner/services');serviceList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.name}</h3><p>${x.duration} min · ${x.price} RSD</p><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');serviceList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);serviceId.value=x.id;serviceName.value=x.name;serviceDesc.value=x.description||'';serviceDuration.value=x.duration;servicePrice.value=x.price;serviceSort.value=x.sort_order;serviceActive.checked=!!x.active})}let selectedHoursLocationId='', locationHoursCache=[];
+function resetSt(){staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true}resetStaff.onclick=resetSt;staffForm.onsubmit=async e=>{e.preventDefault();let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked};await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});msg('Radnik sačuvan.','ok');resetSt();loadStaff()};async function loadStaff(){let rows=await api('/api/owner/staff');staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.name}</h3><p>${x.title||''} ${x.phone||''}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span></div><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');staffList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active})}function resetSv(){serviceId.value='';serviceName.value='';serviceDesc.value='';serviceDuration.value=30;servicePrice.value=1000;serviceSort.value=0;serviceActive.checked=true}resetService.onclick=resetSv;serviceForm.onsubmit=async e=>{e.preventDefault();let id=serviceId.value,p={name:serviceName.value,description:serviceDesc.value,duration:+serviceDuration.value,price:+servicePrice.value,sort_order:+serviceSort.value,active:serviceActive.checked};await api(id?'/api/owner/services/'+id:'/api/owner/services',{method:id?'PUT':'POST',body:JSON.stringify(p)});msg('Usluga sačuvana.','ok');resetSv();loadServices()};async function loadServices(){let rows=await api('/api/owner/services');serviceList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.name}</h3><p>${x.duration} min · ${x.price} RSD</p><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');serviceList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);serviceId.value=x.id;serviceName.value=x.name;serviceDesc.value=x.description||'';serviceDuration.value=x.duration;servicePrice.value=x.price;serviceSort.value=x.sort_order;serviceActive.checked=!!x.active})}let selectedHoursLocationId='', locationHoursCache=[], locationBlockedCache=[];
 function normalizeHoursRows(rows){
  const byDay={};
  (rows||[]).forEach(r=>{byDay[Number(r.day)]=r});
@@ -162,6 +162,7 @@ function openLocationHoursModal(locationId){
  if(title)title.textContent='Radno vreme: '+(loc.name||'Lokacija');
  if(hint)hint.textContent='Podesi radno vreme za ovu lokaciju i klikni Sačuvaj.';
  setHoursEditorRows(loc.hours||[], rows);
+ setupLocationBlockedPanel();
  if(modal){
    modal.classList.remove('hidden');
    modal.classList.add('manual-modal-open');
@@ -206,6 +207,65 @@ function renderLocationHoursList(){
   openLocationHoursModal(btn.dataset.id);
  });
 }
+
+function locationModeHasMultiple(){
+ return (locationHoursCache||[]).length>1;
+}
+function showMainBlockedCard(){
+ if(typeof blockedCard==='undefined')return;
+ blockedCard.classList.toggle('hidden',locationModeHasMultiple());
+}
+function setupLocationBlockedPanel(){
+ const section=document.getElementById('locationBlockedSection');
+ if(!section)return;
+ const multi=locationModeHasMultiple();
+ section.classList.toggle('hidden',!multi);
+ if(!multi){
+  locationBlockedCache=[];
+  if(typeof locationBlockedList!=='undefined')locationBlockedList.innerHTML='';
+  return;
+ }
+ if(typeof locationBlockedDate!=='undefined' && !locationBlockedDate.value)locationBlockedDate.value=today();
+ loadLocationBlocked().catch(e=>msg(e.message,'err'));
+}
+async function loadLocationBlocked(){
+ if(!selectedHoursLocationId || !locationModeHasMultiple() || typeof locationBlockedList==='undefined')return;
+ locationBlockedCache=await api('/api/owner/blocked-dates?location_id='+encodeURIComponent(selectedHoursLocationId));
+ locationBlockedList.innerHTML=locationBlockedCache.length ? locationBlockedCache.map(x=>{
+  let time=x.start_time&&x.end_time?`${x.start_time}–${x.end_time}`:'Ceo dan';
+  let key=encodeURIComponent(x.key||x.id||x.date);
+  let scope=x.scope==='global'?'<span class="location-blocked-scope-v119">sve lokacije</span>':'';
+  return `<article class="item location-blocked-row-v119">
+    <div>
+      <b>${htmlEsc(x.date)} · ${htmlEsc(time)} ${scope}</b>
+      <p>${htmlEsc(x.reason||'')}</p>
+    </div>
+    <button data-key="${key}" class="btn small danger" type="button">Obriši</button>
+  </article>`;
+ }).join('') : '<p class="muted">Nema dodatih neradnih dana ili zauzetih perioda za ovu lokaciju.</p>';
+ locationBlockedList.querySelectorAll('button').forEach(b=>b.onclick=async()=>{
+  await api('/api/owner/blocked-dates/'+b.dataset.key,{method:'DELETE'});
+  await loadLocationBlocked();
+  msg('Neradno vreme je obrisano.','ok');
+ });
+}
+async function addLocationBlockedPeriod(){
+ if(!selectedHoursLocationId)return;
+ await api('/api/owner/blocked-dates',{
+  method:'POST',
+  body:JSON.stringify({
+   location_id:selectedHoursLocationId,
+   date:locationBlockedDate.value,
+   start_time:locationBlockedStart.value,
+   end_time:locationBlockedEnd.value,
+   reason:locationBlockedReason.value
+  })
+ });
+ msg('Neradni dan/period je dodat za lokaciju.','ok');
+ locationBlockedStart.value='';locationBlockedEnd.value='';locationBlockedReason.value='';
+ await loadLocationBlocked();
+}
+
 async function loadHours(){
   try{
     locationHoursCache=await api('/api/owner/location-working-hours');
@@ -213,6 +273,7 @@ async function loadHours(){
     locationHoursCache=[];
   }
   if(typeof locationHoursCard!=='undefined')locationHoursCard.classList.toggle('hidden',!locationHoursCache.length);
+  showMainBlockedCard();
   if(locationHoursCache.length){
     if(!selectedHoursLocationId || !locationHoursCache.some(x=>String(x.id)===String(selectedHoursLocationId)))selectedHoursLocationId=String(locationHoursCache[0].id);
     renderLocationHoursList();
@@ -227,7 +288,7 @@ async function loadHours(){
     if(typeof saveHours!=='undefined')saveHours.textContent='Sačuvaj radno vreme';
     setHoursEditorRows(rows, hoursForm);
   }
-  await loadBlocked();
+  if(!locationModeHasMultiple())await loadBlocked();
 }
 
 if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
@@ -252,6 +313,7 @@ if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
   modal.dataset.ready='1';
   if(close)close.addEventListener('click', ev=>{ev.preventDefault();closeLocationHoursModal();});
   if(cancel)cancel.addEventListener('click', ev=>{ev.preventDefault();closeLocationHoursModal();});
+  if(typeof addLocationBlocked!=='undefined')addLocationBlocked.addEventListener('click', ev=>{ev.preventDefault();addLocationBlockedPeriod().catch(e=>msg(e.message,'err'));});
   modal.addEventListener('mousedown', ev=>{if(ev.target===modal)closeLocationHoursModal();});
   if(form)form.addEventListener('submit', async ev=>{
     ev.preventDefault();

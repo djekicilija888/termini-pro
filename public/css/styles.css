@@ -1059,3 +1059,41 @@ body.manual-modal-body-open{
     width:100%;
   }
 }
+
+/* Location-specific blocked days v119 */
+.location-blocked-section-v119{
+  border-top:1px solid #e5e7eb;
+  padding-top:12px;
+  margin-top:4px;
+}
+.location-blocked-section-v119 h3{
+  margin:0 0 4px;
+  font-size:18px;
+}
+.location-blocked-form-v119{
+  align-items:end;
+  margin:10px 0 12px;
+}
+.location-blocked-row-v119{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.location-blocked-row-v119 p{
+  margin:4px 0 0;
+}
+.location-blocked-scope-v119{
+  display:inline-block;
+  margin-left:6px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#3730a3;
+  font-size:12px;
+  font-weight:700;
+}
+@media(max-width:760px){
+  .location-blocked-row-v119{align-items:stretch;flex-direction:column}
+  .location-blocked-row-v119 .btn{width:100%}
+}
