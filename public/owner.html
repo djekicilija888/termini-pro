@@ -126,10 +126,10 @@
       <div class="formgrid">
         <label>Naziv firme<input id="setName"></label>
         <label>Delatnost<input id="setType"></label>
-        <label>Grad<input id="setCity"></label>
-        <label>Telefoni firme, najviše 10 brojeva<textarea id="setPhone" rows="5" placeholder="Svaki broj u novi red"></textarea></label>
+        <label id="primaryCityField">Grad<input id="setCity"></label>
+        <label id="primaryPhoneField">Telefoni firme, najviše 10 brojeva<textarea id="setPhone" rows="5" placeholder="Svaki broj u novi red"></textarea></label>
         <label>Instagram/Facebook link<input id="setInstagram"></label>
-        <label>Adresa<input id="setAddress"></label>
+        <label id="primaryAddressField">Adresa<input id="setAddress"></label>
         <label>Website<input id="setWebsite"></label>
         <label>Opis firme<textarea id="setDesc"></textarea></label>
       </div>
@@ -138,8 +138,8 @@
     <div id="profileExtraLocationsWrap" class="card soft-card hidden">
       <div class="location-title-row">
         <div>
-          <h3>Dodatne lokacije</h3>
-          <p class="muted">Ovo se prikazuje tek kada su upisani Grad i Adresa za prvu lokaciju.</p>
+          <h3>Lokacije</h3>
+          <p class="muted">Kada postoji više od jedne lokacije, sve lokacije se uređuju ovde.</p>
         </div>
         <button id="profileAddLocationBtn" class="btn small ghost" type="button">+ Dodaj još jednu lokaciju</button>
       </div>
@@ -168,4 +168,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=profil-prva-lokacija-plus-v111"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=lokacije-prebaci-v113"></script></body></html>
