@@ -162,9 +162,14 @@ async function loadBlocked(){
 
 async function loadSettings(){
  let d=await api('/api/owner/settings'),b=d.business,s=d.settings||{};
+ try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
+ const firstLoc=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:{};
  setName.value=b.name||'';
  setType.value=b.type||'';
+ setCity.value=b.city||firstLoc.city||'';
+ setPhone.value=b.phone||firstLoc.phone||'';
  setInstagram.value=b.instagram||'';
+ setAddress.value=b.address||firstLoc.address||'';
  setWebsite.value=b.website||'';
  setDesc.value=b.description||'';
  setInterval.value=s.interval||15;setMin.value=s.min_notice||2;setMax.value=s.max_days||45;
@@ -172,13 +177,14 @@ async function loadSettings(){
  if(typeof setMsgBooking!=='undefined')setMsgBooking.value=s.msg_booking||'Hvala, vaš termin je uspešno zakazan.';
  if(typeof setMsgCancel!=='undefined')setMsgCancel.value=s.msg_cancel||'Vaš termin je otkazan.';
  if(typeof setCustomerNote!=='undefined')setCustomerNote.value=s.customer_note||'Molimo vas da dođete 5 minuta ranije.';
- try{ await ensureOwnerLocationsLoaded(); renderProfileLocations(); }catch(_e){ renderProfileLocations(); }
+ renderProfileExtraLocations();
+ refreshProfileAddLocationButton();
 }
 settingsForm.onsubmit=async e=>{
  e.preventDefault();
  await api('/api/owner/settings',{method:'PUT',body:JSON.stringify({
-  name:setName.value,type:setType.value,
-  instagram:setInstagram.value,website:setWebsite.value,description:setDesc.value,
+  name:setName.value,type:setType.value,city:setCity.value,phone:setPhone.value,
+  instagram:setInstagram.value,address:setAddress.value,website:setWebsite.value,description:setDesc.value,
   interval:+setInterval.value,min_notice:+setMin.value,max_days:+setMax.value,
   notify_customer_email:nCust.checked,notify_owner_email:nOwner.checked,notify_sms:nSms.checked,notify_viber:nViber.checked,
   msg_booking:typeof setMsgBooking!=='undefined'?setMsgBooking.value:undefined,
@@ -199,13 +205,16 @@ let ownerQrObjectUrl='', ownerLocationsCache=[];
 function safeFileName(value){return String(value||'lokacija').toLowerCase().replace(/[š]/g,'s').replace(/[đ]/g,'dj').replace(/[čć]/g,'c').replace(/[ž]/g,'z').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'lokacija'}
 function ownerLocationTitle(l,idx){return (l&&l.name)||('Lokacija '+((idx||0)+1))}
 function ownerLocId(l){return l&&String(l.id||'').startsWith('new-')?'':(l&&l.id?String(l.id):'')}
+function ownerPrimaryCityFilled(){return typeof setCity!=='undefined' && !!String(setCity.value||'').trim()}
+function ownerPrimaryAddressFilled(){return typeof setAddress!=='undefined' && !!String(setAddress.value||'').trim()}
 function ownerHasWrittenLocation(){
- return (ownerLocationsCache||[]).some(l=>!!String((l&&l.city)||'').trim() || !!String((l&&l.address)||'').trim() || !!String((l&&l.phone)||'').trim());
+ return ownerPrimaryCityFilled() && ownerPrimaryAddressFilled();
 }
 function refreshProfileAddLocationButton(){
- if(typeof profileAddLocationBtn!=='undefined')profileAddLocationBtn.classList.remove('hidden');
+ if(typeof profileExtraLocationsWrap==='undefined')return;
+ profileExtraLocationsWrap.classList.toggle('hidden', !ownerHasWrittenLocation());
 }
-function makeEmptyOwnerLocation(idx){
+function makeEmptyProfileLocation(idx){
  return {id:'new-'+Date.now()+'-'+idx,name:'Lokacija '+idx,city:'',address:'',phone:'',email:'',active:1,sort_order:idx,booking_url:''};
 }
 function ownerActiveLocationCount(){
@@ -214,7 +223,7 @@ function ownerActiveLocationCount(){
 async function ensureOwnerLocationsLoaded(){
  ownerLocationsCache=await api('/api/owner/locations');
  refreshProfileAddLocationButton();
- renderProfileLocations();
+ if(typeof profileLocationsList!=='undefined')renderProfileExtraLocations();
  return ownerLocationsCache;
 }
 async function fetchOwnerQrDataUrl(locationId=''){
@@ -246,19 +255,17 @@ async function downloadOwnerQrCode(locationArg){
  }catch(e){msg(e.message,'err')}
 }
 
-function ensureProfileLocationRows(){
- if(!Array.isArray(ownerLocationsCache))ownerLocationsCache=[];
- if(!ownerLocationsCache.length)ownerLocationsCache.push(makeEmptyOwnerLocation(1));
-}
-function renderProfileLocations(){
+function renderProfileExtraLocations(){
  if(typeof profileLocationsList==='undefined')return;
- ensureProfileLocationRows();
- profileLocationsList.innerHTML=ownerLocationsCache.map((l,idx)=>`
+ const extras=(ownerLocationsCache||[]).slice(1);
+ profileLocationsList.innerHTML=extras.map((l,extraIdx)=>{
+  const idx=extraIdx+2;
+  return `
   <article class="item profile-location-card" data-id="${htmlEsc(l.id||('new-'+idx))}">
     <div class="location-title-row">
       <div>
-        <h4>Lokacija ${idx+1}</h4>
-        <p class="muted">Ovo se prikazuje za ovu lokaciju i koristi se za Link / QR.</p>
+        <h4>Lokacija ${idx}</h4>
+        <p class="muted">Dodatna lokacija ima samo grad, adresu i telefone.</p>
       </div>
       <label class="inline-check"><input class="profile-loc-active" type="checkbox" ${l.active!==0?'checked':''}> Aktivna</label>
     </div>
@@ -267,46 +274,57 @@ function renderProfileLocations(){
       <label>Adresa<input class="profile-loc-address" value="${htmlEsc(l.address||'')}"></label>
       <label>Telefoni lokacije, najviše 4 broja<textarea class="profile-loc-phone" rows="4" placeholder="Svaki broj u novi red">${htmlEsc(l.phone||'')}</textarea></label>
     </div>
-    <input class="profile-loc-name" type="hidden" value="${htmlEsc(l.name||('Lokacija '+(idx+1)))}">
-    <input class="profile-loc-email" type="hidden" value="${htmlEsc(l.email||'')}">
-    <input class="profile-loc-sort" type="hidden" value="${Number(l.sort_order||idx+1)}">
     <div class="profile-location-actions">
-      <button class="btn small danger profile-loc-delete" type="button" data-idx="${idx}">Obriši lokaciju</button>
+      <button class="btn small danger profile-loc-delete" type="button" data-idx="${extraIdx+1}">Obriši lokaciju</button>
     </div>
-  </article>`).join('');
+  </article>`}).join('');
  profileLocationsList.querySelectorAll('.profile-loc-delete').forEach(btn=>btn.onclick=async()=>{
   const idx=Number(btn.dataset.idx),loc=ownerLocationsCache[idx];
-  if(ownerLocationsCache.length<=1)return msg('Mora ostati bar jedna lokacija.','err');
-  if(String(loc.id||'').startsWith('new-')){ownerLocationsCache.splice(idx,1);renderProfileLocations();return}
+  if(String(loc&&loc.id||'').startsWith('new-')){ownerLocationsCache.splice(idx,1);renderProfileExtraLocations();return}
   await api('/api/owner/locations/'+loc.id,{method:'DELETE'});
   msg('Lokacija je obrisana.','ok');
   await ensureOwnerLocationsLoaded();
-  renderProfileLocations();
+  renderProfileExtraLocations();
   if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
  });
 }
-function collectProfileLocations(){
+function collectProfileExtraLocations(){
  if(typeof profileLocationsList==='undefined')return [];
- return [...profileLocationsList.querySelectorAll('.profile-location-card')].map((card,idx)=>({
+ return [...profileLocationsList.querySelectorAll('.profile-location-card')].map((card,extraIdx)=>({
   id:card.dataset.id,
-  name:card.querySelector('.profile-loc-name').value || ('Lokacija '+(idx+1)),
+  name:'Lokacija '+(extraIdx+2),
   city:card.querySelector('.profile-loc-city').value,
   address:card.querySelector('.profile-loc-address').value,
   phone:card.querySelector('.profile-loc-phone').value,
-  email:card.querySelector('.profile-loc-email').value,
-  sort_order:idx+1,
+  email:'',
+  sort_order:extraIdx+2,
   active:card.querySelector('.profile-loc-active').checked
  }));
 }
 async function saveProfileLocations(silent=false){
- if(typeof profileLocationsList==='undefined')return;
- for(const loc of collectProfileLocations()){
+ if(!ownerHasWrittenLocation())return;
+ try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
+ const first=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:null;
+ const firstBody={
+  id:first&&first.id?first.id:'',
+  name:'Lokacija 1',
+  city:setCity.value,
+  address:setAddress.value,
+  phone:setPhone.value,
+  email:first&&first.email?first.email:'',
+  sort_order:1,
+  active:true
+ };
+ if(first&&first.id&&!String(first.id).startsWith('new-'))await api('/api/owner/locations/'+first.id,{method:'PUT',body:JSON.stringify(firstBody)});
+ else await api('/api/owner/locations',{method:'POST',body:JSON.stringify(firstBody)});
+
+ for(const loc of collectProfileExtraLocations()){
   const body=JSON.stringify(loc);
   if(String(loc.id||'').startsWith('new-'))await api('/api/owner/locations',{method:'POST',body});
   else await api('/api/owner/locations/'+loc.id,{method:'PUT',body});
  }
  await ensureOwnerLocationsLoaded();
- renderProfileLocations();
+ renderProfileExtraLocations();
  if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
  if(!silent)msg('Lokacije su sačuvane.','ok');
 }
@@ -372,7 +390,7 @@ async function saveOwnerLocations(){
   }
   msg('Lokacije su sačuvane.','ok');
   await loadBookingLink(false);
-  renderProfileLocations();
+  renderProfileExtraLocations();
   refreshProfileAddLocationButton();
  }catch(e){msg(e.message,'err')}
 }
@@ -395,12 +413,16 @@ async function loadBookingLink(render=true){
   }
  }catch(e){msg(e.message,'err')}
 }
-if(typeof addLocationBtn!=='undefined')addLocationBtn.onclick=()=>{const n=(ownerLocationsCache||[]).length+1;ownerLocationsCache.push(makeEmptyOwnerLocation(n));renderOwnerLocations();renderProfileLocations();refreshProfileAddLocationButton()};
+if(typeof addLocationBtn!=='undefined')addLocationBtn.onclick=()=>{ownerLocationsCache.push({id:'new-'+Date.now(),name:'Lokacija '+(ownerLocationsCache.length+1),city:'',address:'',phone:'',email:'',active:1,sort_order:ownerLocationsCache.length+1,booking_url:''});renderOwnerLocations();renderProfileExtraLocations();refreshProfileAddLocationButton()};
 if(typeof profileAddLocationBtn!=='undefined')profileAddLocationBtn.onclick=()=>{
+ if(!ownerHasWrittenLocation())return msg('Prvo upiši Grad i Adresu za prvu lokaciju.','err');
  const n=(ownerLocationsCache||[]).length+1;
- ownerLocationsCache.push(makeEmptyOwnerLocation(n));
- renderProfileLocations();
+ ownerLocationsCache.push(makeEmptyProfileLocation(n));
+ renderProfileExtraLocations();
+ refreshProfileAddLocationButton();
 };
+if(typeof setCity!=='undefined')setCity.addEventListener('input',refreshProfileAddLocationButton);
+if(typeof setAddress!=='undefined')setAddress.addEventListener('input',refreshProfileAddLocationButton);
 if(typeof saveLocationsBtn!=='undefined')saveLocationsBtn.onclick=saveOwnerLocations;
 if(typeof copyLinkBtn!=='undefined')copyLinkBtn.onclick=async()=>{
  try{

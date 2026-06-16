@@ -118,26 +118,28 @@
 </section><section id="settings" class="tab card hidden">
   <p class="eyebrow">Profil firme</p>
   <h2>Podešavanje profila firme</h2>
-  <p class="muted">Podaci firme su zajednički, a grad, adresa i telefoni se podešavaju posebno po lokaciji.</p>
+  <p class="muted">Podaci koje mušterije vide na javnoj stranici.</p>
 
   <form id="settingsForm" class="stack">
     <div class="card soft-card">
       <h3>Podaci firme</h3>
-      <p class="muted">Ovo važi za sve lokacije.</p>
       <div class="formgrid">
         <label>Naziv firme<input id="setName"></label>
         <label>Delatnost<input id="setType"></label>
+        <label>Grad<input id="setCity"></label>
+        <label>Telefoni firme, najviše 10 brojeva<textarea id="setPhone" rows="5" placeholder="Svaki broj u novi red"></textarea></label>
         <label>Instagram/Facebook link<input id="setInstagram"></label>
+        <label>Adresa<input id="setAddress"></label>
         <label>Website<input id="setWebsite"></label>
-        <label class="profile-wide-field">Opis firme<textarea id="setDesc" rows="4"></textarea></label>
+        <label>Opis firme<textarea id="setDesc"></textarea></label>
       </div>
     </div>
 
-    <div class="card soft-card">
+    <div id="profileExtraLocationsWrap" class="card soft-card hidden">
       <div class="location-title-row">
         <div>
-          <h3>Lokacije firme</h3>
-          <p class="muted">Grad, adresa i telefoni se čuvaju posebno za svaku lokaciju.</p>
+          <h3>Dodatne lokacije</h3>
+          <p class="muted">Ovo se prikazuje tek kada su upisani Grad i Adresa za prvu lokaciju.</p>
         </div>
         <button id="profileAddLocationBtn" class="btn small ghost" type="button">+ Dodaj još jednu lokaciju</button>
       </div>
@@ -166,4 +168,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=profil-lokacije-odvojeno-v110"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=profil-prva-lokacija-plus-v111"></script></body></html>

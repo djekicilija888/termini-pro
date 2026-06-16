@@ -800,9 +800,6 @@ body.manual-modal-body-open{
 @media(max-width:850px){.location-actions .btn,.link-actions .btn{width:100%}}
 
 
-.profile-wide-field{
-  grid-column:1 / -1;
-}
 .profile-locations-list{
   padding-bottom:0;
 }
@@ -824,9 +821,6 @@ body.manual-modal-body-open{
   flex-wrap:wrap;
 }
 @media(max-width:850px){
-  .profile-wide-field{
-    grid-column:auto;
-  }
   .profile-location-actions .btn{
     width:100%;
   }
