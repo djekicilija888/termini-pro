@@ -96,9 +96,15 @@
   <h2>Radno vreme</h2>
   <p class="muted">Ovde podešavaš kada firma radi. Pauze i neradni dani automatski blokiraju zakazivanje.</p>
 
+  <div id="locationHoursCard" class="card soft-card hidden">
+    <h3>Radno vreme po lokacijama</h3>
+    <p class="muted">Ako imaš dodate lokacije, ovde se vidi radno vreme za svaku lokaciju. Klikni Izmeni pored lokacije da promeniš radno vreme.</p>
+    <div id="locationHoursList" class="stack"></div>
+  </div>
+
   <div class="card soft-card">
-    <h3>Redovno radno vreme i pauze</h3>
-    <p class="muted">Za svaki dan možeš uneti vreme rada i pauzu, npr. 12:00–13:00.</p>
+    <h3 id="hoursEditorTitle">Redovno radno vreme i pauze</h3>
+    <p id="hoursEditorHint" class="muted">Za svaki dan možeš uneti vreme rada i pauzu, npr. 12:00–13:00.</p>
     <div id="hoursForm" class="stack"></div>
     <button id="saveHours" class="btn small">Sačuvaj radno vreme</button>
   </div>

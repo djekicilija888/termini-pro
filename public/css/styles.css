@@ -949,3 +949,9 @@ body.manual-modal-body-open{
     grid-template-columns:1fr;
   }
 }
+
+
+.location-hours-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,2fr) auto;gap:12px;align-items:center}
+.location-hours-summary{margin:0}
+.selected-location-hours{outline:2px solid rgba(0,0,0,.12)}
+@media(max-width:760px){.location-hours-row{grid-template-columns:1fr}.location-hours-row .btn{width:100%}}
