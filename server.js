@@ -17,9 +17,35 @@ require('dotenv').config();
 const path=require('path'),crypto=require('crypto'),express=require('express'),cors=require('cors'),helmet=require('helmet'),rateLimit=require('express-rate-limit'),sqlite3=require('sqlite3').verbose(),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),QRCode=require('qrcode'),nodemailer=require('nodemailer');
 const fs=require('fs');
 const app=express(),PORT=process.env.PORT||3000,JWT_SECRET=process.env.JWT_SECRET||'secret',PLATFORM_NAME=process.env.PLATFORM_NAME||'Termini Pro Platforma';
-const DATA_DIR=process.env.DATA_DIR||process.env.RENDER_DISK_PATH||__dirname;
-fs.mkdirSync(DATA_DIR,{recursive:true});
-const DB_PATH=process.env.DB_PATH||path.join(DATA_DIR,'termini-platforma-pro.db');
+
+function ensureWritableDir(dir){
+ if(!dir)return '';
+ try{
+  fs.mkdirSync(dir,{recursive:true});
+  fs.accessSync(dir,fs.constants.W_OK);
+  return dir;
+ }catch(e){
+  console.warn('Data folder is not writable, trying fallback:',dir,e.code||e.message);
+  return '';
+ }
+}
+
+let DB_PATH=process.env.DB_PATH||'';
+let DATA_DIR='';
+if(DB_PATH){
+ const dbDir=path.dirname(DB_PATH);
+ if(ensureWritableDir(dbDir))DATA_DIR=dbDir;
+ else DB_PATH='';
+}
+if(!DB_PATH){
+ DATA_DIR=
+  ensureWritableDir(process.env.DATA_DIR) ||
+  ensureWritableDir(process.env.RENDER_DISK_PATH) ||
+  ensureWritableDir(path.join(__dirname,'data')) ||
+  ensureWritableDir('/tmp/termini-pro-data');
+ DB_PATH=path.join(DATA_DIR,'termini-platforma-pro.db');
+}
+console.log('Using database:',DB_PATH);
 
 app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));
 app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
