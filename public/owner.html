@@ -139,11 +139,33 @@
       <div class="location-title-row">
         <div>
           <h3>Lokacije</h3>
-          <p class="muted">Kada postoji više od jedne lokacije, sve lokacije se uređuju ovde.</p>
+          <p class="muted">Dodate lokacije se prikazuju samo kao redovi. Dodavanje i uređivanje ide kroz prozor.</p>
         </div>
         <button id="profileAddLocationBtn" class="btn small ghost" type="button">+ Dodaj još jednu lokaciju</button>
       </div>
-      <div id="profileLocationsList" class="stack profile-locations-list"></div>
+      <div id="profileLocationsList" class="profile-locations-list-v115"></div>
+    </div>
+
+    <div id="profileLocationModal" class="location-modal-v115 hidden" role="dialog" aria-modal="true">
+      <div class="location-modal-box-v115">
+        <div class="location-modal-head-v115">
+          <div>
+            <h3 id="profileLocationModalTitle">Dodaj lokaciju</h3>
+            <p class="muted">Unesi samo podatke lokacije: grad, adresu i telefone.</p>
+          </div>
+          <button id="closeProfileLocationModal" class="manual-close" type="button" aria-label="Zatvori">×</button>
+        </div>
+        <form id="profileLocationForm" class="location-modal-form-v115">
+          <label>Grad<input id="profileModalCity"></label>
+          <label>Adresa<input id="profileModalAddress"></label>
+          <label>Telefoni lokacije, najviše 4 broja<textarea id="profileModalPhone" rows="4" placeholder="Svaki broj u novi red"></textarea></label>
+          <label class="inline-check location-modal-check-v115"><input id="profileModalActive" type="checkbox" checked> Aktivna lokacija</label>
+          <div class="location-modal-actions-v115">
+            <button id="cancelProfileLocationModal" type="button" class="btn small ghost">Otkaži</button>
+            <button id="profileModalSaveBtn" class="btn small" type="submit">Dodaj u listu</button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <div class="card soft-card">
@@ -168,4 +190,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=lokacije-prebaci-v113"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=lokacije-popup-redovi-v115"></script></body></html>

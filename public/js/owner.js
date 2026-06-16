@@ -202,7 +202,7 @@ function ownerPhoneParts(value){
  return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10);
 }
 
-let ownerQrObjectUrl='', ownerLocationsCache=[];
+let ownerQrObjectUrl='', ownerLocationsCache=[], profileLocationEditIndex=null;
 function safeFileName(value){return String(value||'lokacija').toLowerCase().replace(/[š]/g,'s').replace(/[đ]/g,'dj').replace(/[čć]/g,'c').replace(/[ž]/g,'z').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'lokacija'}
 function ownerLocationTitle(l,idx){return (l&&l.name)||('Lokacija '+((idx||0)+1))}
 function ownerLocId(l){return l&&String(l.id||'').startsWith('new-')?'':(l&&l.id?String(l.id):'')}
@@ -276,54 +276,96 @@ function renderProfileExtraLocations(){
  }
  const list=(ownerLocationsCache||[]);
  profileLocationsList.innerHTML=list.map((l,idx)=>{
+  const phones=ownerPhoneParts(l.phone||'').slice(0,4);
+  const where=[l.city,l.address].map(x=>String(x||'').trim()).filter(Boolean).join(' · ') || 'Grad i adresa nisu uneti';
+  const phoneText=phones.length?phones.join(' / '):'Telefoni nisu uneti';
   return `
-  <article class="item profile-location-card" data-id="${htmlEsc(l.id||('new-'+(idx+1)))}">
-    <div class="location-title-row">
-      <div>
-        <h4>Lokacija ${idx+1}</h4>
-        <p class="muted">${idx===0?'Prva lokacija prebačena je iz Podaci firme.':'Dodatna lokacija ima samo grad, adresu i telefone.'}</p>
-      </div>
-      <label class="inline-check"><input class="profile-loc-active" type="checkbox" ${l.active!==0?'checked':''}> Aktivna</label>
+  <article class="location-row-v115" data-idx="${idx}">
+    <div>
+      <h4>Lokacija ${idx+1}<span class="location-badge-v115">${l.active!==0?'Aktivna':'Neaktivna'}</span></h4>
+      <p>${htmlEsc(where)}</p>
+      <p>${htmlEsc(phoneText)}</p>
     </div>
-    <div class="formgrid">
-      <label>Grad<input class="profile-loc-city" value="${htmlEsc(l.city||'')}"></label>
-      <label>Adresa<input class="profile-loc-address" value="${htmlEsc(l.address||'')}"></label>
-      <label>Telefoni lokacije, najviše 4 broja<textarea class="profile-loc-phone" rows="4" placeholder="Svaki broj u novi red">${htmlEsc(l.phone||'')}</textarea></label>
-    </div>
-    <div class="profile-location-actions">
-      <button class="btn small danger profile-loc-delete" type="button" data-idx="${idx}">Obriši lokaciju</button>
+    <div class="location-row-actions-v115">
+      <button class="btn small ghost profile-loc-edit" type="button" data-idx="${idx}">Uredi</button>
+      <button class="btn small danger profile-loc-delete" type="button" data-idx="${idx}">Obriši</button>
     </div>
   </article>`}).join('');
+ profileLocationsList.querySelectorAll('.profile-loc-edit').forEach(btn=>btn.onclick=()=>openProfileLocationModal(Number(btn.dataset.idx)));
  profileLocationsList.querySelectorAll('.profile-loc-delete').forEach(btn=>btn.onclick=async()=>{
   const idx=Number(btn.dataset.idx),loc=ownerLocationsCache[idx];
   if(ownerLocationsCache.length<=1)return msg('Mora ostati bar jedna lokacija.','err');
-  if(String(loc&&loc.id||'').startsWith('new-')){ownerLocationsCache.splice(idx,1);renderProfileExtraLocations();refreshProfileAddLocationButton();return}
-  await api('/api/owner/locations/'+loc.id,{method:'DELETE'});
-  msg('Lokacija je obrisana.','ok');
-  await ensureOwnerLocationsLoaded();
-  if((ownerLocationsCache||[]).length<=1)profileLocationsMode='primary';
+  if(String(loc&&loc.id||'').startsWith('new-')){
+   ownerLocationsCache.splice(idx,1);
+  }else{
+   await api('/api/owner/locations/'+loc.id,{method:'DELETE'});
+   msg('Lokacija je obrisana.','ok');
+   await ensureOwnerLocationsLoaded();
+  }
+  if((ownerLocationsCache||[]).length<=1){
+   const remaining=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:{};
+   profileLocationsMode='primary';
+   if(typeof setCity!=='undefined')setCity.value=remaining.city||'';
+   if(typeof setAddress!=='undefined')setAddress.value=remaining.address||'';
+   if(typeof setPhone!=='undefined')setPhone.value=remaining.phone||'';
+  }
   renderProfileExtraLocations();
   refreshProfileAddLocationButton();
   if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
  });
 }
 function collectProfileExtraLocations(){
- if(typeof profileLocationsList==='undefined')return [];
  if(!profileUsingFullLocations())return [];
- return [...profileLocationsList.querySelectorAll('.profile-location-card')].map((card,idx)=>({
-  id:card.dataset.id,
-  name:'Lokacija '+(idx+1),
-  city:card.querySelector('.profile-loc-city').value,
-  address:card.querySelector('.profile-loc-address').value,
-  phone:card.querySelector('.profile-loc-phone').value,
-  email:'',
+ return (ownerLocationsCache||[]).map((l,idx)=>({
+  id:l.id||('new-'+(idx+1)),
+  name:l.name||('Lokacija '+(idx+1)),
+  city:l.city||'',
+  address:l.address||'',
+  phone:l.phone||'',
+  email:l.email||'',
   sort_order:idx+1,
-  active:card.querySelector('.profile-loc-active').checked
+  active:l.active!==0
  }));
+}
+function ensureFullLocationModeFromPrimary(){
+ if(profileUsingFullLocations())return true;
+ if(!ownerHasWrittenLocation())return false;
+ const first=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:makeEmptyProfileLocation(1);
+ first.name='Lokacija 1';
+ first.city=setCity.value;
+ first.address=setAddress.value;
+ first.phone=setPhone.value;
+ first.active=1;
+ first.sort_order=1;
+ ownerLocationsCache=[first];
+ profileLocationsMode='all';
+ refreshProfileAddLocationButton();
+ renderProfileExtraLocations();
+ return true;
+}
+function openProfileLocationModal(idx=null){
+ if(!profileUsingFullLocations()){
+  if(!ensureFullLocationModeFromPrimary())return msg('Prvo upiši Grad i Adresu za prvu lokaciju.','err');
+ }
+ profileLocationEditIndex=idx;
+ const loc=idx===null?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[idx]||makeEmptyProfileLocation(idx+1));
+ if(typeof profileLocationModalTitle!=='undefined')profileLocationModalTitle.textContent=idx===null?'Dodaj lokaciju':'Uredi lokaciju '+(idx+1);
+ if(typeof profileModalSaveBtn!=='undefined')profileModalSaveBtn.textContent=idx===null?'Dodaj u listu':'Sačuvaj u listu';
+ if(typeof profileModalCity!=='undefined')profileModalCity.value=loc.city||'';
+ if(typeof profileModalAddress!=='undefined')profileModalAddress.value=loc.address||'';
+ if(typeof profileModalPhone!=='undefined')profileModalPhone.value=loc.phone||'';
+ if(typeof profileModalActive!=='undefined')profileModalActive.checked=loc.active!==0;
+ if(typeof profileLocationModal!=='undefined'){
+  profileLocationModal.classList.remove('hidden');
+  setTimeout(()=>{try{profileModalCity.focus()}catch(_e){}},50);
+ }
+}
+function closeProfileLocationModalFn(){
+ profileLocationEditIndex=null;
+ if(typeof profileLocationModal!=='undefined')profileLocationModal.classList.add('hidden');
 }
 async function saveProfileLocations(silent=false){
  if(!ownerHasWrittenLocation() && !profileUsingFullLocations())return;
- try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
  if(profileUsingFullLocations()){
   for(const loc of collectProfileExtraLocations()){
    const body=JSON.stringify(loc);
@@ -439,25 +481,32 @@ async function loadBookingLink(render=true){
 }
 if(typeof addLocationBtn!=='undefined')addLocationBtn.onclick=()=>{ownerLocationsCache.push({id:'new-'+Date.now(),name:'Lokacija '+(ownerLocationsCache.length+1),city:'',address:'',phone:'',email:'',active:1,sort_order:ownerLocationsCache.length+1,booking_url:''});renderOwnerLocations();renderProfileExtraLocations();refreshProfileAddLocationButton()};
 if(typeof profileAddLocationBtn!=='undefined')profileAddLocationBtn.onclick=()=>{
- if(!ownerHasWrittenLocation() && !profileUsingFullLocations())return msg('Prvo upiši Grad i Adresu za prvu lokaciju.','err');
- if(!profileUsingFullLocations()){
-  const first=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:makeEmptyProfileLocation(1);
-  first.name='Lokacija 1';
-  first.city=setCity.value;
-  first.address=setAddress.value;
-  first.phone=setPhone.value;
-  first.active=1;
-  first.sort_order=1;
-  ownerLocationsCache=[first];
-  profileLocationsMode='all';
- }
- const n=(ownerLocationsCache||[]).length+1;
- ownerLocationsCache.push(makeEmptyProfileLocation(n));
- renderProfileExtraLocations();
- refreshProfileAddLocationButton();
+ openProfileLocationModal(null);
 };
 if(typeof setCity!=='undefined')setCity.addEventListener('input',refreshProfileAddLocationButton);
 if(typeof setAddress!=='undefined')setAddress.addEventListener('input',refreshProfileAddLocationButton);
+if(typeof profileLocationForm!=='undefined')profileLocationForm.onsubmit=e=>{
+ e.preventDefault();
+ const loc=profileLocationEditIndex===null?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[profileLocationEditIndex]||makeEmptyProfileLocation(profileLocationEditIndex+1));
+ loc.city=profileModalCity.value;
+ loc.address=profileModalAddress.value;
+ loc.phone=profileModalPhone.value;
+ loc.active=profileModalActive.checked?1:0;
+ loc.name=loc.name||('Lokacija '+((profileLocationEditIndex===null?(ownerLocationsCache||[]).length:profileLocationEditIndex)+1));
+ loc.sort_order=profileLocationEditIndex===null?(ownerLocationsCache||[]).length+1:profileLocationEditIndex+1;
+ if(profileLocationEditIndex===null)ownerLocationsCache.push(loc);
+ else ownerLocationsCache[profileLocationEditIndex]=loc;
+ profileLocationsMode='all';
+ closeProfileLocationModalFn();
+ renderProfileExtraLocations();
+ refreshProfileAddLocationButton();
+ msg('Lokacija je dodata u listu. Klikni Sačuvaj da ostane upisana.','ok');
+};
+if(typeof closeProfileLocationModal!=='undefined')closeProfileLocationModal.onclick=closeProfileLocationModalFn;
+if(typeof cancelProfileLocationModal!=='undefined')cancelProfileLocationModal.onclick=closeProfileLocationModalFn;
+if(typeof profileLocationModal!=='undefined')profileLocationModal.addEventListener('mousedown',ev=>{
+ if(ev.target===profileLocationModal)closeProfileLocationModalFn();
+});
 if(typeof saveLocationsBtn!=='undefined')saveLocationsBtn.onclick=saveOwnerLocations;
 if(typeof copyLinkBtn!=='undefined')copyLinkBtn.onclick=async()=>{
  try{
@@ -1293,3 +1342,10 @@ async function init(){from.value=today();to.value=add(30);if(!tok())return hide(
     setTimeout(install, 80);
   }, true);
 })();
+
+// profile location modal escape v115
+document.addEventListener('keydown', function(ev){
+ if(ev.key==='Escape' && typeof profileLocationModal!=='undefined' && !profileLocationModal.classList.contains('hidden')){
+  closeProfileLocationModalFn();
+ }
+});
