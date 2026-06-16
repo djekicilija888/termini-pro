@@ -224,14 +224,15 @@ function locationModeHasMultiple(){
 }
 function showMainBlockedCard(){
  if(typeof blockedCard==='undefined')return;
- blockedCard.classList.toggle('hidden',locationModeHasMultiple());
+ const hasLocations=(locationHoursCache||[]).length>0;
+ blockedCard.classList.toggle('hidden',hasLocations);
 }
 function setupLocationBlockedPanel(){
  const section=document.getElementById('locationBlockedSection');
  if(!section)return;
- const multi=locationModeHasMultiple();
- section.classList.toggle('hidden',!multi);
- if(!multi){
+ const hasLocation=!!selectedHoursLocationId;
+ section.classList.toggle('hidden',!hasLocation);
+ if(!hasLocation){
   locationBlockedCache=[];
   if(typeof locationBlockedList!=='undefined')locationBlockedList.innerHTML='';
   return;
@@ -240,7 +241,7 @@ function setupLocationBlockedPanel(){
  loadLocationBlocked().catch(e=>msg(e.message,'err'));
 }
 async function loadLocationBlocked(){
- if(!selectedHoursLocationId || !locationModeHasMultiple() || typeof locationBlockedList==='undefined')return;
+ if(!selectedHoursLocationId || typeof locationBlockedList==='undefined')return;
  locationBlockedCache=await api('/api/owner/blocked-dates?location_id='+encodeURIComponent(selectedHoursLocationId));
  locationBlockedList.innerHTML=locationBlockedCache.length ? locationBlockedCache.map(x=>{
   let time=x.start_time&&x.end_time?`${x.start_time}–${x.end_time}`:'Ceo dan';
@@ -303,8 +304,9 @@ async function loadHours(){
     if(typeof saveHours!=='undefined')saveHours.textContent='Sačuvaj radno vreme';
     setHoursEditorRows(rows, hoursForm);
   }
-  if(!locationModeHasMultiple())await loadBlocked();
+  if(!locationHoursCache.length)await loadBlocked();
 }
+
 
 if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
   let rows=collectHoursRows(hoursForm);
