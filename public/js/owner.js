@@ -187,6 +187,13 @@ function closeLocationHoursModal(){
 }
 function renderLocationHoursList(){
  if(typeof locationHoursList==='undefined')return;
+ const singleLocation=(locationHoursCache||[]).length===1;
+ if(typeof locationHoursCard!=='undefined')locationHoursCard.classList.toggle('single-location-hours-card-v120',singleLocation);
+ locationHoursList.classList.toggle('single-location-hours-list-v120',singleLocation);
+ const help=document.getElementById('locationHoursHelp');
+ if(help)help.textContent=singleLocation
+  ? 'Ovo je lokacija firme. Klikni Izmeni u pravougaoniku da podesiš radno vreme te lokacije.'
+  : 'Ako imaš dodate lokacije, ovde se vidi radno vreme za svaku lokaciju. Klikni Izmeni pored lokacije da promeniš radno vreme.';
  if(!locationHoursCache.length){
   locationHoursList.innerHTML='<p class="muted">Nema dodatih lokacija.</p>';
   return;
@@ -194,8 +201,11 @@ function renderLocationHoursList(){
  locationHoursList.innerHTML=locationHoursCache.map((l,idx)=>{
   const selected=String(l.id)===String(selectedHoursLocationId);
   const where=[l.city,l.address].map(x=>String(x||'').trim()).filter(Boolean).join(' · ');
-  return `<article class="item location-hours-row ${selected?'selected-location-hours':''}" data-id="${htmlEsc(l.id)}">
-    <div>
+  const classes=['item','location-hours-row'];
+  if(selected)classes.push('selected-location-hours');
+  if(singleLocation)classes.push('single-location-hours-row-v120');
+  return `<article class="${classes.join(' ')}" data-id="${htmlEsc(l.id)}">
+    <div class="location-hours-main-v120">
       <h3>${htmlEsc(l.name||('Lokacija '+(idx+1)))}</h3>
       <p class="muted">${htmlEsc(where||'Grad i adresa nisu uneti')}</p>
     </div>
@@ -207,6 +217,7 @@ function renderLocationHoursList(){
   openLocationHoursModal(btn.dataset.id);
  });
 }
+
 
 function locationModeHasMultiple(){
  return (locationHoursCache||[]).length>1;
@@ -272,7 +283,11 @@ async function loadHours(){
   }catch(_e){
     locationHoursCache=[];
   }
-  if(typeof locationHoursCard!=='undefined')locationHoursCard.classList.toggle('hidden',!locationHoursCache.length);
+  if(typeof locationHoursCard!=='undefined'){
+    locationHoursCard.classList.toggle('hidden',!locationHoursCache.length);
+    locationHoursCard.classList.toggle('single-location-hours-card-v120',(locationHoursCache||[]).length===1);
+  }
+  if(typeof locationHoursList!=='undefined')locationHoursList.classList.toggle('single-location-hours-list-v120',(locationHoursCache||[]).length===1);
   showMainBlockedCard();
   if(locationHoursCache.length){
     if(!selectedHoursLocationId || !locationHoursCache.some(x=>String(x.id)===String(selectedHoursLocationId)))selectedHoursLocationId=String(locationHoursCache[0].id);

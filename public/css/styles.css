@@ -956,6 +956,54 @@ body.manual-modal-body-open{
 .selected-location-hours{outline:2px solid rgba(0,0,0,.12)}
 @media(max-width:760px){.location-hours-row{grid-template-columns:1fr}.location-hours-row .btn{width:100%}}
 
+
+/* Single-location Radno vreme card v120 */
+.single-location-hours-card-v120{
+  padding:22px 26px;
+}
+.single-location-hours-list-v120{
+  padding:16px 0 18px;
+}
+.single-location-hours-row-v120{
+  min-height:118px;
+  border-radius:22px;
+  border:1px solid #d9dee8;
+  box-shadow:none;
+  padding:22px 24px;
+  grid-template-columns:minmax(190px,1fr) minmax(280px,2.1fr) auto;
+  background:#fff;
+}
+.single-location-hours-row-v120 .location-hours-main-v120 h3{
+  margin-bottom:10px;
+  font-size:20px;
+}
+.single-location-hours-row-v120 .location-hours-main-v120 .muted{
+  margin:0;
+  font-size:16px;
+  color:#344054;
+}
+.single-location-hours-row-v120 .location-hours-summary{
+  justify-self:center;
+  text-align:center;
+  font-size:16px;
+  color:#344054;
+}
+.single-location-hours-row-v120 .edit-location-hours{
+  min-width:82px;
+  border-radius:14px;
+}
+@media(max-width:760px){
+  .single-location-hours-card-v120{padding:16px}
+  .single-location-hours-row-v120{
+    grid-template-columns:1fr;
+    padding:18px;
+  }
+  .single-location-hours-row-v120 .location-hours-summary{
+    justify-self:start;
+    text-align:left;
+  }
+}
+
 /* Location working-hours modal v118 */
 .location-hours-modal-v118.manual-modal-open{
   position:fixed !important;
