@@ -349,20 +349,26 @@ function openProfileLocationModal(idx=null){
  }
  profileLocationEditIndex=idx;
  const loc=idx===null?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[idx]||makeEmptyProfileLocation(idx+1));
- if(typeof profileLocationModalTitle!=='undefined')profileLocationModalTitle.textContent=idx===null?'Nova lokacija':'Uredi lokaciju '+(idx+1);
- if(typeof profileModalSaveBtn!=='undefined')profileModalSaveBtn.textContent=idx===null?'Sačuvaj lokaciju odmah':'Sačuvaj izmene odmah';
+ if(typeof profileLocationModalTitle!=='undefined')profileLocationModalTitle.textContent=idx===null?'Dodaj lokaciju':'Uredi lokaciju '+(idx+1);
+ if(typeof profileModalSaveBtn!=='undefined')profileModalSaveBtn.textContent=idx===null?'Dodaj i sačuvaj':'Sačuvaj';
  if(typeof profileModalCity!=='undefined')profileModalCity.value=loc.city||'';
  if(typeof profileModalAddress!=='undefined')profileModalAddress.value=loc.address||'';
  if(typeof profileModalPhone!=='undefined')profileModalPhone.value=loc.phone||'';
  if(typeof profileModalActive!=='undefined')profileModalActive.checked=loc.active!==0;
  if(typeof profileLocationModal!=='undefined'){
   profileLocationModal.classList.remove('hidden');
+  profileLocationModal.classList.add('manual-modal-open');
+  document.body.classList.add('manual-modal-body-open');
   setTimeout(()=>{try{profileModalCity.focus()}catch(_e){}},50);
  }
 }
 function closeProfileLocationModalFn(){
  profileLocationEditIndex=null;
- if(typeof profileLocationModal!=='undefined')profileLocationModal.classList.add('hidden');
+ if(typeof profileLocationModal!=='undefined'){
+  profileLocationModal.classList.add('hidden');
+  profileLocationModal.classList.remove('manual-modal-open');
+  document.body.classList.remove('manual-modal-body-open');
+ }
 }
 async function saveProfileLocations(silent=false){
  if(!ownerHasWrittenLocation() && !profileUsingFullLocations())return;
@@ -511,7 +517,6 @@ if(typeof profileLocationForm!=='undefined')profileLocationForm.onsubmit=async e
  closeProfileLocationModalFn();
  renderProfileExtraLocations();
  refreshProfileAddLocationButton();
- msg('Čuvam lokaciju...','ok');
 
  try{
   await saveProfileLocations(true);
