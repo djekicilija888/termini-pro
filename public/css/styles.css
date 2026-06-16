@@ -955,3 +955,107 @@ body.manual-modal-body-open{
 .location-hours-summary{margin:0}
 .selected-location-hours{outline:2px solid rgba(0,0,0,.12)}
 @media(max-width:760px){.location-hours-row{grid-template-columns:1fr}.location-hours-row .btn{width:100%}}
+
+/* Location working-hours modal v118 */
+.location-hours-modal-v118.manual-modal-open{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:6500 !important;
+  width:100vw !important;
+  height:100vh !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:rgba(17,24,39,.82) !important;
+  backdrop-filter:blur(5px) !important;
+  -webkit-backdrop-filter:blur(5px) !important;
+  box-sizing:border-box !important;
+}
+.location-hours-modal-v118.manual-modal-open .manual-modal-head,
+.location-hours-modal-v118.manual-modal-open #locationHoursModalForm{
+  width:min(1120px, calc(100vw - 70px)) !important;
+  background:#ffffff !important;
+  box-sizing:border-box !important;
+}
+.location-hours-modal-v118.manual-modal-open .manual-modal-head{
+  border-radius:22px 22px 0 0 !important;
+  padding:14px 18px 8px !important;
+  border:1px solid #e5e7eb !important;
+  border-bottom:0 !important;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:18px !important;
+  box-shadow:0 -18px 60px rgba(0,0,0,.34) !important;
+}
+.location-hours-modal-v118.manual-modal-open .manual-modal-head h3{
+  margin:0 0 4px !important;
+  font-size:21px !important;
+}
+.location-hours-modal-v118.manual-modal-open .manual-modal-head p{
+  margin:0 !important;
+  font-size:14px !important;
+}
+.location-hours-modal-v118.manual-modal-open #locationHoursModalForm{
+  border:1px solid #e5e7eb !important;
+  border-top:0 !important;
+  border-radius:0 0 22px 22px !important;
+  padding:10px 18px 16px !important;
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:10px !important;
+  max-height:calc(100vh - 112px) !important;
+  overflow:auto !important;
+  box-shadow:0 26px 70px rgba(0,0,0,.42) !important;
+}
+.location-hours-days-v118{
+  display:grid !important;
+  gap:9px !important;
+}
+.location-hours-modal-v118 .hour{
+  grid-template-columns:1.05fr .85fr repeat(4, minmax(118px,1fr));
+  padding:12px 14px;
+}
+.location-hours-modal-v118 .hour b,
+.location-hours-modal-v118 .hour label{
+  margin:0 !important;
+  font-size:14px !important;
+}
+.location-hours-modal-v118 .hour input[type="time"]{
+  min-height:40px !important;
+  padding:8px 11px !important;
+  font-size:15px !important;
+}
+.location-hours-modal-actions-v118{
+  justify-content:flex-end !important;
+  padding-top:4px;
+}
+.location-hours-modal-actions-v118 .btn{
+  min-height:40px !important;
+}
+@media(max-width:900px){
+  .location-hours-modal-v118.manual-modal-open .manual-modal-head,
+  .location-hours-modal-v118.manual-modal-open #locationHoursModalForm{
+    width:calc(100vw - 24px) !important;
+  }
+  .location-hours-modal-v118 .hour{
+    grid-template-columns:1fr 1fr;
+  }
+}
+@media(max-width:620px){
+  .location-hours-modal-v118.manual-modal-open{
+    justify-content:flex-start !important;
+    padding-top:10px !important;
+  }
+  .location-hours-modal-v118 .hour{
+    grid-template-columns:1fr !important;
+  }
+  .location-hours-modal-actions-v118 .btn{
+    width:100%;
+  }
+}

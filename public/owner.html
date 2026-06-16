@@ -1,4 +1,4 @@
-<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=desktop-qr-sharp-centered-v90"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
+<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=radno-vreme-popup-v118"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
   <p class="eyebrow">Pregled</p>
   <h2 id="bn">Osnovna strana</h2>
   <div id="cards" class="grid3 dashboard-stats"></div>
@@ -102,7 +102,24 @@
     <div id="locationHoursList" class="stack"></div>
   </div>
 
-  <div class="card soft-card">
+  <div id="locationHoursModal" class="manual-panel location-hours-modal-v118 hidden" role="dialog" aria-modal="true">
+    <div class="manual-modal-head">
+      <div>
+        <h3 id="locationHoursModalTitle">Radno vreme lokacije</h3>
+        <p id="locationHoursModalHint" class="muted">Podesi dane, vreme rada i pauze za izabranu lokaciju.</p>
+      </div>
+      <button id="closeLocationHoursModal" class="manual-close" type="button" aria-label="Zatvori">×</button>
+    </div>
+    <form id="locationHoursModalForm" class="formgrid">
+      <div id="locationHoursModalRows" class="location-hours-days-v118"></div>
+      <div class="form-actions location-hours-modal-actions-v118">
+        <button id="cancelLocationHoursModal" type="button" class="btn small ghost">Otkaži</button>
+        <button class="btn small" type="submit">Sačuvaj radno vreme</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="hoursEditorCard" class="card soft-card">
     <h3 id="hoursEditorTitle">Redovno radno vreme i pauze</h3>
     <p id="hoursEditorHint" class="muted">Za svaki dan možeš uneti vreme rada i pauzu, npr. 12:00–13:00.</p>
     <div id="hoursForm" class="stack"></div>
@@ -196,4 +213,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=lokacije-popup-autosave-v116"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=radno-vreme-popup-v118"></script></body></html>

@@ -125,9 +125,11 @@ function summarizeHours(rows){
  }
  return parts.join('; ');
 }
-function setHoursEditorRows(rows){
+function setHoursEditorRows(rows, target){
  rows=normalizeHoursRows(rows);
- hoursForm.innerHTML=rows.map(x=>`
+ const el = target ? (typeof target==='string' ? document.getElementById(target) : target) : hoursForm;
+ if(!el) return;
+ el.innerHTML=rows.map(x=>`
     <div class="item hour" data-day="${x.day}">
       <b>${day[x.day]}</b>
       <label><input class="open" type="checkbox" ${x.is_open?'checked':''}> Otvoreno</label>
@@ -137,8 +139,9 @@ function setHoursEditorRows(rows){
       <label>Pauza do<input class="be" type="time" value="${x.break_end||''}"></label>
     </div>`).join('');
 }
-function collectHoursRows(){
- return [...document.querySelectorAll('.hour')].map(x=>({
+function collectHoursRows(root){
+ const scope = root ? (typeof root==='string' ? document.getElementById(root) : root) : document;
+ return [...(scope||document).querySelectorAll('.hour')].map(x=>({
    day:+x.dataset.day,
    is_open:x.querySelector('.open').checked,
    open_time:x.querySelector('.ot').value,
@@ -146,6 +149,40 @@ function collectHoursRows(){
    break_start:x.querySelector('.bs').value,
    break_end:x.querySelector('.be').value
  }));
+}
+function openLocationHoursModal(locationId){
+ selectedHoursLocationId=String(locationId||'');
+ const loc=locationHoursCache.find(x=>String(x.id)===String(selectedHoursLocationId));
+ if(!loc) return;
+ renderLocationHoursList();
+ const modal=document.getElementById('locationHoursModal');
+ const title=document.getElementById('locationHoursModalTitle');
+ const hint=document.getElementById('locationHoursModalHint');
+ const rows=document.getElementById('locationHoursModalRows');
+ if(title)title.textContent='Radno vreme: '+(loc.name||'Lokacija');
+ if(hint)hint.textContent='Podesi radno vreme za ovu lokaciju i klikni Sačuvaj.';
+ setHoursEditorRows(loc.hours||[], rows);
+ if(modal){
+   modal.classList.remove('hidden');
+   modal.classList.add('manual-modal-open');
+   document.body.classList.add('manual-modal-body-open');
+   setTimeout(()=>{
+    const first=modal.querySelector('input,select,textarea,button');
+    if(first)try{first.focus({preventScroll:true})}catch(_e){}
+   },80);
+ }else{
+   if(typeof hoursEditorTitle!=='undefined')hoursEditorTitle.textContent='Radno vreme: '+(loc&&loc.name?loc.name:'Lokacija');
+   if(typeof hoursEditorHint!=='undefined')hoursEditorHint.textContent='Izmeni radno vreme za izabranu lokaciju i klikni Sačuvaj.';
+   if(typeof saveHours!=='undefined')saveHours.textContent='Sačuvaj radno vreme lokacije';
+   setHoursEditorRows(loc?loc.hours:[], hoursForm);
+ }
+}
+function closeLocationHoursModal(){
+ const modal=document.getElementById('locationHoursModal');
+ if(!modal)return;
+ modal.classList.add('hidden');
+ modal.classList.remove('manual-modal-open');
+ document.body.classList.remove('manual-modal-body-open');
 }
 function renderLocationHoursList(){
  if(typeof locationHoursList==='undefined')return;
@@ -166,14 +203,7 @@ function renderLocationHoursList(){
   </article>`;
  }).join('');
  locationHoursList.querySelectorAll('.edit-location-hours').forEach(btn=>btn.onclick=async()=>{
-  selectedHoursLocationId=btn.dataset.id;
-  renderLocationHoursList();
-  const loc=locationHoursCache.find(x=>String(x.id)===String(selectedHoursLocationId));
-  if(typeof hoursEditorTitle!=='undefined')hoursEditorTitle.textContent='Radno vreme: '+(loc&&loc.name?loc.name:'Lokacija');
-  if(typeof hoursEditorHint!=='undefined')hoursEditorHint.textContent='Izmeni radno vreme za izabranu lokaciju i klikni Sačuvaj.';
-  if(typeof saveHours!=='undefined')saveHours.textContent='Sačuvaj radno vreme lokacije';
-  setHoursEditorRows(loc?loc.hours:[]);
-  try{hoursForm.scrollIntoView({behavior:'smooth',block:'start'})}catch(_e){}
+  openLocationHoursModal(btn.dataset.id);
  });
 }
 async function loadHours(){
@@ -185,26 +215,23 @@ async function loadHours(){
   if(typeof locationHoursCard!=='undefined')locationHoursCard.classList.toggle('hidden',!locationHoursCache.length);
   if(locationHoursCache.length){
     if(!selectedHoursLocationId || !locationHoursCache.some(x=>String(x.id)===String(selectedHoursLocationId)))selectedHoursLocationId=String(locationHoursCache[0].id);
-    const loc=locationHoursCache.find(x=>String(x.id)===String(selectedHoursLocationId))||locationHoursCache[0];
-    selectedHoursLocationId=String(loc.id);
     renderLocationHoursList();
-    if(typeof hoursEditorTitle!=='undefined')hoursEditorTitle.textContent='Radno vreme: '+(loc.name||'Lokacija');
-    if(typeof hoursEditorHint!=='undefined')hoursEditorHint.textContent='Za svaki dan možeš uneti vreme rada i pauzu za ovu lokaciju.';
-    if(typeof saveHours!=='undefined')saveHours.textContent='Sačuvaj radno vreme lokacije';
-    setHoursEditorRows(loc.hours||[]);
+    if(typeof hoursEditorCard!=='undefined')hoursEditorCard.classList.add('hidden');
   }else{
+    closeLocationHoursModal();
     selectedHoursLocationId='';
+    if(typeof hoursEditorCard!=='undefined')hoursEditorCard.classList.remove('hidden');
     let rows=await api('/api/owner/working-hours');
     if(typeof hoursEditorTitle!=='undefined')hoursEditorTitle.textContent='Redovno radno vreme i pauze';
     if(typeof hoursEditorHint!=='undefined')hoursEditorHint.textContent='Za svaki dan možeš uneti vreme rada i pauzu, npr. 12:00–13:00.';
     if(typeof saveHours!=='undefined')saveHours.textContent='Sačuvaj radno vreme';
-    setHoursEditorRows(rows);
+    setHoursEditorRows(rows, hoursForm);
   }
   await loadBlocked();
 }
 
-saveHours.onclick=async()=>{
-  let rows=collectHoursRows();
+if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
+  let rows=collectHoursRows(hoursForm);
   if(selectedHoursLocationId){
     await api('/api/owner/location-working-hours/'+encodeURIComponent(selectedHoursLocationId),{method:'PUT',body:JSON.stringify({rows})});
     msg('Radno vreme lokacije je sačuvano.','ok');
@@ -214,6 +241,32 @@ saveHours.onclick=async()=>{
     msg('Radno vreme je sačuvano.','ok');
   }
 };
+
+(function(){
+ function installLocationHoursModal(){
+  const modal=document.getElementById('locationHoursModal');
+  const form=document.getElementById('locationHoursModalForm');
+  const close=document.getElementById('closeLocationHoursModal');
+  const cancel=document.getElementById('cancelLocationHoursModal');
+  if(!modal || modal.dataset.ready)return;
+  modal.dataset.ready='1';
+  if(close)close.addEventListener('click', ev=>{ev.preventDefault();closeLocationHoursModal();});
+  if(cancel)cancel.addEventListener('click', ev=>{ev.preventDefault();closeLocationHoursModal();});
+  modal.addEventListener('mousedown', ev=>{if(ev.target===modal)closeLocationHoursModal();});
+  if(form)form.addEventListener('submit', async ev=>{
+    ev.preventDefault();
+    if(!selectedHoursLocationId)return;
+    const rows=collectHoursRows(form);
+    await api('/api/owner/location-working-hours/'+encodeURIComponent(selectedHoursLocationId),{method:'PUT',body:JSON.stringify({rows})});
+    msg('Radno vreme lokacije je sačuvano.','ok');
+    closeLocationHoursModal();
+    await loadHours();
+  });
+ }
+ document.addEventListener('DOMContentLoaded',()=>{setTimeout(installLocationHoursModal,120);setTimeout(installLocationHoursModal,800)});
+ document.addEventListener('click',()=>setTimeout(installLocationHoursModal,80),true);
+ document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){const m=document.getElementById('locationHoursModal');if(m&&!m.classList.contains('hidden'))closeLocationHoursModal();}});
+})();
 
 blockedForm.onsubmit=async e=>{
   e.preventDefault();
