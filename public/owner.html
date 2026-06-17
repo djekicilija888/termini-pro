@@ -1,4 +1,4 @@
-<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=locations-limit-v122"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
+<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><link rel="stylesheet" href="/css/styles.css?v=location-qr-popup-v123"></head><body><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
   <p class="eyebrow">Pregled</p>
   <h2 id="bn">Osnovna strana</h2>
   <div id="cards" class="grid3 dashboard-stats"></div>
@@ -43,6 +43,43 @@
       <button id="addLocationBtn" class="btn small ghost" type="button">Dodaj lokaciju</button>
       <button id="saveLocationsBtn" class="btn small" type="button">Sačuvaj lokacije</button>
     </div>
+  </div>
+
+  <div id="ownerLocationQrModal" class="manual-panel location-qr-modal-v123 hidden" role="dialog" aria-modal="true">
+    <div class="manual-modal-head">
+      <div>
+        <h3 id="ownerLocationQrModalTitle">Lokacija</h3>
+        <p id="ownerLocationQrModalHint" class="muted">Podesi podatke lokacije, link i QR materijale.</p>
+      </div>
+      <button id="closeOwnerLocationQrModal" class="manual-close" type="button" aria-label="Zatvori">×</button>
+    </div>
+
+    <form id="ownerLocationQrModalForm" class="location-qr-modal-form-v123">
+      <div class="location-qr-fields-v123">
+        <label>Naziv lokacije<input id="qrLocName"></label>
+        <label>Grad<input id="qrLocCity"></label>
+        <label>Adresa<input id="qrLocAddress"></label>
+        <label>Email<input id="qrLocEmail" type="email"></label>
+        <label>Telefoni, najviše 4 broja<textarea id="qrLocPhone" rows="4" placeholder="Svaki broj u novi red"></textarea></label>
+        <label>Redosled<input id="qrLocSort" type="number" min="0"></label>
+        <label class="inline-check location-qr-active-v123"><input id="qrLocActive" type="checkbox" checked> Aktivna lokacija</label>
+        <label class="location-qr-url-v123">Link lokacije<input id="qrLocUrl" readonly></label>
+      </div>
+
+      <div class="location-qr-actions-v123">
+        <button id="qrLocCopy" class="btn small ghost" type="button">Kopiraj link</button>
+        <a id="qrLocOpen" class="btn small ghost" target="_blank">Otvori</a>
+        <button id="qrLocDownload" class="btn small" type="button">Preuzmi samo QR</button>
+        <button id="qrLocCards" class="btn small" type="button">Štampaj/preuzmi QR vizit karte</button>
+        <button id="qrLocStickers" class="btn small" type="button">Štampaj/preuzmi QR nalepnice</button>
+        <button id="qrLocDelete" class="btn small danger" type="button">Obriši</button>
+      </div>
+
+      <div class="form-actions location-qr-modal-bottom-v123">
+        <button id="cancelOwnerLocationQrModal" type="button" class="btn small ghost">Otkaži</button>
+        <button id="saveOwnerLocationQrModal" class="btn small" type="submit">Sačuvaj lokaciju</button>
+      </div>
+    </form>
   </div>
 </section>
 
@@ -229,4 +266,4 @@
 
     <button class="btn small">Sačuvaj</button>
   </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=locations-limit-v122"></script></body></html>
+</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main><script src="/js/owner.js?v=location-qr-popup-v123"></script></body></html>
