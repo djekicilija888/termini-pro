@@ -1,29 +1,92 @@
 const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'];let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}function msg(t,c=''){om.textContent=t;om.className='msg '+c}function show(){login.classList.add('hidden');app.classList.remove('hidden')}function hide(){login.classList.remove('hidden');app.classList.add('hidden')}loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};logout.onclick=()=>{localStorage.removeItem(T);localStorage.removeItem('token');hide()};document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));function tab(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
 let ownerServiceCache=[], ownerStaffCache=[];
 
+function locIdsOf(x){return (x&&Array.isArray(x.location_ids)?x.location_ids:[]).map(String)}
+function selectedActiveLocationIds(){return (ownerLocationsCache||[]).filter(l=>l&&l.active!==0).map(l=>String(l.id))}
+function locationAllowedForItem(item,locationId){
+ const ids=locIdsOf(item);
+ if(!locationId || !ids.length)return true;
+ return ids.includes(String(locationId));
+}
+function itemLocationText(item){
+ const ids=locIdsOf(item), active=selectedActiveLocationIds();
+ if(!ids.length || ids.length===active.length)return 'Sve lokacije';
+ const names=(ownerLocationsCache||[]).filter(l=>ids.includes(String(l.id))).map(l=>l.name||l.city||('Lokacija '+l.id));
+ return names.length?names.join(', '):'Sve lokacije';
+}
+function currentManualLocationId(){
+ if(typeof manualLocation!=='undefined' && manualLocation && manualLocation.value)return manualLocation.value;
+ const first=(ownerLocationsCache||[]).find(l=>l&&l.active!==0);
+ return first?String(first.id):'';
+}
+function renderLocationChecks(boxId,selectedIds){
+ const box=document.getElementById(boxId);
+ if(!box)return;
+ const locs=(ownerLocationsCache||[]).filter(l=>l&&l.active!==0);
+ if(locs.length<=1){box.innerHTML='';box.classList.add('hidden');return;}
+ box.classList.remove('hidden');
+ const ids=(selectedIds&&selectedIds.length?selectedIds:locs.map(l=>l.id)).map(String);
+ box.innerHTML=`<p class="muted location-checks-title-v122">Lokacije na kojima je dostupno</p>`+locs.map(l=>`<label class="location-check-v122"><input type="checkbox" value="${htmlEsc(l.id)}" ${ids.includes(String(l.id))?'checked':''}> ${htmlEsc(l.name||l.city||'Lokacija')}</label>`).join('');
+}
+function collectLocationChecks(boxId){
+ const box=document.getElementById(boxId);
+ if(!box)return selectedActiveLocationIds().map(Number);
+ const checked=[...box.querySelectorAll('input[type="checkbox"]:checked')].map(x=>Number(x.value)).filter(Boolean);
+ const all=(ownerLocationsCache||[]).filter(l=>l&&l.active!==0).map(l=>Number(l.id)).filter(Boolean);
+ return checked.length?checked:all;
+}
+function populateLocationSelect(select,includeAll=false){
+ if(!select)return;
+ const old=select.value;
+ const locs=(ownerLocationsCache||[]).filter(l=>l&&l.active!==0);
+ select.innerHTML=(includeAll?'<option value="">Sve lokacije</option>':'')+locs.map((l,i)=>`<option value="${htmlEsc(l.id)}">${htmlEsc(l.name||('Lokacija '+(i+1)))}</option>`).join('');
+ if(old && [...select.options].some(o=>o.value===old))select.value=old;
+ else if(includeAll)select.value='';
+}
+function refreshManualLocationSelects(){
+ if(typeof manualLocation!=='undefined'){
+  populateLocationSelect(manualLocation,false);
+  const wrap=document.getElementById('manualLocationWrap');
+  if(wrap)wrap.classList.toggle('hidden',(ownerLocationsCache||[]).filter(l=>l&&l.active!==0).length<=1);
+ }
+ if(typeof appointmentLocationFilter!=='undefined')populateLocationSelect(appointmentLocationFilter,true);
+}
+function filterItemsByManualLocation(items){
+ const lid=currentManualLocationId();
+ return (items||[]).filter(x=>x.active!==0 && locationAllowedForItem(x,lid));
+}
+async function updateManualChoices(){
+ const oldService=typeof manualService!=='undefined'?manualService.value:'';
+ const oldStaff=typeof manualStaff!=='undefined'?manualStaff.value:'';
+ const services=filterItemsByManualLocation(ownerServiceCache);
+ const staffRows=filterItemsByManualLocation(ownerStaffCache);
+ if(typeof manualService!=='undefined'){
+  manualService.innerHTML=services.map(x=>`<option value="${x.id}">${htmlEsc(x.name)} · ${x.duration} min</option>`).join('');
+  if(oldService && services.some(x=>String(x.id)===String(oldService)))manualService.value=oldService;
+ }
+ if(typeof manualStaff!=='undefined'){
+  manualStaff.innerHTML='<option value="">Bilo koji slobodan radnik</option>'+staffRows.map(x=>`<option value="${x.id}">${htmlEsc(x.name)}</option>`).join('');
+  if(oldStaff && staffRows.some(x=>String(x.id)===String(oldStaff)))manualStaff.value=oldStaff;
+ }
+ await updateManualSlots();
+}
+
 async function loadManualOptions(){
+  try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
   ownerServiceCache = await api('/api/owner/services');
   ownerStaffCache = await api('/api/owner/staff');
-
-  if(typeof manualService!=='undefined'){
-    let activeServices = ownerServiceCache.filter(x=>x.active!==0);
-    manualService.innerHTML = activeServices.map(x=>`<option value="${x.id}">${htmlEsc(x.name)} · ${x.duration} min</option>`).join('');
-  }
-
-  if(typeof manualStaff!=='undefined'){
-    let activeStaff = ownerStaffCache.filter(x=>x.active!==0);
-    manualStaff.innerHTML = '<option value="">Bilo koji slobodan radnik</option>' + activeStaff.map(x=>`<option value="${x.id}">${htmlEsc(x.name)}</option>`).join('');
-  }
-
+  refreshManualLocationSelects();
   if(typeof manualDate!=='undefined' && !manualDate.value) manualDate.value = today();
-  await updateManualSlots();
+  await updateManualChoices();
 }
 
 async function updateManualSlots(){
-  if(typeof manualTime==='undefined' || !manualService || !manualService.value || !manualDate || !manualDate.value) return;
+  if(typeof manualTime==='undefined' || !manualService || !manualDate || !manualDate.value) return;
+  if(!manualService.value){manualTime.innerHTML='<option value="">Nema usluga za ovu lokaciju</option>';return;}
   manualTime.innerHTML = '<option value="">Učitavam...</option>';
   try{
     let p = new URLSearchParams({date:manualDate.value,service_id:manualService.value});
+    const lid=currentManualLocationId();if(lid)p.set('location_id',lid);
     if(manualStaff.value) p.set('staff_id', manualStaff.value);
     let rows = await api('/api/owner/available-slots?'+p);
     manualTime.innerHTML = rows.length
@@ -36,12 +99,15 @@ async function updateManualSlots(){
 }
 
 async function loadAppointments(){
+  try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
+  refreshManualLocationSelects();
   if(typeof manualService!=='undefined') await loadManualOptions();
 
   if(!from.value)from.value=today();
   if(!to.value)to.value=add(30);
   let p=new URLSearchParams({from:from.value,to:to.value});
   if(status.value)p.set('status',status.value);
+  if(typeof appointmentLocationFilter!=='undefined' && appointmentLocationFilter.value)p.set('location_id',appointmentLocationFilter.value);
   let rows=await api('/api/owner/appointments?'+p);
 
   appointmentsBody.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th><th>Promeni</th></tr>'+rows.map(a=>`
@@ -72,9 +138,12 @@ async function loadAppointments(){
   });
 }
 
+if(typeof manualLocation!=='undefined') manualLocation.onchange=()=>updateManualChoices().catch(e=>msg(e.message,'err'));
 if(typeof manualService!=='undefined') manualService.onchange=updateManualSlots;
 if(typeof manualStaff!=='undefined') manualStaff.onchange=updateManualSlots;
 if(typeof manualDate!=='undefined') manualDate.onchange=updateManualSlots;
+if(typeof appointmentLocationFilter!=='undefined') appointmentLocationFilter.onchange=loadAppointments;
+if(typeof loadA!=='undefined') loadA.onclick=loadAppointments;
 if(typeof manualSlotRefresh!=='undefined') manualSlotRefresh.onclick=updateManualSlots;
 if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   e.preventDefault();
@@ -86,6 +155,7 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
       customer_name:manualName.value,
       phone:manualPhone.value,
       email:manualEmail.value,
+      location_id:currentManualLocationId(),
       service_id:manualService.value,
       staff_id:manualStaff.value || (selected ? selected.dataset.staff : ''),
       date:manualDate.value,
@@ -99,7 +169,43 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   await loadAppointments();
 };
 
-function resetSt(){staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true}resetStaff.onclick=resetSt;staffForm.onsubmit=async e=>{e.preventDefault();let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked};await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});msg('Radnik sačuvan.','ok');resetSt();loadStaff()};async function loadStaff(){let rows=await api('/api/owner/staff');staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.name}</h3><p>${x.title||''} ${x.phone||''}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span></div><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');staffList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active})}function resetSv(){serviceId.value='';serviceName.value='';serviceDesc.value='';serviceDuration.value=30;servicePrice.value=1000;serviceSort.value=0;serviceActive.checked=true}resetService.onclick=resetSv;serviceForm.onsubmit=async e=>{e.preventDefault();let id=serviceId.value,p={name:serviceName.value,description:serviceDesc.value,duration:+serviceDuration.value,price:+servicePrice.value,sort_order:+serviceSort.value,active:serviceActive.checked};await api(id?'/api/owner/services/'+id:'/api/owner/services',{method:id?'PUT':'POST',body:JSON.stringify(p)});msg('Usluga sačuvana.','ok');resetSv();loadServices()};async function loadServices(){let rows=await api('/api/owner/services');serviceList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.name}</h3><p>${x.duration} min · ${x.price} RSD</p><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');serviceList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);serviceId.value=x.id;serviceName.value=x.name;serviceDesc.value=x.description||'';serviceDuration.value=x.duration;servicePrice.value=x.price;serviceSort.value=x.sort_order;serviceActive.checked=!!x.active})}let selectedHoursLocationId='', locationHoursCache=[], locationBlockedCache=[];
+function resetSt(){
+ staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true;renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
+}
+resetStaff.onclick=resetSt;
+staffForm.onsubmit=async e=>{
+ e.preventDefault();
+ await ensureOwnerLocationsLoaded();
+ let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,location_ids:collectLocationChecks('staffLocationsBox')};
+ await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
+ msg('Radnik sačuvan.','ok');resetSt();loadStaff()
+};
+async function loadStaff(){
+ await ensureOwnerLocationsLoaded();
+ let rows=await api('/api/owner/staff');
+ renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
+ staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span></div><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');
+ staffList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active;renderLocationChecks('staffLocationsBox',x.location_ids||selectedActiveLocationIds())})
+}
+function resetSv(){
+ serviceId.value='';serviceName.value='';serviceDesc.value='';serviceDuration.value=30;servicePrice.value=1000;serviceSort.value=0;serviceActive.checked=true;renderLocationChecks('serviceLocationsBox',selectedActiveLocationIds());
+}
+resetService.onclick=resetSv;
+serviceForm.onsubmit=async e=>{
+ e.preventDefault();
+ await ensureOwnerLocationsLoaded();
+ let id=serviceId.value,p={name:serviceName.value,description:serviceDesc.value,duration:+serviceDuration.value,price:+servicePrice.value,sort_order:+serviceSort.value,active:serviceActive.checked,location_ids:collectLocationChecks('serviceLocationsBox')};
+ await api(id?'/api/owner/services/'+id:'/api/owner/services',{method:id?'PUT':'POST',body:JSON.stringify(p)});
+ msg('Usluga sačuvana.','ok');resetSv();loadServices()
+};
+async function loadServices(){
+ await ensureOwnerLocationsLoaded();
+ let rows=await api('/api/owner/services');
+ renderLocationChecks('serviceLocationsBox',selectedActiveLocationIds());
+ serviceList.innerHTML=rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${x.duration} min · ${x.price} RSD</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');
+ serviceList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);serviceId.value=x.id;serviceName.value=x.name;serviceDesc.value=x.description||'';serviceDuration.value=x.duration;servicePrice.value=x.price;serviceSort.value=x.sort_order;serviceActive.checked=!!x.active;renderLocationChecks('serviceLocationsBox',x.location_ids||selectedActiveLocationIds())})
+}
+let selectedHoursLocationId='', locationHoursCache=[], locationBlockedCache=[];
 function normalizeHoursRows(rows){
  const byDay={};
  (rows||[]).forEach(r=>{byDay[Number(r.day)]=r});
@@ -457,6 +563,7 @@ function ownerActiveLocationCount(){
 async function ensureOwnerLocationsLoaded(){
  ownerLocationsCache=await api('/api/owner/locations');
  refreshProfileAddLocationButton();
+ refreshManualLocationSelects();
  if(typeof profileLocationsList!=='undefined')renderProfileExtraLocations();
  return ownerLocationsCache;
 }

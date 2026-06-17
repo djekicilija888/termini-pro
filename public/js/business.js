@@ -38,8 +38,9 @@ function setStaffVisibility(count){
   const box = fieldWrap(staff);
   if(!box) return;
   box.style.display = count <= 1 ? 'none' : '';
-  if(count <= 1 && state.staff && state.staff.length === 1){
-    staff.value = String(state.staff[0].id);
+  const visibleStaff = (typeof filteredStaff === 'function') ? filteredStaff() : (state.staff || []);
+  if(count <= 1 && visibleStaff.length === 1){
+    staff.value = String(visibleStaff[0].id);
   }
 }
 function hideStaffPublicSectionIfNeeded(count){
@@ -68,6 +69,25 @@ function currentLocation(){
   const val=(typeof businessLocation!=='undefined'&&businessLocation)?businessLocation.value:'';
   return locs.find(l=>String(l.id)===String(val)) || locs[0];
 }
+function allowedAtCurrentLocation(item){
+  const loc=currentLocation();
+  if(!loc||!loc.id)return true;
+  const ids=Array.isArray(item.location_ids)?item.location_ids.map(String):[];
+  return !ids.length || ids.includes(String(loc.id));
+}
+function filteredServices(){return (state.services||[]).filter(x=>allowedAtCurrentLocation(x))}
+function filteredStaff(){return (state.staff||[]).filter(x=>allowedAtCurrentLocation(x))}
+function renderBookingChoices(){
+  const oldService=service.value,oldStaff=staff.value;
+  const ss=filteredServices(), st=filteredStaff();
+  service.innerHTML='';services.innerHTML='';staff.innerHTML='<option value="">Bilo koji slobodan radnik</option>';staffGrid.innerHTML='';
+  ss.forEach(s=>{let o=document.createElement('option');o.value=s.id;o.textContent=`${s.name} · ${s.duration} min · ${money(s.price)}`;service.appendChild(o);services.insertAdjacentHTML('beforeend',`<article class="item"><h3>${esc(s.name)}</h3><p class="muted">${esc(s.description||'')}</p><div class="badges"><span>${s.duration} min</span><span>${money(s.price)}</span></div></article>`)});
+  if(oldService && ss.some(x=>String(x.id)===String(oldService)))service.value=oldService;
+  st.forEach(p=>{let o=document.createElement('option');o.value=p.id;o.textContent=p.name+(p.title?' · '+p.title:'');staff.appendChild(o);staffGrid.insertAdjacentHTML('beforeend',`<article class="item"><h3>${esc(p.name)}</h3><p class="muted">${esc(p.title||'Radnik')}</p></article>`)});
+  if(oldStaff && st.some(x=>String(x.id)===String(oldStaff)))staff.value=oldStaff;
+  setStaffVisibility(st.length);hideStaffPublicSectionIfNeeded(st.length);
+  if(!ss.length){slot.innerHTML='<option value="">Nema usluga za ovu lokaciju</option>';note('Nema usluga','Za izabranu lokaciju trenutno nema dostupnih usluga.','err')}
+}
 function updateLocationInfo(){
   const b=state.business||{}, l=currentLocation();
   const showLoc=(state.locations||[]).length>1;
@@ -86,18 +106,16 @@ async function load(){
     businessLocation.innerHTML=locs.map((l,i)=>`<option value="${l.id}">${esc(l.name||('Lokacija '+(i+1)))}</option>`).join('');
     const wanted=new URLSearchParams(window.location.search).get('loc');
     if(wanted && locs.some(l=>String(l.id)===String(wanted)))businessLocation.value=wanted;
-    businessLocation.onchange=()=>{updateLocationInfo();loadSlots()};
+    businessLocation.onchange=()=>{updateLocationInfo();renderBookingChoices();loadSlots()};
   }
   updateLocationInfo();
-  service.innerHTML='';services.innerHTML='';staff.innerHTML='<option value="">Bilo koji slobodan radnik</option>';staffGrid.innerHTML='';
-  d.services.forEach(s=>{let o=document.createElement('option');o.value=s.id;o.textContent=`${s.name} · ${s.duration} min · ${money(s.price)}`;service.appendChild(o);services.insertAdjacentHTML('beforeend',`<article class="item"><h3>${esc(s.name)}</h3><p class="muted">${esc(s.description||'')}</p><div class="badges"><span>${s.duration} min</span><span>${money(s.price)}</span></div></article>`)});
-  d.staff.forEach(p=>{let o=document.createElement('option');setStaffVisibility((state.staff||[]).length);hideStaffPublicSectionIfNeeded((state.staff||[]).length);o.value=p.id;o.textContent=p.name+(p.title?' · '+p.title:'');staff.appendChild(o);staffGrid.insertAdjacentHTML('beforeend',`<article class="item"><h3>${esc(p.name)}</h3><p class="muted">${esc(p.title||'Radnik')}</p></article>`)});
-  setStaffVisibility((state.staff||[]).length);hideStaffPublicSectionIfNeeded((state.staff||[]).length);
+  renderBookingChoices();
   date.min=today();date.max=addDays(d.settings.max_days||45);date.value=today();
   if(!d.booking_enabled){form.classList.add('hidden');note('Zakazivanje nije aktivno',d.booking_disabled_reason,'err');return}
   await loadSlots();
 }
 async function loadSlots(pref=''){
+  if(!service.value){slot.innerHTML='<option value="">Nema usluga</option>';return;}
   slot.innerHTML='<option>Učitavanje...</option>';note('Provera','Proveravam zauzetost...');
   try{let p=new URLSearchParams({service_id:service.value,date:date.value});if(staff.value)p.set('staff_id',staff.value);let loc=currentLocation();if(loc&&loc.id)p.set('location_id',loc.id);let rows=await api(`/api/businesses/${slug}/available-slots?${p}`);if(!rows.length){slot.innerHTML='<option value="">Nema termina</option>';let n=await api(`/api/businesses/${slug}/next-available?${p}&from_date=${date.value}`);if(n.first_available){notice.className='notice warn';notice.innerHTML=`<b>Taj dan je zauzet</b><br><span>Najbliži slobodan termin je ${fd(n.first_available.date)} u ${n.first_available.start_time} kod ${n.first_available.staff_name}.</span>${suggestions(n.suggestions)}`;notice.querySelectorAll('button').forEach(b=>b.onclick=async()=>{date.value=b.dataset.date;staff.value=b.dataset.staff;await loadSlots(b.dataset.time)});}else note('Nema termina','Nema slobodnih termina u narednim danima.','err');return}slot.innerHTML='';rows.forEach(x=>{let o=document.createElement('option');o.value=x.start_time;o.dataset.staffId=x.staff_id;o.textContent=`${x.start_time} - ${x.end_time} · ${x.staff_name}`;slot.appendChild(o)});if(pref)slot.value=pref;note('Termin je dostupan',`Prvi slobodan termin je ${rows[0].start_time} kod ${rows[0].staff_name}.`,'ok')}catch(e){note('Greška',e.message,'err')}
 }

@@ -1145,3 +1145,10 @@ body.manual-modal-body-open{
   .location-blocked-row-v119{align-items:stretch;flex-direction:column}
   .location-blocked-row-v119 .btn{width:100%}
 }
+
+/* v122 - usluge i radnici po lokacijama */
+.location-checks-v122{grid-column:1/-1;border:1px solid rgba(15,23,42,.12);border-radius:16px;padding:14px;background:#fff;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.location-checks-v122.hidden{display:none!important}
+.location-checks-title-v122{width:100%;margin:0 0 2px!important;font-weight:700;color:#111827!important}
+.location-check-v122{display:inline-flex!important;align-items:center;gap:8px;margin:0!important;padding:8px 10px;border:1px solid rgba(15,23,42,.12);border-radius:999px;background:#f8fafc;font-size:14px}
+.location-check-v122 input{width:auto!important;margin:0!important}
