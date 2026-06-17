@@ -1153,7 +1153,7 @@ body.manual-modal-body-open{
 .location-check-v122{display:inline-flex!important;align-items:center;gap:8px;margin:0!important;padding:8px 10px;border:1px solid rgba(15,23,42,.12);border-radius:999px;background:#f8fafc;font-size:14px}
 .location-check-v122 input{width:auto!important;margin:0!important}
 
-/* v123 - Link / QR lokacije u popup prozoru */
+/* v123/v124 - Link / QR lokacije kao kartice sa direktnim QR dugmadima */
 .location-qr-list-v123{
   display:grid;
   gap:12px;
@@ -1320,6 +1320,41 @@ body.manual-modal-body-open{
   }
   .location-qr-actions-v123 .btn,
   .location-qr-modal-bottom-v123 .btn{
+    width:100%;
+  }
+}
+
+
+/* v124 - Link / QR: bez obrazaca, direktna dugmad u kartici lokacije */
+.location-qr-row-v124{
+  grid-template-columns:minmax(185px,1.05fr) minmax(230px,1.35fr) minmax(430px,1.6fr);
+  align-items:center;
+}
+.location-qr-actions-inline-v124{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-end;
+  align-items:center;
+}
+.location-qr-actions-inline-v124 .btn{
+  min-height:38px;
+  white-space:nowrap;
+}
+.location-qr-actions-inline-v124 a.disabled-v123{
+  pointer-events:none;
+  text-decoration:none;
+}
+@media(max-width:1100px){
+  .location-qr-row-v124{
+    grid-template-columns:1fr;
+  }
+  .location-qr-actions-inline-v124{
+    justify-content:flex-start;
+  }
+}
+@media(max-width:620px){
+  .location-qr-actions-inline-v124 .btn{
     width:100%;
   }
 }

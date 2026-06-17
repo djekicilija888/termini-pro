@@ -823,16 +823,34 @@ async function copyOwnerLocationQrModalLink(){
  await navigator.clipboard.writeText(loc.booking_url||'');
  msg('Link lokacije je kopiran.','ok');
 }
+function ownerLocationReadyForQr(l){
+ return !!(l&&l.booking_url&&ownerLocId(l));
+}
+async function copyOwnerLocationLink(loc){
+ if(!loc||!loc.booking_url)return msg('Lokacija još nema link. Uredi i sačuvaj lokaciju u odeljku Profil firme.','err');
+ await navigator.clipboard.writeText(loc.booking_url||'');
+ msg('Link lokacije je kopiran.','ok');
+}
+function requireOwnerLocationQrReady(loc){
+ if(ownerLocationReadyForQr(loc))return true;
+ msg('Prvo sačuvaj lokaciju u odeljku Profil firme da dobije svoj link i QR kod.','err');
+ return false;
+}
 function renderOwnerLocations(){
  if(typeof ownerLocationsList==='undefined')return;
  const list=(ownerLocationsCache||[]);
  ownerLocationsList.classList.add('location-qr-list-v123');
  if(!list.length){
-  ownerLocationsList.innerHTML='<p class="muted">Nema dodatih lokacija.</p>';
+  ownerLocationsList.innerHTML='<p class="muted">Nema dodatih lokacija. Lokacije se dodaju u odeljku Profil firme.</p>';
   return;
  }
- ownerLocationsList.innerHTML=list.map((l,idx)=>`
-  <article class="item location-qr-row-v123" data-id="${htmlEsc(l.id||('new-'+idx))}">
+ ownerLocationsList.innerHTML=list.map((l,idx)=>{
+  const ready=ownerLocationReadyForQr(l);
+  const disabledAttr=ready?'':' disabled';
+  const disabledClass=ready?'':' disabled-v123';
+  const openHref=ready?htmlEsc(l.booking_url):'#';
+  return `
+  <article class="item location-qr-row-v123 location-qr-row-v124" data-id="${htmlEsc(l.id||('new-'+idx))}">
     <div class="location-qr-main-v123">
       <h3>${htmlEsc(ownerLocationTitle(l,idx))}<span class="location-badge-v115">${l.active!==0?'Aktivna':'Neaktivna'}</span></h3>
       <p>${htmlEsc(ownerLocationWhere(l))}</p>
@@ -840,11 +858,21 @@ function renderOwnerLocations(){
     </div>
     <div class="location-qr-link-v123">
       <b>Link lokacije</b>
-      <p class="muted">${htmlEsc(l.booking_url||'Link će se napraviti posle čuvanja.')}</p>
+      <p class="muted">${htmlEsc(l.booking_url||'Link će se napraviti posle čuvanja lokacije u Profil firme.')}</p>
     </div>
-    <button class="btn small ghost edit-owner-location-qr" type="button" data-idx="${idx}">Izmeni</button>
-  </article>`).join('');
- ownerLocationsList.querySelectorAll('.edit-owner-location-qr').forEach(btn=>btn.onclick=()=>openOwnerLocationQrModal(Number(btn.dataset.idx)));
+    <div class="location-qr-actions-inline-v124">
+      <button class="btn small ghost owner-loc-copy-link" type="button" data-idx="${idx}"${disabledAttr}>Kopiraj link</button>
+      <a class="btn small ghost owner-loc-open-link${disabledClass}" target="_blank" href="${openHref}" data-idx="${idx}" aria-disabled="${ready?'false':'true'}">Otvori</a>
+      <button class="btn small owner-loc-download-qr" type="button" data-idx="${idx}"${disabledAttr}>Preuzmi samo QR</button>
+      <button class="btn small owner-loc-cards-qr" type="button" data-idx="${idx}"${disabledAttr}>Štampaj/preuzmi QR vizit karte</button>
+      <button class="btn small owner-loc-stickers-qr" type="button" data-idx="${idx}"${disabledAttr}>Štampaj/preuzmi QR nalepnice</button>
+    </div>
+  </article>`}).join('');
+ ownerLocationsList.querySelectorAll('.owner-loc-copy-link').forEach(btn=>btn.onclick=()=>copyOwnerLocationLink(list[Number(btn.dataset.idx)]).catch(e=>msg(e.message||'Ne mogu da kopiram link.','err')));
+ ownerLocationsList.querySelectorAll('.owner-loc-open-link').forEach(a=>a.onclick=ev=>{const loc=list[Number(a.dataset.idx)];if(!requireOwnerLocationQrReady(loc))ev.preventDefault();});
+ ownerLocationsList.querySelectorAll('.owner-loc-download-qr').forEach(btn=>btn.onclick=()=>{const loc=list[Number(btn.dataset.idx)];if(requireOwnerLocationQrReady(loc))downloadOwnerQrCode(loc);});
+ ownerLocationsList.querySelectorAll('.owner-loc-cards-qr').forEach(btn=>btn.onclick=()=>{const loc=list[Number(btn.dataset.idx)];if(requireOwnerLocationQrReady(loc))printQrPdfList(loc);});
+ ownerLocationsList.querySelectorAll('.owner-loc-stickers-qr').forEach(btn=>btn.onclick=()=>{const loc=list[Number(btn.dataset.idx)];if(requireOwnerLocationQrReady(loc))printQrStickerPdf(loc);});
 }
 function collectOwnerLocations(){
  return (ownerLocationsCache||[]).map((l,idx)=>({
