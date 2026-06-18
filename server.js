@@ -59,6 +59,22 @@ const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toL
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function addDays(ds,n){let d=new Date(`${ds}T12:00:00`);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 const validDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(String(d||'')),validTime=t=>/^\d{2}:\d{2}$/.test(String(t||'')),tm=t=>{let [h,m]=t.split(':').map(Number);return h*60+m},mt=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`,dow=d=>new Date(`${d}T12:00:00`).getDay(),over=(a,b,c,d)=>a<d&&c<b;
+function sha256(v){return crypto.createHash('sha256').update(String(v||'')).digest('hex')}
+async function tabletDeviceFromRequest(req){
+ const raw=clean(req.headers['x-device-token']||req.query.device_token||'',200);
+ if(!raw)return null;
+ const h=sha256(raw);
+ const d=await get(`SELECT ld.*,b.name business_name,b.slug business_slug,b.active business_active,b.subscription_status,b.subscription_expires_at,bl.name location_name,bl.city,bl.address,bl.phone,bl.active location_active
+  FROM location_devices ld
+  JOIN businesses b ON b.id=ld.business_id
+  JOIN business_locations bl ON bl.id=ld.location_id AND bl.business_id=ld.business_id
+  WHERE ld.token_hash=? AND ld.active=1`,[h]);
+ if(!d||!d.business_active||!d.location_active)return null;
+ const plan=await bizPlanOk(d.business_id);
+ if(!plan.ok)return null;
+ await run('UPDATE location_devices SET last_seen_at=?,updated_at=? WHERE id=?',[now(),now(),d.id]).catch(()=>{});
+ return d;
+}
 const phone4=v=>String(v||'').split(/[\n,;|/]+/).map(x=>x.trim().replace(/[^0-9+()\-\s/]/g,'').replace(/\s+/g,' ')).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,4).join('\n');
 function slugify(t){const map={'š':'s','đ':'dj','č':'c','ć':'c','ž':'z','Š':'s','Đ':'dj','Č':'c','Ć':'c','Ž':'z'};return String(t||'firma').replace(/[šđčćžŠĐČĆŽ]/g,c=>map[c]||c).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'firma'}
 async function uniqueSlug(n){let b=slugify(n),s=b,i=2;while(await get('SELECT id FROM businesses WHERE slug=?',[s]))s=`${b}-${i++}`;return s}
@@ -98,6 +114,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
  await run(`CREATE TABLE IF NOT EXISTS service_locations(business_id INTEGER,service_id INTEGER,location_id INTEGER,created_at TEXT,PRIMARY KEY(business_id,service_id,location_id))`);
  await run(`CREATE TABLE IF NOT EXISTS staff_locations(business_id INTEGER,staff_id INTEGER,location_id INTEGER,created_at TEXT,PRIMARY KEY(business_id,staff_id,location_id))`);
  await run(`CREATE TABLE IF NOT EXISTS staff_location_schedule(business_id INTEGER,staff_id INTEGER,day INTEGER,location_id INTEGER,is_working INTEGER DEFAULT 1,start_time TEXT DEFAULT '09:00',end_time TEXT DEFAULT '17:00',updated_at TEXT,PRIMARY KEY(business_id,staff_id,day))`);
+ await run(`CREATE TABLE IF NOT EXISTS location_devices(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,location_id INTEGER,token_hash TEXT UNIQUE,device_name TEXT,active INTEGER DEFAULT 1,created_at TEXT,last_seen_at TEXT,updated_at TEXT)`);
 
  await run(`CREATE TABLE IF NOT EXISTS google_play_entitlements(
   email TEXT PRIMARY KEY,
@@ -108,7 +125,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
   order_id TEXT DEFAULT '',
   updated_at TEXT
  )`);
-await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_location_business ON business_locations(business_id,sort_order,id)');await run('CREATE INDEX IF NOT EXISTS idx_location_hours ON location_hours(business_id,location_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_blocked_periods_scope ON blocked_periods(business_id,location_id,date)');await run('CREATE INDEX IF NOT EXISTS idx_service_locations ON service_locations(business_id,service_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_locations ON staff_locations(business_id,staff_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_location_schedule ON staff_location_schedule(business_id,staff_id,day,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
+await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_location_business ON business_locations(business_id,sort_order,id)');await run('CREATE INDEX IF NOT EXISTS idx_location_hours ON location_hours(business_id,location_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_blocked_periods_scope ON blocked_periods(business_id,location_id,date)');await run('CREATE INDEX IF NOT EXISTS idx_service_locations ON service_locations(business_id,service_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_locations ON staff_locations(business_id,staff_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_location_schedule ON staff_location_schedule(business_id,staff_id,day,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_location_devices ON location_devices(business_id,location_id,active)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
  let se=email(process.env.SUPERADMIN_EMAIL||'admin@platform.local');if(!await get('SELECT id FROM users WHERE email=?',[se])){let h=await bcrypt.hash(process.env.SUPERADMIN_PASSWORD||'platform123',12);await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(NULL,'Super Admin',?,?,'superadmin',?)",[se,h,now()])}}
 
 async function activeLocationIds(bid){
@@ -331,7 +348,7 @@ async function notify(req,a,ctx){
  if(s.notify_sms)await logN({business_id:a.business_id,appointment_id:a.id,channel:'sms',recipient:a.phone,subject:'SMS termin',body,status:'logged',provider:process.env.SMS_PROVIDER||'demo'});
  if(s.notify_viber)await logN({business_id:a.business_id,appointment_id:a.id,channel:'viber',recipient:a.phone,subject:'Viber termin',body,status:'logged',provider:process.env.VIBER_PROVIDER||'demo'})
 }
-app.get('/b/:slug',(req,res)=>res.sendFile(path.join(__dirname,'public','business.html')));app.get('/m/:tok',(req,res)=>res.sendFile(path.join(__dirname,'public','manage.html')));app.get('/api/health',(req,res)=>res.json({ok:true}));app.get('/api/platform',(req,res)=>res.json({name:PLATFORM_NAME,plans:PLANS}));
+app.get('/b/:slug',(req,res)=>res.sendFile(path.join(__dirname,'public','business.html')));app.get('/m/:tok',(req,res)=>res.sendFile(path.join(__dirname,'public','manage.html')));app.get('/tablet',(req,res)=>res.sendFile(path.join(__dirname,'public','tablet.html')));app.get('/api/health',(req,res)=>res.json({ok:true}));app.get('/api/platform',(req,res)=>res.json({name:PLATFORM_NAME,plans:PLANS}));
 app.post('/api/auth/register-business',async(req,res)=>{
  res.status(403).json({error:'Registracija firme nije dostupna preko web sajta. Registracija se radi kroz Android aplikaciju preko Google Play-a.'});
 });
@@ -542,6 +559,13 @@ app.put('/api/owner/staff/:id',auth,owner,async(req,res)=>{
  await saveStaffLocationSchedule(req.user.business_id,id,req.body.location_schedule);
  res.json({message:'Radnik je sačuvan.'})
 });
+app.put('/api/owner/staff/:id/location-schedule',auth,owner,async(req,res)=>{
+ let id=Number(req.params.id);
+ let st=await get('SELECT id FROM staff WHERE business_id=? AND id=?',[req.user.business_id,id]);
+ if(!st)return res.status(404).json({error:'Radnik nije pronađen.'});
+ await saveStaffLocationSchedule(req.user.business_id,id,req.body.location_schedule);
+ res.json({message:'Raspored rada je sačuvan.'});
+});
 app.get('/api/owner/services',auth,owner,async(req,res)=>{
  let rows=await all('SELECT * FROM services WHERE business_id=? ORDER BY sort_order,id',[req.user.business_id]);
  res.json(await attachLocationsToRows(rows,'service_locations','service_id',req.user.business_id));
@@ -606,6 +630,55 @@ app.post('/api/owner/appointments',auth,owner,async(req,res)=>{
 
 app.patch('/api/owner/appointments/:id/status',auth,owner,async(req,res)=>{await run('UPDATE appointments SET status=?,updated_at=? WHERE id=? AND business_id=?',[clean(req.body.status,30),now(),Number(req.params.id),req.user.business_id]);res.json({message:'Status je promenjen.'})});
 
+
+app.get('/api/owner/location-devices',auth,owner,async(req,res)=>{
+ await ensureDefaultLocation(req.user.business_id);
+ let rows=await all(`SELECT ld.id,ld.business_id,ld.location_id,ld.device_name,ld.active,ld.created_at,ld.last_seen_at,ld.updated_at,bl.name location_name,bl.city,bl.address
+  FROM location_devices ld LEFT JOIN business_locations bl ON bl.id=ld.location_id AND bl.business_id=ld.business_id
+  WHERE ld.business_id=? ORDER BY ld.active DESC,ld.updated_at DESC,ld.id DESC`,[req.user.business_id]);
+ res.json(rows);
+});
+app.post('/api/owner/location-devices',auth,owner,async(req,res)=>{
+ await ensureDefaultLocation(req.user.business_id);
+ let locationId=Number(req.body.location_id||0);
+ let loc=await get('SELECT * FROM business_locations WHERE business_id=? AND id=? AND active=1',[req.user.business_id,locationId]);
+ if(!loc)return res.status(404).json({error:'Lokacija nije pronađena.'});
+ let raw=token()+token();
+ await run('INSERT INTO location_devices(business_id,location_id,token_hash,device_name,active,created_at,last_seen_at,updated_at) VALUES(?,?,?,?,1,?,?,?)',[req.user.business_id,locationId,sha256(raw),clean(req.body.device_name,120)||('Uređaj za '+(loc.name||'lokaciju')),now(),now(),now()]);
+ res.status(201).json({device_token:raw,location:pubLoc(loc,null,null),message:'Ovaj uređaj je povezan sa lokacijom.'});
+});
+app.delete('/api/owner/location-devices/:id',auth,owner,async(req,res)=>{
+ await run('UPDATE location_devices SET active=0,updated_at=? WHERE id=? AND business_id=?',[now(),Number(req.params.id),req.user.business_id]);
+ res.json({message:'Uređaj je deaktiviran.'});
+});
+
+app.get('/api/tablet/me',async(req,res)=>{
+ let d=await tabletDeviceFromRequest(req);
+ if(!d)return res.status(401).json({error:'Ovaj uređaj nije povezan sa lokacijom ili je pristup deaktiviran.'});
+ res.json({business:{id:d.business_id,name:d.business_name,slug:d.business_slug},location:{id:d.location_id,name:d.location_name,city:d.city||'',address:d.address||'',phone:d.phone||''},device:{id:d.id,name:d.device_name,last_seen_at:d.last_seen_at}});
+});
+app.get('/api/tablet/appointments',async(req,res)=>{
+ let d=await tabletDeviceFromRequest(req);
+ if(!d)return res.status(401).json({error:'Ovaj uređaj nije povezan sa lokacijom ili je pristup deaktiviran.'});
+ let date=clean(req.query.date,20)||today();
+ if(!validDate(date))date=today();
+ let status=clean(req.query.status,30);
+ let p=[d.business_id,d.location_id,date],w="WHERE a.business_id=? AND a.location_id=? AND a.date=?";
+ if(status){w+=' AND a.status=?';p.push(status)}
+ let rows=await all(`SELECT a.*,s.name service_name,s.price,st.name staff_name,bl.name location_name FROM appointments a JOIN services s ON s.id=a.service_id LEFT JOIN staff st ON st.id=a.staff_id LEFT JOIN business_locations bl ON bl.id=a.location_id ${w} ORDER BY a.start_time,a.id`,p);
+ res.json(rows);
+});
+app.patch('/api/tablet/appointments/:id/status',async(req,res)=>{
+ let d=await tabletDeviceFromRequest(req);
+ if(!d)return res.status(401).json({error:'Ovaj uređaj nije povezan sa lokacijom ili je pristup deaktiviran.'});
+ let status=clean(req.body.status,30);
+ if(!['booked','completed','cancelled','no_show'].includes(status))return res.status(400).json({error:'Status nije ispravan.'});
+ let ap=await get('SELECT * FROM appointments WHERE id=? AND business_id=? AND location_id=?',[Number(req.params.id),d.business_id,d.location_id]);
+ if(!ap)return res.status(404).json({error:'Termin nije pronađen za ovu lokaciju.'});
+ await run('UPDATE appointments SET status=?,updated_at=? WHERE id=? AND business_id=? AND location_id=?',[status,now(),ap.id,d.business_id,d.location_id]);
+ await logN({business_id:d.business_id,appointment_id:ap.id,channel:'system',subject:'Tablet promena statusa',body:`Uređaj ${d.device_name||'tablet'} (${d.location_name}) je promenio status termina u ${status}. Razlog: ${clean(req.body.reason||'',250)}`,status:'logged'});
+ res.json({message:'Status je promenjen.'});
+});
 app.get('/api/owner/location-working-hours',auth,owner,async(req,res)=>{
  await ensureDefaultLocation(req.user.business_id);
  let locs=await all('SELECT * FROM business_locations WHERE business_id=? ORDER BY sort_order,id',[req.user.business_id]);

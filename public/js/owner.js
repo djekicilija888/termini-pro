@@ -1,4 +1,4 @@
-const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'];let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}function msg(t,c=''){om.textContent=t;om.className='msg '+c}function show(){login.classList.add('hidden');app.classList.remove('hidden')}function hide(){login.classList.remove('hidden');app.classList.add('hidden')}loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};logout.onclick=()=>{localStorage.removeItem(T);localStorage.removeItem('token');hide()};document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));function tab(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
+const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'];let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}function msg(t,c=''){om.textContent=t;om.className='msg '+c}function show(){login.classList.add('hidden');app.classList.remove('hidden')}function hide(){login.classList.remove('hidden');app.classList.add('hidden')}loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};logout.onclick=()=>{localStorage.removeItem(T);localStorage.removeItem('token');hide()};document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));function tab(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,workschedule:loadWorkSchedule,tabletmode:loadTabletMode,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
 let ownerServiceCache=[], ownerStaffCache=[];
 
 function locIdsOf(x){return (x&&Array.isArray(x.location_ids)?x.location_ids:[]).map(String)}
@@ -27,6 +27,7 @@ function renderLocationChecks(boxId,selectedIds){
  box.classList.remove('hidden');
  const ids=(selectedIds&&selectedIds.length?selectedIds:locs.map(l=>l.id)).map(String);
  box.innerHTML=`<p class="muted location-checks-title-v122">Lokacije na kojima je dostupno</p>`+locs.map(l=>`<label class="location-check-v122"><input type="checkbox" value="${htmlEsc(l.id)}" ${ids.includes(String(l.id))?'checked':''}> ${htmlEsc(l.name||l.city||'Lokacija')}</label>`).join('');
+ if(boxId==='staffLocationsBox')box.querySelectorAll('input[type="checkbox"]').forEach(ch=>ch.onchange=()=>renderStaffLocationScheduleBox(null,collectLocationChecks('staffLocationsBox')));
 }
 function collectLocationChecks(boxId){
  const box=document.getElementById(boxId);
@@ -34,6 +35,61 @@ function collectLocationChecks(boxId){
  const checked=[...box.querySelectorAll('input[type="checkbox"]:checked')].map(x=>Number(x.value)).filter(Boolean);
  const all=(ownerLocationsCache||[]).filter(l=>l&&l.active!==0).map(l=>Number(l.id)).filter(Boolean);
  return checked.length?checked:all;
+}
+
+function locationNameById(id){
+ const l=(ownerLocationsCache||[]).find(x=>String(x.id)===String(id));
+ return l?(l.name||l.city||('Lokacija '+l.id)):'Lokacija';
+}
+function normalizedStaffSchedule(schedule,allowedIds){
+ const byDay={};
+ (schedule||[]).forEach(r=>{byDay[Number(r.day)]=r});
+ const ids=(allowedIds&&allowedIds.length?allowedIds:selectedActiveLocationIds()).map(String);
+ const first=ids[0]||'';
+ return [0,1,2,3,4,5,6].map(d=>{
+  const r=byDay[d];
+  if(r)return {day:d,location_id:r.is_working?String(r.location_id||''):'',is_working:!!r.is_working,start_time:r.start_time||'09:00',end_time:r.end_time||'17:00'};
+  return {day:d,location_id:first,is_working:!!first,start_time:'09:00',end_time:'17:00'};
+ });
+}
+function renderStaffLocationScheduleBox(schedule=null,allowedIds=null){
+ const box=document.getElementById('staffLocationScheduleBox');
+ if(!box)return;
+ const locs=(ownerLocationsCache||[]).filter(l=>l&&l.active!==0);
+ if(locs.length<=1){box.innerHTML='';box.classList.add('hidden');return;}
+ const ids=(allowedIds&&allowedIds.length?allowedIds:collectLocationChecks('staffLocationsBox')).map(String);
+ const allowedLocs=locs.filter(l=>ids.includes(String(l.id)));
+ if(!allowedLocs.length){box.innerHTML='<p class="muted">Izaberi bar jednu lokaciju za radnika.</p>';box.classList.remove('hidden');return;}
+ box.classList.remove('hidden');
+ const rows=normalizedStaffSchedule(schedule,ids);
+ box.innerHTML=`<div class="staff-schedule-head-v125"><h3>Raspored radnika po lokacijama</h3><p class="muted">Ovde odredi kog dana je radnik na kojoj lokaciji. Mušterija će videti radnika samo na lokaciji gde je tog dana podešen.</p></div>`+
+  rows.map(r=>`<div class="staff-schedule-day-v125" data-day="${r.day}">
+    <b>${day[r.day]}</b>
+    <label>Lokacija<select class="staff-schedule-location-v125"><option value="">Ne radi</option>${allowedLocs.map(l=>`<option value="${htmlEsc(l.id)}" ${String(r.location_id)===String(l.id)?'selected':''}>${htmlEsc(l.name||l.city||'Lokacija')}</option>`).join('')}</select></label>
+    <label>Od<input class="staff-schedule-start-v125" type="time" value="${htmlEsc(r.start_time||'09:00')}"></label>
+    <label>Do<input class="staff-schedule-end-v125" type="time" value="${htmlEsc(r.end_time||'17:00')}"></label>
+  </div>`).join('');
+}
+function collectStaffLocationSchedule(){
+ const box=document.getElementById('staffLocationScheduleBox');
+ if(!box||box.classList.contains('hidden'))return [];
+ return [...box.querySelectorAll('.staff-schedule-day-v125')].map(row=>{
+  const lid=row.querySelector('.staff-schedule-location-v125').value;
+  return {day:Number(row.dataset.day),location_id:lid?Number(lid):null,is_working:!!lid,start_time:row.querySelector('.staff-schedule-start-v125').value||'09:00',end_time:row.querySelector('.staff-schedule-end-v125').value||'17:00'};
+ });
+}
+function staffScheduleForSelectedDate(item,locationId,dateVal){
+ if(!item||!locationId)return true;
+ const sched=Array.isArray(item.location_schedule)?item.location_schedule:[];
+ if(!sched.length)return true;
+ const d=dateVal&&/^\d{4}-\d{2}-\d{2}$/.test(dateVal)?new Date(dateVal+'T12:00:00').getDay():new Date().getDay();
+ const r=sched.find(x=>Number(x.day)===d);
+ return !!(r&&r.is_working&&String(r.location_id)===String(locationId));
+}
+function staffScheduleText(item){
+ const sched=Array.isArray(item&&item.location_schedule)?item.location_schedule:[];
+ if(!sched.length)return 'Raspored po lokacijama nije posebno podešen.';
+ return sched.map(r=>`${shortDayName(r.day)} ${r.is_working?locationNameById(r.location_id):'ne radi'}`).join('; ');
 }
 function populateLocationSelect(select,includeAll=false){
  if(!select)return;
@@ -51,15 +107,16 @@ function refreshManualLocationSelects(){
  }
  if(typeof appointmentLocationFilter!=='undefined')populateLocationSelect(appointmentLocationFilter,true);
 }
-function filterItemsByManualLocation(items){
+function filterItemsByManualLocation(items,checkSchedule=false){
  const lid=currentManualLocationId();
- return (items||[]).filter(x=>x.active!==0 && locationAllowedForItem(x,lid));
+ const dateVal=(typeof manualDate!=='undefined'&&manualDate.value)?manualDate.value:today();
+ return (items||[]).filter(x=>x.active!==0 && locationAllowedForItem(x,lid) && (!checkSchedule || staffScheduleForSelectedDate(x,lid,dateVal)));
 }
 async function updateManualChoices(){
  const oldService=typeof manualService!=='undefined'?manualService.value:'';
  const oldStaff=typeof manualStaff!=='undefined'?manualStaff.value:'';
- const services=filterItemsByManualLocation(ownerServiceCache);
- const staffRows=filterItemsByManualLocation(ownerStaffCache);
+ const services=filterItemsByManualLocation(ownerServiceCache,false);
+ const staffRows=filterItemsByManualLocation(ownerStaffCache,true);
  if(typeof manualService!=='undefined'){
   manualService.innerHTML=services.map(x=>`<option value="${x.id}">${htmlEsc(x.name)} · ${x.duration} min</option>`).join('');
   if(oldService && services.some(x=>String(x.id)===String(oldService)))manualService.value=oldService;
@@ -141,7 +198,7 @@ async function loadAppointments(){
 if(typeof manualLocation!=='undefined') manualLocation.onchange=()=>updateManualChoices().catch(e=>msg(e.message,'err'));
 if(typeof manualService!=='undefined') manualService.onchange=updateManualSlots;
 if(typeof manualStaff!=='undefined') manualStaff.onchange=updateManualSlots;
-if(typeof manualDate!=='undefined') manualDate.onchange=updateManualSlots;
+if(typeof manualDate!=='undefined') manualDate.onchange=()=>updateManualChoices().catch(e=>msg(e.message,'err'));
 if(typeof appointmentLocationFilter!=='undefined') appointmentLocationFilter.onchange=loadAppointments;
 if(typeof loadA!=='undefined') loadA.onclick=loadAppointments;
 if(typeof manualSlotRefresh!=='undefined') manualSlotRefresh.onclick=updateManualSlots;
@@ -170,13 +227,13 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
 };
 
 function resetSt(){
- staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true;renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
+ staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true;renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());renderStaffLocationScheduleBox([],selectedActiveLocationIds());
 }
 resetStaff.onclick=resetSt;
 staffForm.onsubmit=async e=>{
  e.preventDefault();
  await ensureOwnerLocationsLoaded();
- let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,location_ids:collectLocationChecks('staffLocationsBox')};
+ let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
  await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
  msg('Radnik sačuvan.','ok');resetSt();loadStaff()
 };
@@ -184,9 +241,92 @@ async function loadStaff(){
  await ensureOwnerLocationsLoaded();
  let rows=await api('/api/owner/staff');
  renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
- staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span></div><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');
- staffList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active;renderLocationChecks('staffLocationsBox',x.location_ids||selectedActiveLocationIds())})
+ renderStaffLocationScheduleBox([],selectedActiveLocationIds());
+ staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span></div><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');
+ staffList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active;const ids=x.location_ids||selectedActiveLocationIds();renderLocationChecks('staffLocationsBox',ids);renderStaffLocationScheduleBox(x.location_schedule||[],ids)})
 }
+
+let workScheduleStaffRows=[];
+function renderWorkScheduleForStaff(staffObj){
+ const box=document.getElementById('workScheduleRows');
+ if(!box)return;
+ const locs=(ownerLocationsCache||[]).filter(l=>l&&l.active!==0);
+ if(!locs.length){box.innerHTML='<p class="muted">Prvo dodaj lokaciju u Profil firme.</p>';return;}
+ if(!staffObj){box.innerHTML='<p class="muted">Izaberi radnika.</p>';return;}
+ const allowedIds=(Array.isArray(staffObj.location_ids)&&staffObj.location_ids.length?staffObj.location_ids:locs.map(l=>l.id)).map(String);
+ const allowedLocs=locs.filter(l=>allowedIds.includes(String(l.id)));
+ const rows=normalizedStaffSchedule(staffObj.location_schedule||[],allowedIds);
+ box.innerHTML=rows.map(r=>`<div class="staff-schedule-day-v125 work-schedule-day-v126" data-day="${r.day}">
+    <b>${day[r.day]}</b>
+    <label>Lokacija<select class="work-schedule-location-v126"><option value="">Ne radi</option>${allowedLocs.map(l=>`<option value="${htmlEsc(l.id)}" ${String(r.location_id)===String(l.id)?'selected':''}>${htmlEsc(l.name||l.city||'Lokacija')}</option>`).join('')}</select></label>
+    <label>Od<input class="work-schedule-start-v126" type="time" value="${htmlEsc(r.start_time||'09:00')}"></label>
+    <label>Do<input class="work-schedule-end-v126" type="time" value="${htmlEsc(r.end_time||'17:00')}"></label>
+  </div>`).join('');
+}
+function collectWorkScheduleRows(){
+ const box=document.getElementById('workScheduleRows');
+ if(!box)return [];
+ return [...box.querySelectorAll('.work-schedule-day-v126')].map(row=>{
+  const lid=row.querySelector('.work-schedule-location-v126').value;
+  return {day:Number(row.dataset.day),location_id:lid?Number(lid):null,is_working:!!lid,start_time:row.querySelector('.work-schedule-start-v126').value||'09:00',end_time:row.querySelector('.work-schedule-end-v126').value||'17:00'};
+ });
+}
+async function loadWorkSchedule(){
+ await ensureOwnerLocationsLoaded();
+ workScheduleStaffRows=await api('/api/owner/staff');
+ if(typeof workScheduleStaff==='undefined')return;
+ const old=workScheduleStaff.value;
+ workScheduleStaff.innerHTML=workScheduleStaffRows.map(x=>`<option value="${htmlEsc(x.id)}">${htmlEsc(x.name)}${x.title?' · '+htmlEsc(x.title):''}</option>`).join('');
+ if(old && workScheduleStaffRows.some(x=>String(x.id)===String(old)))workScheduleStaff.value=old;
+ const selected=workScheduleStaffRows.find(x=>String(x.id)===String(workScheduleStaff.value))||workScheduleStaffRows[0];
+ if(selected)workScheduleStaff.value=String(selected.id);
+ renderWorkScheduleForStaff(selected);
+ if(typeof workScheduleList!=='undefined')workScheduleList.innerHTML=workScheduleStaffRows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p></article>`).join('')||'<p class="muted">Nema dodatih radnika.</p>';
+}
+if(typeof workScheduleStaff!=='undefined')workScheduleStaff.onchange=()=>{
+ const selected=workScheduleStaffRows.find(x=>String(x.id)===String(workScheduleStaff.value));
+ renderWorkScheduleForStaff(selected);
+};
+if(typeof saveWorkSchedule!=='undefined')saveWorkSchedule.onclick=async()=>{
+ if(!workScheduleStaff.value)return msg('Izaberi radnika.','err');
+ await api('/api/owner/staff/'+encodeURIComponent(workScheduleStaff.value)+'/location-schedule',{method:'PUT',body:JSON.stringify({location_schedule:collectWorkScheduleRows()})});
+ msg('Raspored rada je sačuvan.','ok');
+ await loadWorkSchedule();
+};
+
+const TABLET_TOKEN_KEY='terminiTabletDeviceToken';
+async function loadTabletMode(){
+ await ensureOwnerLocationsLoaded();
+ if(typeof tabletLocationSelect!=='undefined')populateLocationSelect(tabletLocationSelect,false);
+ if(typeof tabletDeviceName!=='undefined' && !tabletDeviceName.value){
+  const loc=(ownerLocationsCache||[]).find(l=>String(l.id)===String(tabletLocationSelect&&tabletLocationSelect.value))||(ownerLocationsCache||[])[0];
+  tabletDeviceName.value='Uređaj '+(loc?(loc.name||'lokacije'):'lokacije');
+ }
+ await loadTabletDevices();
+}
+async function loadTabletDevices(){
+ if(typeof tabletDevicesList==='undefined')return;
+ try{
+  const rows=await api('/api/owner/location-devices');
+  tabletDevicesList.innerHTML=rows.length?rows.map(x=>`<article class="item tablet-device-row-v126">
+    <div><h3>${htmlEsc(x.device_name||'Uređaj')}</h3><p class="muted">${htmlEsc(x.location_name||'Lokacija')} · ${x.active?'aktivan':'deaktiviran'}${x.last_seen_at?' · poslednje viđen: '+htmlEsc(x.last_seen_at):''}</p></div>
+    ${x.active?`<button class="btn small danger tablet-deactivate-v126" type="button" data-id="${htmlEsc(x.id)}">Deaktiviraj</button>`:''}
+  </article>`).join(''):'<p class="muted">Nema povezanih uređaja.</p>';
+  tabletDevicesList.querySelectorAll('.tablet-deactivate-v126').forEach(b=>b.onclick=async()=>{await api('/api/owner/location-devices/'+encodeURIComponent(b.dataset.id),{method:'DELETE'});msg('Uređaj je deaktiviran.','ok');await loadTabletDevices();});
+ }catch(e){tabletDevicesList.innerHTML='<p class="muted">Ne mogu da učitam uređaje.</p>';}
+}
+if(typeof activateTabletDevice!=='undefined')activateTabletDevice.onclick=async()=>{
+ if(!tabletLocationSelect.value)return msg('Izaberi lokaciju.','err');
+ const d=await api('/api/owner/location-devices',{method:'POST',body:JSON.stringify({location_id:tabletLocationSelect.value,device_name:tabletDeviceName.value})});
+ localStorage.setItem(TABLET_TOKEN_KEY,d.device_token);
+ msg('Ovaj uređaj je povezan sa lokacijom '+((d.location&&d.location.name)||'')+'.','ok');
+ await loadTabletDevices();
+};
+if(typeof tabletLocationSelect!=='undefined')tabletLocationSelect.onchange=()=>{
+ const loc=(ownerLocationsCache||[]).find(l=>String(l.id)===String(tabletLocationSelect.value));
+ if(typeof tabletDeviceName!=='undefined')tabletDeviceName.value='Uređaj '+(loc?(loc.name||'lokacije'):'lokacije');
+};
+
 function resetSv(){
  serviceId.value='';serviceName.value='';serviceDesc.value='';serviceDuration.value=30;servicePrice.value=1000;serviceSort.value=0;serviceActive.checked=true;renderLocationChecks('serviceLocationsBox',selectedActiveLocationIds());
 }

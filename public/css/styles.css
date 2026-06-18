@@ -1408,3 +1408,18 @@ body.manual-modal-body-open{
     padding-bottom:0;
   }
 }
+
+/* v126 - Raspored rada i tablet režim lokacije */
+.work-schedule-v126{margin-top:14px}
+.work-schedule-day-v126{align-items:end}
+.tablet-device-row-v126{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.tablet-toolbar-v126{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:16px 0}
+.tablet-toolbar-v126 label{min-width:190px}
+.tablet-shell-v126{max-width:1200px;margin:0 auto;padding:18px}
+.tablet-table-v126 table{width:100%}
+.tablet-appt-row-v126 td{vertical-align:top}
+.tablet-status-badge-v126{display:inline-block;border:1px solid #d7dce5;border-radius:999px;padding:5px 9px;background:#fff;font-size:.9rem;font-weight:700}
+.tablet-status-modal-box-v126{max-width:720px}
+.tablet-status-actions-v126{display:flex;gap:10px;flex-wrap:wrap}
+.disabled-v123{opacity:.5;cursor:not-allowed}
+@media(max-width:720px){.tablet-shell-v126{padding:10px}.tablet-toolbar-v126{display:grid;grid-template-columns:1fr}.tablet-status-actions-v126 .btn{width:100%}}
