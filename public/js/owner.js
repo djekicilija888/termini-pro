@@ -15,7 +15,7 @@ function enterTabletLockedMode(deviceToken){
  setTabletModeCookie();
  sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);
  clearOwnerSession();
- location.href='/tablet';
+ location.replace('/tablet');
 }
 function showTabletAdminLock(){
  const lock=$('#tabletAdminLock');
@@ -27,6 +27,17 @@ function showTabletAdminLock(){
  if(login)login.classList.add('hidden');
  if(app)app.classList.add('hidden');
 }
+function enforceTabletOwnerLock(){
+ if(tabletModeActive()&&!tabletAdminUnlocked()){
+  showTabletAdminLock();
+  return true;
+ }
+ return false;
+}
+window.addEventListener('pageshow', enforceTabletOwnerLock);
+window.addEventListener('focus', enforceTabletOwnerLock);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)enforceTabletOwnerLock()});
+window.addEventListener('popstate',()=>setTimeout(enforceTabletOwnerLock,0));
 async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();if(tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}
 async function plainApi(u,o={}){let r=await fetch(u,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Greška');return d}
 function msg(t,c=''){om.textContent=t;om.className='msg '+c}
@@ -38,7 +49,7 @@ function ensureTabletOwnerBanner(){
  banner.innerHTML='<b>Admin je privremeno otključan na uređaju koji je povezan kao tablet.</b><p class="muted">Kad završiš podešavanje, zaključaj uređaj i vrati radnički ekran.</p><div class="actions"><button id="tabletRelockNow" class="btn small" type="button">Zaključaj i otvori radnički ekran</button></div>';
  app.insertBefore(banner, app.firstChild);
  const b=document.getElementById('tabletRelockNow');
- if(b)b.onclick=()=>{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);clearOwnerSession();location.href='/tablet'};
+ if(b)b.onclick=()=>{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);clearOwnerSession();location.replace('/tablet')};
 }
 async function ownerNoRegistrationLogin(buttonEl,msgEl){
  const out=msgEl||document.getElementById('lm')||document.getElementById('tabletAdminUnlockMsg');

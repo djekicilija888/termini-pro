@@ -47,7 +47,16 @@ if(!DB_PATH){
 }
 console.log('Using database:',DB_PATH);
 
-app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));
+app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));
+app.use((req,res,next)=>{
+ if(['/', '/owner.html', '/tablet', '/tablet.html'].includes(req.path)){
+  res.set('Cache-Control','no-store, no-cache, must-revalidate, private');
+  res.set('Pragma','no-cache');
+  res.set('Expires','0');
+ }
+ next();
+});
+app.use(express.static(path.join(__dirname,'public')));
 app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
 function cookieValue(req,name){let raw=req.headers.cookie||'';let parts=raw.split(';').map(x=>x.trim());for(let p of parts){let i=p.indexOf('=');if(i>0&&p.slice(0,i)===name)return decodeURIComponent(p.slice(i+1)||'')}return ''}
 app.use('/api/owner',(req,res,next)=>{

@@ -3,6 +3,22 @@ const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const today=()=>new Date().toISOString().split('T')[0];
 const tabletToken=()=>localStorage.getItem(TABLET_TOKEN_KEY)||'';
+function setCookieTabletV133(name,value,maxAge){try{document.cookie=name+'='+encodeURIComponent(value||'')+'; path=/; max-age='+(maxAge||31536000)+'; SameSite=Lax'}catch(e){}}
+function prepareLockedTabletHistoryV133(){
+  const token=tabletToken();
+  if(!token)return;
+  setCookieTabletV133('terminiTabletMode','1');
+  setCookieTabletV133('terminiTabletDevice',token);
+  try{localStorage.removeItem('terminiOwnerToken');localStorage.removeItem('token');sessionStorage.removeItem('terminiTabletAdminUnlocked')}catch(e){}
+  try{
+    history.replaceState({tabletLocked:true},'',location.pathname+location.search);
+    history.pushState({tabletLocked:true,guard:true},'',location.pathname+location.search);
+    window.addEventListener('popstate',()=>{
+      try{history.pushState({tabletLocked:true,guard:true},'',location.pathname+location.search)}catch(e){}
+    });
+  }catch(e){}
+}
+prepareLockedTabletHistoryV133();
 let tabletState={me:null,appointments:[],selected:null,services:[],staff:[]};
 
 const tabletEls={
