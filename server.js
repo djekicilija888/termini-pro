@@ -49,6 +49,13 @@ console.log('Using database:',DB_PATH);
 
 app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));app.use(express.static(path.join(__dirname,'public')));
 app.use('/api/',rateLimit({windowMs:15*60*1000,limit:900,standardHeaders:true,legacyHeaders:false}));
+function cookieValue(req,name){let raw=req.headers.cookie||'';let parts=raw.split(';').map(x=>x.trim());for(let p of parts){let i=p.indexOf('=');if(i>0&&p.slice(0,i)===name)return decodeURIComponent(p.slice(i+1)||'')}return ''}
+app.use('/api/owner',(req,res,next)=>{
+ const tabletMode=cookieValue(req,'terminiTabletMode');
+ const tabletDevice=cookieValue(req,'terminiTabletDevice');
+ if(tabletMode==='1'&&tabletDevice&&req.headers['x-tablet-admin-unlocked']!=='1')return res.status(423).json({error:'Ovaj uređaj je u radničkom/tablet režimu. Za glavni panel prvo otključaj admin pristup.'});
+ next();
+});
 const db=new sqlite3.Database(DB_PATH);
 const PLANS={basic:{name:'Basic',price:29,max_staff:1,max_month:100,sms:false},standard:{name:'Standard',price:49,max_staff:5,max_month:1000,sms:false},premium:{name:'Premium',price:99,max_staff:30,max_month:10000,sms:true}};
 const run=(s,p=[])=>new Promise((res,rej)=>db.run(s,p,function(e){e?rej(e):res(this)}));

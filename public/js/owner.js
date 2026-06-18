@@ -1,4 +1,74 @@
-const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'];let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}function msg(t,c=''){om.textContent=t;om.className='msg '+c}function show(){login.classList.add('hidden');app.classList.remove('hidden')}function hide(){login.classList.remove('hidden');app.classList.add('hidden')}loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};logout.onclick=()=>{localStorage.removeItem(T);localStorage.removeItem('token');hide()};document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));function tab(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
+const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'];
+const TABLET_TOKEN_KEY='terminiTabletDeviceToken';
+const TABLET_ADMIN_UNLOCK_KEY='terminiTabletAdminUnlocked';
+let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};
+function tabletToken(){return localStorage.getItem(TABLET_TOKEN_KEY)||''}
+function tabletModeActive(){return !!tabletToken()}
+function tabletAdminUnlocked(){return sessionStorage.getItem(TABLET_ADMIN_UNLOCK_KEY)==='1'}
+function canOpenOwnerPanel(){return !tabletModeActive()||tabletAdminUnlocked()}
+function setCookie(name,value,maxAge){try{document.cookie=name+'='+encodeURIComponent(value||'')+'; path=/; max-age='+(maxAge||31536000)+'; SameSite=Lax'}catch(e){}}
+function clearCookie(name){try{document.cookie=name+'=; path=/; max-age=0; SameSite=Lax'}catch(e){}}
+function setTabletModeCookie(){setCookie('terminiTabletMode','1');if(tabletToken())setCookie('terminiTabletDevice',tabletToken())}
+function clearOwnerSession(){localStorage.removeItem(T);localStorage.removeItem('token')}
+function enterTabletLockedMode(deviceToken){
+ if(deviceToken)localStorage.setItem(TABLET_TOKEN_KEY,deviceToken);
+ setTabletModeCookie();
+ sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);
+ clearOwnerSession();
+ location.href='/tablet';
+}
+function showTabletAdminLock(){
+ const lock=$('#tabletAdminLock');
+ if(!lock)return;
+ setTabletModeCookie();
+ sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);
+ clearOwnerSession();
+ lock.classList.remove('hidden');
+ if(login)login.classList.add('hidden');
+ if(app)app.classList.add('hidden');
+}
+async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();if(tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}
+async function plainApi(u,o={}){let r=await fetch(u,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Greška');return d}
+function msg(t,c=''){om.textContent=t;om.className='msg '+c}
+function ensureTabletOwnerBanner(){
+ if(!tabletModeActive()||!tabletAdminUnlocked()||document.getElementById('tabletAdminBanner'))return;
+ const banner=document.createElement('div');
+ banner.id='tabletAdminBanner';
+ banner.className='notice warn tablet-admin-banner-v129';
+ banner.innerHTML='<b>Admin je privremeno otključan na uređaju koji je povezan kao tablet.</b><p class="muted">Kad završiš podešavanje, zaključaj uređaj i vrati radnički ekran.</p><div class="actions"><button id="tabletRelockNow" class="btn small" type="button">Zaključaj i otvori radnički ekran</button></div>';
+ app.insertBefore(banner, app.firstChild);
+ const b=document.getElementById('tabletRelockNow');
+ if(b)b.onclick=()=>{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);clearOwnerSession();location.href='/tablet'};
+}
+function show(){
+ if(!canOpenOwnerPanel())return showTabletAdminLock();
+ const lock=$('#tabletAdminLock');if(lock)lock.classList.add('hidden');
+ login.classList.add('hidden');app.classList.remove('hidden');ensureTabletOwnerBanner();
+}
+function hide(){
+ if(!canOpenOwnerPanel())return showTabletAdminLock();
+ const lock=$('#tabletAdminLock');if(lock)lock.classList.add('hidden');
+ login.classList.remove('hidden');app.classList.add('hidden')
+}
+if(typeof tabletAdminUnlockForm!=='undefined'&&tabletAdminUnlockForm){
+ tabletAdminUnlockForm.onsubmit=async e=>{
+  e.preventDefault();
+  tabletAdminUnlockMsg.textContent='Proveravam admin nalog...';tabletAdminUnlockMsg.className='msg';
+  try{
+   const d=await plainApi('/api/auth/login',{method:'POST',body:JSON.stringify({email:tabletAdminEmail.value,password:tabletAdminPassword.value})});
+   if(!d.user||d.user.role!=='owner')throw Error('Nije admin nalog firme.');
+   localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);
+   sessionStorage.setItem(TABLET_ADMIN_UNLOCK_KEY,'1');
+   tabletAdminUnlockMsg.textContent='Admin je otključan.';tabletAdminUnlockMsg.className='msg ok';
+   show();tab('dash');
+  }catch(er){tabletAdminUnlockMsg.textContent=er.message||'Neuspešna prijava.';tabletAdminUnlockMsg.className='msg err'}
+ };
+}
+loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};
+logout.onclick=()=>{clearOwnerSession();sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);hide()};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+function tab(id){if(!canOpenOwnerPanel())return showTabletAdminLock();document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}
+async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
 let ownerServiceCache=[], ownerStaffCache=[];
 
 function locIdsOf(x){return (x&&Array.isArray(x.location_ids)?x.location_ids:[]).map(String)}
@@ -294,15 +364,14 @@ if(typeof saveWorkSchedule!=='undefined')saveWorkSchedule.onclick=async()=>{
  await loadWorkSchedule();
 };
 
-const TABLET_TOKEN_KEY='terminiTabletDeviceToken';
 async function activateTabletForLocation(locationId,locationName){
  if(!locationId)return msg('Prvo sačuvaj lokaciju.','err');
  const name=locationName||'lokaciju';
  if(!confirm('Ovaj uređaj će biti povezan sa lokacijom: '+name+'.\n\nNa radničkom ekranu će se prikazivati samo termini za tu lokaciju.'))return;
  try{
   const d=await api('/api/owner/location-devices',{method:'POST',body:JSON.stringify({location_id:locationId,device_name:'Uređaj '+name})});
-  localStorage.setItem(TABLET_TOKEN_KEY,d.device_token);
-  msg('Ovaj uređaj je povezan sa lokacijom '+((d.location&&d.location.name)||name)+'. Otvori /tablet za radnički ekran.','ok');
+  msg('Ovaj uređaj je povezan sa lokacijom '+((d.location&&d.location.name)||name)+'. Otvaram radnički ekran.','ok');
+  enterTabletLockedMode(d.device_token);
  }catch(e){msg(e.message||'Ne mogu da povežem uređaj.','err')}
 }
 async function loadTabletMode(){
@@ -328,9 +397,8 @@ async function loadTabletDevices(){
 if(typeof activateTabletDevice!=='undefined')activateTabletDevice.onclick=async()=>{
  if(!tabletLocationSelect.value)return msg('Izaberi lokaciju.','err');
  const d=await api('/api/owner/location-devices',{method:'POST',body:JSON.stringify({location_id:tabletLocationSelect.value,device_name:tabletDeviceName.value})});
- localStorage.setItem(TABLET_TOKEN_KEY,d.device_token);
- msg('Ovaj uređaj je povezan sa lokacijom '+((d.location&&d.location.name)||'')+'.','ok');
- await loadTabletDevices();
+ msg('Ovaj uređaj je povezan sa lokacijom '+((d.location&&d.location.name)||'')+'. Otvaram radnički ekran.','ok');
+ enterTabletLockedMode(d.device_token);
 };
 if(typeof tabletLocationSelect!=='undefined')tabletLocationSelect.onchange=()=>{
  const loc=(ownerLocationsCache||[]).find(l=>String(l.id)===String(tabletLocationSelect.value));

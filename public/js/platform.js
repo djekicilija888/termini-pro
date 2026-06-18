@@ -15,6 +15,18 @@ function setMsg(id, text, ok = false) {
   el.className = ok ? 'msg ok' : 'msg';
 }
 
+const TABLET_TOKEN_KEY = 'terminiTabletDeviceToken';
+const TABLET_ADMIN_UNLOCK_KEY = 'terminiTabletAdminUnlocked';
+function isTabletModeLocked(){return !!localStorage.getItem(TABLET_TOKEN_KEY) && sessionStorage.getItem(TABLET_ADMIN_UNLOCK_KEY)!=='1'}
+function showTabletModeLanding(){
+  const panel=document.querySelector('.panel-grid');
+  if(!panel)return false;
+  panel.innerHTML=`<div class="card"><p class="eyebrow">Radnički ekran</p><h2>Ovaj uređaj je povezan sa lokacijom</h2><p class="muted">Za ovaj računar/tablet je uključen radnički ekran. Glavni panel se otključava samo admin nalogom.</p><div class="actions"><a class="btn" href="/tablet">Otvori radnički ekran</a><a class="btn ghost" href="/owner.html">Admin ulaz</a></div></div>`;
+  const hero=document.querySelector('.hero-copy');
+  if(hero)hero.querySelector('.card.soft-card')?.remove();
+  return true;
+}
+
 async function loadPlatform() {
   try {
     const data = await api('/api/platform');
@@ -26,6 +38,10 @@ async function loadPlatform() {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadPlatform();
+  if (isTabletModeLocked()) {
+    showTabletModeLanding();
+    return;
+  }
   addNoRegistrationTestButton();
 
   const loginForm = document.getElementById('loginForm');
@@ -42,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         });
 
-        if (data.role === 'admin') {
+        if (data.role === 'admin' || (data.user && data.user.role === 'superadmin')) {
           localStorage.removeItem('terminiOwnerToken');
           localStorage.setItem('token', data.token);
           location.href = '/superadmin.html';
