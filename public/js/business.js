@@ -75,8 +75,19 @@ function allowedAtCurrentLocation(item){
   const ids=Array.isArray(item.location_ids)?item.location_ids.map(String):[];
   return !ids.length || ids.includes(String(loc.id));
 }
+function selectedDateValue(){return (typeof date!=='undefined'&&date&&date.value)?date.value:today()}
+function staffScheduledAtCurrentLocation(item){
+  const loc=currentLocation();
+  if(!loc||!loc.id)return true;
+  const sched=Array.isArray(item.location_schedule)?item.location_schedule:[];
+  if(!sched.length)return true;
+  const val=selectedDateValue();
+  const d=/^\d{4}-\d{2}-\d{2}$/.test(val)?new Date(val+'T12:00:00').getDay():new Date().getDay();
+  const r=sched.find(x=>Number(x.day)===d);
+  return !!(r&&r.is_working&&String(r.location_id)===String(loc.id));
+}
 function filteredServices(){return (state.services||[]).filter(x=>allowedAtCurrentLocation(x))}
-function filteredStaff(){return (state.staff||[]).filter(x=>allowedAtCurrentLocation(x))}
+function filteredStaff(){return (state.staff||[]).filter(x=>allowedAtCurrentLocation(x)&&staffScheduledAtCurrentLocation(x))}
 function renderBookingChoices(){
   const oldService=service.value,oldStaff=staff.value;
   const ss=filteredServices(), st=filteredStaff();
@@ -108,9 +119,9 @@ async function load(){
     if(wanted && locs.some(l=>String(l.id)===String(wanted)))businessLocation.value=wanted;
     businessLocation.onchange=()=>{updateLocationInfo();renderBookingChoices();loadSlots()};
   }
+  date.min=today();date.max=addDays(d.settings.max_days||45);if(!date.value)date.value=today();
   updateLocationInfo();
   renderBookingChoices();
-  date.min=today();date.max=addDays(d.settings.max_days||45);date.value=today();
   if(!d.booking_enabled){form.classList.add('hidden');note('Zakazivanje nije aktivno',d.booking_disabled_reason,'err');return}
   await loadSlots();
 }
@@ -120,5 +131,5 @@ async function loadSlots(pref=''){
   try{let p=new URLSearchParams({service_id:service.value,date:date.value});if(staff.value)p.set('staff_id',staff.value);let loc=currentLocation();if(loc&&loc.id)p.set('location_id',loc.id);let rows=await api(`/api/businesses/${slug}/available-slots?${p}`);if(!rows.length){slot.innerHTML='<option value="">Nema termina</option>';let n=await api(`/api/businesses/${slug}/next-available?${p}&from_date=${date.value}`);if(n.first_available){notice.className='notice warn';notice.innerHTML=`<b>Taj dan je zauzet</b><br><span>Najbliži slobodan termin je ${fd(n.first_available.date)} u ${n.first_available.start_time} kod ${n.first_available.staff_name}.</span>${suggestions(n.suggestions)}`;notice.querySelectorAll('button').forEach(b=>b.onclick=async()=>{date.value=b.dataset.date;staff.value=b.dataset.staff;await loadSlots(b.dataset.time)});}else note('Nema termina','Nema slobodnih termina u narednim danima.','err');return}slot.innerHTML='';rows.forEach(x=>{let o=document.createElement('option');o.value=x.start_time;o.dataset.staffId=x.staff_id;o.textContent=`${x.start_time} - ${x.end_time} · ${x.staff_name}`;slot.appendChild(o)});if(pref)slot.value=pref;note('Termin je dostupan',`Prvi slobodan termin je ${rows[0].start_time} kod ${rows[0].staff_name}.`,'ok')}catch(e){note('Greška',e.message,'err')}
 }
 form.onsubmit=async e=>{e.preventDefault();try{let opt=slot.options[slot.selectedIndex];let loc=currentLocation();let d=await api(`/api/businesses/${slug}/appointments`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location_id:loc?loc.id:'',service_id:+service.value,staff_id:staff.value?+staff.value:+opt.dataset.staffId,date:date.value,start_time:slot.value,customer_name:name.value,phone:phone.value,email:email.value,notes:notes.value})});m.textContent=d.customer_note?`${d.message} ${d.customer_note}`:d.message;m.className='msg ok';manage.classList.remove('hidden');manage.innerHTML=`<b>Link za promenu/otkazivanje</b><p class="muted">Sačuvaj ovaj link.</p><a class="btn small" href="${d.manage_url}">Otvori moj termin</a><button id="copyM" type="button" class="btn small ghost">Kopiraj</button>`;copyM.onclick=async()=>{await navigator.clipboard.writeText(d.manage_url);copyM.textContent='Kopirano'};await loadSlots()}catch(e){m.textContent=e.message;m.className='msg err';await loadSlots()}};
-[service,staff,date].forEach(x=>x.onchange=()=>loadSlots());
+service.onchange=()=>loadSlots();staff.onchange=()=>loadSlots();date.onchange=()=>{renderBookingChoices();loadSlots();};
 load().catch(e=>document.body.innerHTML=e.message);

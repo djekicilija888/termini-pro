@@ -97,6 +97,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
  await addColumnIfMissing('blocked_periods','location_id',`INTEGER`);
  await run(`CREATE TABLE IF NOT EXISTS service_locations(business_id INTEGER,service_id INTEGER,location_id INTEGER,created_at TEXT,PRIMARY KEY(business_id,service_id,location_id))`);
  await run(`CREATE TABLE IF NOT EXISTS staff_locations(business_id INTEGER,staff_id INTEGER,location_id INTEGER,created_at TEXT,PRIMARY KEY(business_id,staff_id,location_id))`);
+ await run(`CREATE TABLE IF NOT EXISTS staff_location_schedule(business_id INTEGER,staff_id INTEGER,day INTEGER,location_id INTEGER,is_working INTEGER DEFAULT 1,start_time TEXT DEFAULT '09:00',end_time TEXT DEFAULT '17:00',updated_at TEXT,PRIMARY KEY(business_id,staff_id,day))`);
 
  await run(`CREATE TABLE IF NOT EXISTS google_play_entitlements(
   email TEXT PRIMARY KEY,
@@ -107,7 +108,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
   order_id TEXT DEFAULT '',
   updated_at TEXT
  )`);
-await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_location_business ON business_locations(business_id,sort_order,id)');await run('CREATE INDEX IF NOT EXISTS idx_location_hours ON location_hours(business_id,location_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_blocked_periods_scope ON blocked_periods(business_id,location_id,date)');await run('CREATE INDEX IF NOT EXISTS idx_service_locations ON service_locations(business_id,service_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_locations ON staff_locations(business_id,staff_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
+await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_location_business ON business_locations(business_id,sort_order,id)');await run('CREATE INDEX IF NOT EXISTS idx_location_hours ON location_hours(business_id,location_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_blocked_periods_scope ON blocked_periods(business_id,location_id,date)');await run('CREATE INDEX IF NOT EXISTS idx_service_locations ON service_locations(business_id,service_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_locations ON staff_locations(business_id,staff_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_location_schedule ON staff_location_schedule(business_id,staff_id,day,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
  let se=email(process.env.SUPERADMIN_EMAIL||'admin@platform.local');if(!await get('SELECT id FROM users WHERE email=?',[se])){let h=await bcrypt.hash(process.env.SUPERADMIN_PASSWORD||'platform123',12);await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(NULL,'Super Admin',?,?,'superadmin',?)",[se,h,now()])}}
 
 async function activeLocationIds(bid){
@@ -156,6 +157,47 @@ async function filterRowsForLocation(rows,table,idCol,bid,locationId){
   if(await itemAllowedAtLocation(table,idCol,bid,r.id,locationId))out.push(r);
  }
  return out;
+}
+
+async function staffScheduleRows(bid,staffId){
+ return await all('SELECT day,location_id,is_working,start_time,end_time FROM staff_location_schedule WHERE business_id=? AND staff_id=? ORDER BY day',[bid,Number(staffId)]);
+}
+async function attachStaffSchedules(rows,bid){
+ for(let r of rows)r.location_schedule=await staffScheduleRows(bid,r.id);
+ return rows;
+}
+async function saveStaffLocationSchedule(bid,staffId,rows){
+ await run('DELETE FROM staff_location_schedule WHERE business_id=? AND staff_id=?',[bid,Number(staffId)]);
+ if(!Array.isArray(rows)||!rows.length)return;
+ const active=await activeLocationIds(bid);
+ const allowed=await assignedLocationIds('staff_locations','staff_id',bid,staffId);
+ const allowedActive=allowed.filter(x=>active.includes(Number(x)));
+ for(let i=0;i<7;i++){
+  let r=rows.find(x=>Number(x.day)===i)||{};
+  let lid=Number(r.location_id||0)||0;
+  let working=!!r.is_working && lid>0;
+  if(working && !allowedActive.includes(lid))lid=allowedActive[0]||active[0]||0;
+  if(!lid)working=false;
+  let st=clean(r.start_time||'09:00',10),en=clean(r.end_time||'17:00',10);
+  if(!(validTime(st)&&validTime(en)&&tm(st)<tm(en))){st='09:00';en='17:00'}
+  await run('INSERT OR REPLACE INTO staff_location_schedule(business_id,staff_id,day,location_id,is_working,start_time,end_time,updated_at) VALUES(?,?,?,?,?,?,?,?)',[bid,Number(staffId),i,working?lid:null,working?1:0,st,en,now()]);
+ }
+}
+async function staffScheduleForDate(bid,staffId,locationId,date){
+ locationId=Number(locationId||0)||0;
+ if(!locationId)return null;
+ const cnt=await get('SELECT COUNT(*) total FROM staff_location_schedule WHERE business_id=? AND staff_id=?',[bid,Number(staffId)]);
+ if(!cnt||Number(cnt.total||0)===0)return null;
+ const r=await get('SELECT * FROM staff_location_schedule WHERE business_id=? AND staff_id=? AND day=?',[bid,Number(staffId),dow(date)]);
+ if(!r||!r.is_working)return false;
+ if(Number(r.location_id||0)!==locationId)return false;
+ return r;
+}
+function staffScheduleAllowsSlot(schedule,start,end){
+ if(schedule===null)return true;
+ if(schedule===false)return false;
+ if(validTime(schedule.start_time)&&validTime(schedule.end_time))return start>=tm(schedule.start_time)&&end<=tm(schedule.end_time);
+ return true;
 }
 async function defaults(bid,ownerName){await run('INSERT INTO settings(business_id,updated_at) VALUES(?,?)',[bid,now()]);for(let r of [[0,0,'09:00','17:00'],[1,1,'09:00','17:00'],[2,1,'09:00','17:00'],[3,1,'09:00','17:00'],[4,1,'09:00','17:00'],[5,1,'09:00','17:00'],[6,1,'09:00','14:00']])await run('INSERT INTO hours(business_id,day,is_open,open_time,close_time,break_start,break_end) VALUES(?,?,?,?,?,?,?)',[bid,...r,'','']);await run("INSERT INTO staff(business_id,name,title,active,sort_order,created_at,updated_at) VALUES(?,?,'Majstor',1,1,?,?)",[bid,ownerName||'Glavni majstor',now(),now()]);await run("INSERT INTO services(business_id,name,description,duration,price,active,sort_order,created_at,updated_at) VALUES(?,'Osnovna usluga','Promeni naziv i cenu u panelu.',30,1000,1,1,?,?)",[bid,now(),now()])}
 
@@ -247,6 +289,12 @@ async function slots(bid,date,service,staffId=null,opts={}){
  staff=staff.filter(Boolean);
  if(locationId)staff=await filterRowsForLocation(staff,'staff_locations','staff_id',bid,locationId);
  if(!staff.length)return[];
+ let staffSchedules={};
+ if(locationId){
+  for(let p of staff)staffSchedules[p.id]=await staffScheduleForDate(bid,p.id,locationId,date);
+  staff=staff.filter(p=>staffSchedules[p.id]!==false);
+ }
+ if(!staff.length)return[];
 
  let dur=Number(service.duration),int=Number(s.interval||15),open=tm(h.open_time),close=tm(h.close_time),bs=h.break_start?tm(h.break_start):null,be=h.break_end?tm(h.break_end):null;
  let minDate=opts.ignoreMinNotice?new Date():new Date(Date.now()+Number(s.min_notice||0)*3600000);
@@ -260,6 +308,7 @@ async function slots(bid,date,service,staffId=null,opts={}){
   if(blockedPeriods.some(x=>validTime(x.start_time)&&validTime(x.end_time)&&over(start,end,tm(x.start_time),tm(x.end_time))))continue;
 
   for(let p of staff){
+   if(locationId&&!staffScheduleAllowsSlot(staffSchedules[p.id]===undefined?null:staffSchedules[p.id],start,end))continue;
    let c=busy[p.id].some(x=>over(start,end,tm(x.start_time),tm(x.end_time)));
    if(!c){out.push({start_time:stt,end_time:ett,staff_id:p.id,staff_name:p.name});break}
   }
@@ -402,7 +451,7 @@ app.get('/api/businesses/:slug',async(req,res)=>{
   business:{...pb,booking_url:bookUrl(req,b.slug)},
   locations:locs.map(l=>pubLoc(l,b,req)),
   services:await attachLocationsToRows(await all('SELECT * FROM services WHERE business_id=? AND active=1 ORDER BY sort_order,id',[b.id]),'service_locations','service_id',b.id),
-  staff:await attachLocationsToRows(await all('SELECT id,name,title,phone FROM staff WHERE business_id=? AND active=1 ORDER BY sort_order,id',[b.id]),'staff_locations','staff_id',b.id),
+  staff:await attachStaffSchedules(await attachLocationsToRows(await all('SELECT id,name,title,phone FROM staff WHERE business_id=? AND active=1 ORDER BY sort_order,id',[b.id]),'staff_locations','staff_id',b.id),b.id),
   settings:await get('SELECT * FROM settings WHERE business_id=?',[b.id]),
   booking_enabled:ok.ok,
   booking_disabled_reason:ok.reason||''
@@ -469,24 +518,28 @@ app.delete('/api/owner/locations/:id',auth,owner,async(req,res)=>{
  await run('DELETE FROM blocked_periods WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
  await run('DELETE FROM service_locations WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
  await run('DELETE FROM staff_locations WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
+ await run('DELETE FROM staff_location_schedule WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
  await run('DELETE FROM business_locations WHERE business_id=? AND id=?',[req.user.business_id,Number(req.params.id)]);
  res.json({message:'Lokacija je obrisana.'});
 });
 
 app.get('/api/owner/staff',auth,owner,async(req,res)=>{
  let rows=await all('SELECT * FROM staff WHERE business_id=? ORDER BY sort_order,id',[req.user.business_id]);
- res.json(await attachLocationsToRows(rows,'staff_locations','staff_id',req.user.business_id));
+ rows=await attachLocationsToRows(rows,'staff_locations','staff_id',req.user.business_id);
+ res.json(await attachStaffSchedules(rows,req.user.business_id));
 });
 app.post('/api/owner/staff',auth,owner,async(req,res)=>{
  let b=await get('SELECT * FROM businesses WHERE id=?',[req.user.business_id]);
  let r=await run('INSERT INTO staff(business_id,name,title,phone,email,active,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)',[b.id,clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),req.body.active===false?0:1,Number(req.body.sort_order||0),now(),now()]);
  await saveAssignedLocationIds('staff_locations','staff_id',b.id,r.lastID,req.body.location_ids);
+ await saveStaffLocationSchedule(b.id,r.lastID,req.body.location_schedule);
  res.status(201).json({id:r.lastID,message:'Radnik je dodat.'})
 });
 app.put('/api/owner/staff/:id',auth,owner,async(req,res)=>{
  let id=Number(req.params.id);
  await run('UPDATE staff SET name=?,title=?,phone=?,email=?,active=?,sort_order=?,updated_at=? WHERE id=? AND business_id=?',[clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),req.body.active?1:0,Number(req.body.sort_order||0),now(),id,req.user.business_id]);
  await saveAssignedLocationIds('staff_locations','staff_id',req.user.business_id,id,req.body.location_ids);
+ await saveStaffLocationSchedule(req.user.business_id,id,req.body.location_schedule);
  res.json({message:'Radnik je sačuvan.'})
 });
 app.get('/api/owner/services',auth,owner,async(req,res)=>{

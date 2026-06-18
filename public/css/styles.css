@@ -1358,3 +1358,53 @@ body.manual-modal-body-open{
     width:100%;
   }
 }
+
+/* v125 - raspored radnika po lokacijama */
+.staff-location-schedule-v125{
+  grid-column:1 / -1;
+  border:1px solid #d9dee8;
+  border-radius:18px;
+  background:#fff;
+  padding:14px;
+  display:grid;
+  gap:10px;
+}
+.staff-schedule-head-v125 h3{
+  margin:0 0 4px;
+  font-size:17px;
+}
+.staff-schedule-head-v125 p{
+  margin:0;
+}
+.staff-schedule-day-v125{
+  display:grid;
+  grid-template-columns:minmax(110px,.75fr) minmax(170px,1.4fr) minmax(120px,.75fr) minmax(120px,.75fr);
+  gap:10px;
+  align-items:end;
+  padding:10px;
+  border:1px solid #eef1f6;
+  border-radius:14px;
+  background:#f8fafc;
+}
+.staff-schedule-day-v125 b{
+  padding-bottom:11px;
+}
+.staff-schedule-day-v125 label{
+  margin:0 !important;
+  font-size:13px;
+}
+.staff-schedule-day-v125 select,
+.staff-schedule-day-v125 input{
+  width:100%;
+  min-height:40px;
+  box-sizing:border-box;
+}
+@media(max-width:760px){
+  .staff-schedule-day-v125{
+    grid-template-columns:1fr;
+    align-items:stretch;
+  }
+  .staff-schedule-day-v125 b{
+    padding-bottom:0;
+  }
+}
