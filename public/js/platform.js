@@ -22,9 +22,10 @@ function isTabletModeLocked(){return (!!localStorage.getItem(TABLET_TOKEN_KEY)||
 function showTabletModeLanding(){
   const panel=document.querySelector('.panel-grid');
   if(!panel)return false;
-  panel.innerHTML=`<div class="card"><p class="eyebrow">Radnički ekran</p><h2>Ovaj uređaj je povezan sa lokacijom</h2><p class="muted">Za ovaj računar/tablet je uključen radnički ekran. Glavni panel se otključava samo admin nalogom.</p><div class="actions"><a class="btn" href="/tablet">Otvori radnički ekran</a><a class="btn ghost" href="/owner.html">Admin ulaz</a></div></div>`;
+  panel.innerHTML=`<div class="card"><p class="eyebrow">Radnički ekran</p><h2>Ovaj uređaj je povezan sa lokacijom</h2><p class="muted">Za ovaj računar/tablet je uključen radnički ekran. Glavni panel se otključava samo admin nalogom.</p><div class="actions"><a class="btn" href="/tablet">Otvori radnički ekran</a><a class="btn ghost" href="/owner.html">Admin ulaz</a></div><button id="tabletNoRegistrationBtn" class="btn ghost" type="button" style="margin-top:10px">Uđi bez registracije</button><p id="tabletLandingMsg" class="msg"></p></div>`;
   const hero=document.querySelector('.hero-copy');
   if(hero)hero.querySelector('.card.soft-card')?.remove();
+  attachTabletNoRegistrationButton();
   return true;
 }
 
@@ -77,7 +78,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-/* Owner No Registration Test v81 */
+/* Owner No Registration Test v131 */
+async function noRegistrationLogin(btn, msgId) {
+  const msgEl = msgId ? document.getElementById(msgId) : null;
+  if (msgEl) {
+    msgEl.textContent = 'Ulazim bez registracije...';
+    msgEl.className = 'msg';
+  } else {
+    setMsg('loginMsg', 'Ulazim bez registracije...');
+  }
+  if (btn) btn.disabled = true;
+  try {
+    const data = await api('/api/auth/test-owner-login', { method: 'POST' });
+    localStorage.setItem('terminiOwnerToken', data.token);
+    localStorage.setItem('token', data.token);
+    if (isTabletModeLocked()) sessionStorage.setItem(TABLET_ADMIN_UNLOCK_KEY, '1');
+    location.href = '/owner.html';
+  } catch (err) {
+    if (btn) btn.disabled = false;
+    const text = err.message || 'Neuspešan test ulaz.';
+    if (msgEl) {
+      msgEl.textContent = text;
+      msgEl.className = 'msg err';
+    } else {
+      setMsg('loginMsg', text);
+    }
+  }
+}
+
+function attachTabletNoRegistrationButton() {
+  const btn = document.getElementById('tabletNoRegistrationBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => noRegistrationLogin(btn, 'tabletLandingMsg'));
+}
+
 function addNoRegistrationTestButton(){
   const loginForm = document.getElementById('loginForm');
   if (!loginForm || document.getElementById('testOwnerLoginBtn')) return;
@@ -88,20 +122,7 @@ function addNoRegistrationTestButton(){
   btn.className = 'btn ghost';
   btn.style.marginTop = '10px';
   btn.textContent = 'Uđi bez registracije';
-
-  btn.addEventListener('click', async () => {
-    setMsg('loginMsg', 'Ulazim bez registracije...');
-    btn.disabled = true;
-    try {
-      const data = await api('/api/auth/test-owner-login', { method: 'POST' });
-      localStorage.setItem('terminiOwnerToken', data.token);
-      localStorage.setItem('token', data.token);
-      location.href = '/owner.html';
-    } catch (err) {
-      btn.disabled = false;
-      setMsg('loginMsg', err.message || 'Neuspešan test ulaz.');
-    }
-  });
+  btn.addEventListener('click', () => noRegistrationLogin(btn, 'loginMsg'));
 
   loginForm.insertAdjacentElement('afterend', btn);
 }
