@@ -652,6 +652,54 @@ app.delete('/api/owner/location-devices/:id',auth,owner,async(req,res)=>{
  res.json({message:'Uređaj je deaktiviran.'});
 });
 
+
+app.get('/api/tablet/options',async(req,res)=>{
+ let d=await tabletDeviceFromRequest(req);
+ if(!d)return res.status(401).json({error:'Ovaj uređaj nije povezan sa lokacijom ili je pristup deaktiviran.'});
+ let date=clean(req.query.date,20)||today();
+ if(!validDate(date))date=today();
+ let services=await all('SELECT * FROM services WHERE business_id=? AND active=1 ORDER BY sort_order,id',[d.business_id]);
+ services=await filterRowsForLocation(services,'service_locations','service_id',d.business_id,d.location_id);
+ let staff=await all('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY sort_order,id',[d.business_id]);
+ staff=await filterRowsForLocation(staff,'staff_locations','staff_id',d.business_id,d.location_id);
+ let out=[];
+ for(let st of staff){
+  let sch=await staffScheduleForDate(d.business_id,st.id,d.location_id,date);
+  if(sch!==false)out.push({...st,location_schedule_today:sch});
+ }
+ res.json({location:{id:d.location_id,name:d.location_name},services,staff:out});
+});
+app.get('/api/tablet/available-slots',async(req,res)=>{
+ try{
+  let d=await tabletDeviceFromRequest(req);
+  if(!d)return res.status(401).json({error:'Ovaj uređaj nije povezan sa lokacijom ili je pristup deaktiviran.'});
+  let srv=await get('SELECT * FROM services WHERE business_id=? AND id=? AND active=1',[d.business_id,Number(req.query.service_id)]);
+  if(!srv)return res.status(404).json({error:'Usluga nije pronađena.'});
+  if(!(await itemAllowedAtLocation('service_locations','service_id',d.business_id,srv.id,d.location_id)))return res.status(400).json({error:'Usluga nije dostupna na ovoj lokaciji.'});
+  let rows=await slots(d.business_id,clean(req.query.date,20),srv,req.query.staff_id?Number(req.query.staff_id):null,{ignoreMinNotice:true,locationId:d.location_id});
+  res.json(rows);
+ }catch(e){res.status(500).json({error:'Greška pri učitavanju slobodnih termina.'})}
+});
+app.post('/api/tablet/appointments',async(req,res)=>{
+ try{
+  let d=await tabletDeviceFromRequest(req);
+  if(!d)return res.status(401).json({error:'Ovaj uređaj nije povezan sa lokacijom ili je pristup deaktiviran.'});
+  let srv=await get('SELECT * FROM services WHERE business_id=? AND id=? AND active=1',[d.business_id,Number(req.body.service_id)]);
+  if(!srv)return res.status(404).json({error:'Usluga nije pronađena.'});
+  if(!(await itemAllowedAtLocation('service_locations','service_id',d.business_id,srv.id,d.location_id)))return res.status(400).json({error:'Usluga nije dostupna na ovoj lokaciji.'});
+  let date=clean(req.body.date,20),start=clean(req.body.start_time,10);
+  let rows=await slots(d.business_id,date,srv,req.body.staff_id?Number(req.body.staff_id):null,{ignoreMinNotice:true,locationId:d.location_id});
+  let sel=rows.find(x=>x.start_time===start);
+  if(!sel)return res.status(409).json({error:'Termin nije slobodan za ovu lokaciju/radnika.'});
+  let tok=token();
+  let r=await run("INSERT INTO appointments(business_id,location_id,service_id,staff_id,appt_token,customer_name,phone,email,date,start_time,end_time,status,notes,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,'booked',?,?,?)",[
+   d.business_id,d.location_id,srv.id,sel.staff_id,tok,clean(req.body.customer_name,120),phone(req.body.phone),email(req.body.email),date,sel.start_time,sel.end_time,clean(req.body.notes,500),now(),now()
+  ]);
+  await logN({business_id:d.business_id,appointment_id:r.lastID,channel:'system',subject:'Tablet ručno dodat termin',body:`Uređaj ${d.device_name||'tablet'} (${d.location_name}) je dodao termin: ${clean(req.body.customer_name,120)} ${date} ${sel.start_time}`,status:'logged'});
+  res.status(201).json({id:r.lastID,message:'Termin je dodat.'});
+ }catch(e){res.status(500).json({error:'Greška pri dodavanju termina.'})}
+});
+
 app.get('/api/tablet/me',async(req,res)=>{
  let d=await tabletDeviceFromRequest(req);
  if(!d)return res.status(401).json({error:'Ovaj uređaj nije povezan sa lokacijom ili je pristup deaktiviran.'});

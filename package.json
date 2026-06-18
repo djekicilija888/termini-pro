@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "8.9.0",
+  "version": "9.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Raspored rada u Radnicima i tablet režim uz lokacije"
+  "description": "Raspored rada u Radnicima, tablet režim uz lokacije i ručno dodavanje termina na radničkom ekranu"
 }
