@@ -816,9 +816,14 @@ async function ensureOwnerLocationsLoaded(){
  if(typeof profileLocationsList!=='undefined')renderProfileExtraLocations();
  return ownerLocationsCache;
 }
-async function fetchOwnerQrDataUrl(locationId=''){
+function ownerAuthHeaders(){
  let h={};
  if(tok())h.Authorization='Bearer '+tok();
+ if(typeof tabletAdminUnlocked==='function' && tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';
+ return h;
+}
+async function fetchOwnerQrDataUrl(locationId=''){
+ let h=ownerAuthHeaders();
  let url='/api/owner/qr';
  if(locationId)url+='?location_id='+encodeURIComponent(locationId);
  let r=await fetch(url,{headers:h});
@@ -831,7 +836,7 @@ async function downloadOwnerQrCode(locationArg){
   await loadBookingLink(false);
   const loc=locationArg&&locationArg.id?locationArg:null;
   const id=ownerLocId(loc);
-  let h={};if(tok())h.Authorization='Bearer '+tok();
+  let h=ownerAuthHeaders();
   let url='/api/owner/qr'+(id?'?location_id='+encodeURIComponent(id):'');
   let r=await fetch(url,{headers:h});
   if(!r.ok)throw Error('Ne mogu da preuzmem QR kod.');
