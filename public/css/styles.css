@@ -1423,3 +1423,14 @@ body.manual-modal-body-open{
 .tablet-status-actions-v126{display:flex;gap:10px;flex-wrap:wrap}
 .disabled-v123{opacity:.5;cursor:not-allowed}
 @media(max-width:720px){.tablet-shell-v126{padding:10px}.tablet-toolbar-v126{display:grid;grid-template-columns:1fr}.tablet-status-actions-v126 .btn{width:100%}}
+
+/* v127 - tablet režim direktno uz lokacije */
+.location-row-actions-v115 .profile-loc-tablet{
+  max-width:260px;
+  line-height:1.2;
+}
+@media(max-width:850px){
+  .location-row-actions-v115 .btn{
+    width:100%;
+  }
+}
