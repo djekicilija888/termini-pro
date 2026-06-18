@@ -2,8 +2,9 @@ const T='terminiOwnerToken',$=s=>document.querySelector(s),day=['Nedelja','Poned
 const TABLET_TOKEN_KEY='terminiTabletDeviceToken';
 const TABLET_ADMIN_UNLOCK_KEY='terminiTabletAdminUnlocked';
 let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};
-function tabletToken(){return localStorage.getItem(TABLET_TOKEN_KEY)||''}
-function tabletModeActive(){return !!tabletToken()}
+function getCookie(name){try{let raw=document.cookie||'';for(const part of raw.split(';')){const p=part.trim();const i=p.indexOf('=');if(i>0&&p.slice(0,i)===name)return decodeURIComponent(p.slice(i+1)||'')}return ''}catch(e){return ''}}
+function tabletToken(){return localStorage.getItem(TABLET_TOKEN_KEY)||getCookie('terminiTabletDevice')||''}
+function tabletModeActive(){return !!tabletToken()||getCookie('terminiTabletMode')==='1'}
 function tabletAdminUnlocked(){return sessionStorage.getItem(TABLET_ADMIN_UNLOCK_KEY)==='1'}
 function canOpenOwnerPanel(){return !tabletModeActive()||tabletAdminUnlocked()}
 function setCookie(name,value,maxAge){try{document.cookie=name+'='+encodeURIComponent(value||'')+'; path=/; max-age='+(maxAge||31536000)+'; SameSite=Lax'}catch(e){}}
@@ -64,7 +65,17 @@ if(typeof tabletAdminUnlockForm!=='undefined'&&tabletAdminUnlockForm){
   }catch(er){tabletAdminUnlockMsg.textContent=er.message||'Neuspešna prijava.';tabletAdminUnlockMsg.className='msg err'}
  };
 }
-loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};
+function enforceTabletLockIfNeeded(){
+ if(tabletModeActive()&&!tabletAdminUnlocked()){
+  setTabletModeCookie();
+  showTabletAdminLock();
+  return true;
+ }
+ return false;
+}
+window.addEventListener('pageshow',()=>{enforceTabletLockIfNeeded()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)enforceTabletLockIfNeeded()});
+loginForm.onsubmit=async e=>{e.preventDefault();if(enforceTabletLockIfNeeded())return;try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};
 logout.onclick=()=>{clearOwnerSession();sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);hide()};
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
 function tab(id){if(!canOpenOwnerPanel())return showTabletAdminLock();document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}
@@ -1753,7 +1764,7 @@ async function printA4DoorPoster(){
 if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{await loadBookingLink();printA4DoorPoster()};
 
 
-async function init(){from.value=today();to.value=add(30);if(!tok())return hide();try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}}init();
+async function init(){from.value=today();to.value=add(30);if(enforceTabletLockIfNeeded())return;if(!tok())return hide();try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}}init();
 
 
 /* Owner Nav Clean Final v72 */

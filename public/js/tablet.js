@@ -3,6 +3,18 @@ const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const today=()=>new Date().toISOString().split('T')[0];
 const tabletToken=()=>localStorage.getItem(TABLET_TOKEN_KEY)||'';
+function setCookie(name,value,maxAge){try{document.cookie=name+'='+encodeURIComponent(value||'')+'; path=/; max-age='+(maxAge||31536000)+'; SameSite=Lax'}catch(e){}}
+function enforceTabletLockedBrowserState(){
+  const t=tabletToken();
+  if(!t)return;
+  setCookie('terminiTabletMode','1');
+  setCookie('terminiTabletDevice',t);
+  localStorage.removeItem('terminiOwnerToken');
+  localStorage.removeItem('token');
+  sessionStorage.removeItem('terminiTabletAdminUnlocked');
+}
+enforceTabletLockedBrowserState();
+window.addEventListener('pageshow',enforceTabletLockedBrowserState);
 let tabletState={me:null,appointments:[],selected:null,services:[],staff:[]};
 
 const tabletEls={

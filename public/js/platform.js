@@ -17,7 +17,8 @@ function setMsg(id, text, ok = false) {
 
 const TABLET_TOKEN_KEY = 'terminiTabletDeviceToken';
 const TABLET_ADMIN_UNLOCK_KEY = 'terminiTabletAdminUnlocked';
-function isTabletModeLocked(){return !!localStorage.getItem(TABLET_TOKEN_KEY) && sessionStorage.getItem(TABLET_ADMIN_UNLOCK_KEY)!=='1'}
+function getCookie(name){try{let raw=document.cookie||'';for(const part of raw.split(';')){const p=part.trim();const i=p.indexOf('=');if(i>0&&p.slice(0,i)===name)return decodeURIComponent(p.slice(i+1)||'')}return ''}catch(e){return ''}}
+function isTabletModeLocked(){return (!!localStorage.getItem(TABLET_TOKEN_KEY)||getCookie('terminiTabletMode')==='1'||!!getCookie('terminiTabletDevice')) && sessionStorage.getItem(TABLET_ADMIN_UNLOCK_KEY)!=='1'}
 function showTabletModeLanding(){
   const panel=document.querySelector('.panel-grid');
   if(!panel)return false;

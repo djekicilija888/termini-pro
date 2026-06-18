@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Zaključan tablet režim: radnički ekran po lokaciji i admin ulaz samo uz admin nalog"
+  "description": "Jače zaključavanje tablet/radničkog režima po lokaciji"
 }
