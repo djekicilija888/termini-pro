@@ -40,6 +40,24 @@ function ensureTabletOwnerBanner(){
  const b=document.getElementById('tabletRelockNow');
  if(b)b.onclick=()=>{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);clearOwnerSession();location.href='/tablet'};
 }
+async function ownerNoRegistrationLogin(buttonEl,msgEl){
+ const out=msgEl||document.getElementById('lm')||document.getElementById('tabletAdminUnlockMsg');
+ if(out){out.textContent='Ulazim bez registracije...';out.className='msg';}
+ if(buttonEl)buttonEl.disabled=true;
+ try{
+  const d=await plainApi('/api/auth/test-owner-login',{method:'POST'});
+  if(!d.user||d.user.role!=='owner')throw Error('Test nalog nije admin nalog firme.');
+  localStorage.setItem(T,d.token);
+  localStorage.setItem('token',d.token);
+  if(tabletModeActive())sessionStorage.setItem(TABLET_ADMIN_UNLOCK_KEY,'1');
+  if(out){out.textContent='Ušao si bez registracije.';out.className='msg ok';}
+  show();
+  tab('dash');
+ }catch(er){
+  if(buttonEl)buttonEl.disabled=false;
+  if(out){out.textContent=er.message||'Neuspešan ulaz bez registracije.';out.className='msg err';}
+ }
+}
 function show(){
  if(!canOpenOwnerPanel())return showTabletAdminLock();
  const lock=$('#tabletAdminLock');if(lock)lock.classList.add('hidden');
@@ -50,6 +68,8 @@ function hide(){
  const lock=$('#tabletAdminLock');if(lock)lock.classList.add('hidden');
  login.classList.remove('hidden');app.classList.add('hidden')
 }
+if(typeof ownerNoRegBtn!=='undefined'&&ownerNoRegBtn)ownerNoRegBtn.onclick=()=>ownerNoRegistrationLogin(ownerNoRegBtn,lm);
+if(typeof tabletAdminNoRegBtn!=='undefined'&&tabletAdminNoRegBtn)tabletAdminNoRegBtn.onclick=()=>ownerNoRegistrationLogin(tabletAdminNoRegBtn,tabletAdminUnlockMsg);
 if(typeof tabletAdminUnlockForm!=='undefined'&&tabletAdminUnlockForm){
  tabletAdminUnlockForm.onsubmit=async e=>{
   e.preventDefault();
