@@ -6,6 +6,14 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 const today=()=>new Date().toISOString().split('T')[0];
 const tabletToken=()=>localStorage.getItem(TABLET_TOKEN_KEY)||'';
 function setCookieTabletV133(name,value,maxAge){try{document.cookie=name+'='+encodeURIComponent(value||'')+'; path=/; max-age='+(maxAge||31536000)+'; SameSite=Lax'}catch(e){}}
+function clearTabletModeMemory(){
+  try{localStorage.removeItem(TABLET_TOKEN_KEY)}catch(e){}
+  try{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY)}catch(e){}
+  try{
+    document.cookie='terminiTabletMode=; path=/; max-age=0; SameSite=Lax';
+    document.cookie='terminiTabletDevice=; path=/; max-age=0; SameSite=Lax';
+  }catch(e){}
+}
 function prepareLockedTabletHistoryV133(){
   const token=tabletToken();
   if(!token)return;
@@ -97,9 +105,9 @@ const tabletEls={
 async function api(u,o={}){
   const h={'Content-Type':'application/json',...(o.headers||{})};
   if(tabletToken())h['X-Device-Token']=tabletToken();
-  const r=await fetch(u,{...o,headers:h});
-  const d=await r.json();
-  if(!r.ok)throw Error(d.error||'Greška');
+  const r=await fetch(u,{...o,headers:h,cache:'no-store'});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){const er=Error(d.error||'Greška');er.status=r.status;throw er}
   return d;
 }
 function statusText(s){return {booked:'Zakazan',completed:'Završen',cancelled:'Otkazan',no_show:'Nije došao'}[s]||s||''}
@@ -115,6 +123,10 @@ function showLocked(txt){
   const p=tabletEls.locked?.querySelector('.muted');
   if(txt&&p)p.textContent=txt;
 }
+function goBackToLogin(){
+  clearTabletModeMemory();
+  location.replace('/');
+}
 function showMain(){
   tabletEls.locked?.classList.add('hidden');
   tabletEls.main?.classList.remove('hidden');
@@ -127,7 +139,11 @@ async function loadMe(){
     tabletEls.sub.textContent=[d.business.name,d.location.city,d.location.address].filter(Boolean).join(' · ');
     showMain();
     return d;
-  }catch(e){showLocked(e.message);throw e}
+  }catch(e){
+    if([401,403,404,423].includes(Number(e.status||0)))clearTabletModeMemory();
+    showLocked(e.message);
+    throw e
+  }
 }
 
 async function loadTabletManualOptions(){
@@ -260,6 +276,7 @@ tabletEls.manualService.onchange=updateTabletManualSlots;
 tabletEls.manualStaff.onchange=updateTabletManualSlots;
 tabletEls.manualSlotRefresh.onclick=updateTabletManualSlots;
 tabletEls.manualForm.onsubmit=e=>submitTabletManual(e).catch(err=>tmsg(err.message||'Greška pri dodavanju termina.','err'));
+document.getElementById('tabletBackLogin')?.addEventListener('click',goBackToLogin);
 tabletEls.adminOpen?.addEventListener('click',openTabletAdminModal);
 tabletEls.adminClose?.addEventListener('click',closeTabletAdminModal);
 tabletEls.adminModal?.addEventListener('mousedown',e=>{if(e.target===tabletEls.adminModal)closeTabletAdminModal()});

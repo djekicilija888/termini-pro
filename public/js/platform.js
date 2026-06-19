@@ -17,7 +17,25 @@ function setMsg(id, text, ok = false) {
 
 const TABLET_TOKEN_KEY = 'terminiTabletDeviceToken';
 const TABLET_ADMIN_UNLOCK_KEY = 'terminiTabletAdminUnlocked';
+function clearTabletModeMemory(){
+  try{localStorage.removeItem(TABLET_TOKEN_KEY)}catch(e){}
+  try{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY)}catch(e){}
+  try{
+    document.cookie='terminiTabletMode=; path=/; max-age=0; SameSite=Lax';
+    document.cookie='terminiTabletDevice=; path=/; max-age=0; SameSite=Lax';
+  }catch(e){}
+}
 function isTabletModeLocked(){return !!localStorage.getItem(TABLET_TOKEN_KEY) && sessionStorage.getItem(TABLET_ADMIN_UNLOCK_KEY)!=='1'}
+async function validateStoredTabletMode(){
+  const token=localStorage.getItem(TABLET_TOKEN_KEY)||'';
+  if(!token){clearTabletModeMemory();return false}
+  try{
+    const r=await fetch('/api/tablet/me',{headers:{'Content-Type':'application/json','X-Device-Token':token},cache:'no-store'});
+    if(r.ok)return true;
+    if([401,403,404,423].includes(r.status)){clearTabletModeMemory();return false}
+    return false;
+  }catch(e){return false}
+}
 function showTabletModeLanding(){
   const panel=document.querySelector('.panel-grid');
   if(!panel)return false;
@@ -37,11 +55,14 @@ async function loadPlatform() {
   } catch (e) {}
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   loadPlatform();
   if (isTabletModeLocked()) {
-    location.replace('/tablet');
-    return;
+    const validTablet = await validateStoredTabletMode();
+    if (validTablet && isTabletModeLocked()) {
+      location.replace('/tablet');
+      return;
+    }
   }
   addNoRegistrationTestButton();
 
