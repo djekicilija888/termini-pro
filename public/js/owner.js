@@ -907,12 +907,15 @@ async function loadSettings(){
  try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
  profileLocationsMode=((ownerLocationsCache||[]).length>1)?'all':'primary';
  const firstLoc=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:{};
+ const hasOwnerLocation=(ownerLocationsCache||[]).length>0;
  setName.value=b.name||'';
  setType.value=b.type||'';
- setCity.value=b.city||firstLoc.city||'';
- setPhone.value=b.phone||firstLoc.phone||'';
+ // Lokacije su glavni izvor za grad/adresu/telefon.
+ // Ako je ranije obrisana primarna lokacija, ne smeju ostati stari podaci iz tabele firme.
+ setCity.value=hasOwnerLocation?(firstLoc.city||b.city||''):(b.city||'');
+ setPhone.value=hasOwnerLocation?(firstLoc.phone||b.phone||''):(b.phone||'');
  setInstagram.value=b.instagram||'';
- setAddress.value=b.address||firstLoc.address||'';
+ setAddress.value=hasOwnerLocation?(firstLoc.address||b.address||''):(b.address||'');
  setWebsite.value=b.website||'';
  setDesc.value=b.description||'';
  setInterval.value=s.interval||15;setMin.value=s.min_notice||2;setMax.value=s.max_days||45;
@@ -1056,14 +1059,16 @@ function renderProfileExtraLocations(){
    await ensureOwnerLocationsLoaded();
    await refreshTabletModeAfterLocationChange();
   }
-  // Ako je vlasnik već radio sa više lokacija, brisanje jedne lokacije ne sme da sakrije preostalu lokaciju.
-  // Zato ostajemo u prikazu liste lokacija čak i kada posle brisanja ostane samo jedna.
-  if(keepFullLocationList)profileLocationsMode='all';
+  // Kada posle brisanja ostane samo jedna lokacija, ona postaje glavna lokacija u gornjim poljima.
+  // Ne smeju ostati podaci obrisane lokacije u poljima Grad/Adresa/Telefon.
   if((ownerLocationsCache||[]).length===1){
+   profileLocationsMode='primary';
    const remaining=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:{};
    if(typeof setCity!=='undefined')setCity.value=remaining.city||'';
    if(typeof setAddress!=='undefined')setAddress.value=remaining.address||'';
    if(typeof setPhone!=='undefined')setPhone.value=remaining.phone||'';
+  }else if(keepFullLocationList){
+   profileLocationsMode='all';
   }
   renderProfileExtraLocations();
   refreshProfileAddLocationButton();
