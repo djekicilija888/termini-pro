@@ -11,6 +11,24 @@ function getOwnerStartupTab(){
  return 'dash';
 }
 function rememberOwnerTab(id){try{if(OWNER_VALID_TABS.includes(id))localStorage.setItem(OWNER_ACTIVE_TAB_KEY,id)}catch(_e){}}
+function currentOwnerDomTab(){
+ try{
+  const activeBtn=document.querySelector('.tabs button.active');
+  if(activeBtn&&OWNER_VALID_TABS.includes(activeBtn.dataset.tab))return activeBtn.dataset.tab;
+  const visible=[...document.querySelectorAll('#app .tab')].find(x=>x&&!x.classList.contains('hidden'));
+  if(visible&&OWNER_VALID_TABS.includes(visible.id))return visible.id;
+ }catch(_e){}
+ return '';
+}
+function rememberCurrentOwnerDomTab(){
+ try{
+  const id=currentOwnerDomTab();
+  if(id)rememberOwnerTab(id);
+ }catch(_e){}
+}
+window.addEventListener('pagehide', rememberCurrentOwnerDomTab);
+window.addEventListener('beforeunload', rememberCurrentOwnerDomTab);
+window.addEventListener('visibilitychange',()=>{if(document.hidden)rememberCurrentOwnerDomTab()});
 const TABLET_TOKEN_KEY='terminiTabletDeviceToken';
 const TABLET_ADMIN_UNLOCK_KEY='terminiTabletAdminUnlocked';
 let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};
@@ -2044,8 +2062,9 @@ async function init(){
   try{
    let me=await api('/api/auth/me');
    if(me.user.role!=='owner')throw Error();
+   const startupTab=getOwnerStartupTab();
    show();
-   await tab(getOwnerStartupTab());
+   await tab(startupTab);
   }catch(_e){
    hide();
   }
