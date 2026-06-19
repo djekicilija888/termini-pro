@@ -1666,3 +1666,14 @@ body.owner-booting #app,
 body.owner-booting #tabletAdminLock{
   visibility:hidden !important;
 }
+
+/* v147: dok se proverava sesija i učitava prava kartica, ne prikazuj međuekrane */
+body.owner-booting{
+  overflow:hidden;
+}
+body.owner-booting #login,
+body.owner-booting #app,
+body.owner-booting #tabletAdminLock{
+  visibility:hidden !important;
+  opacity:0 !important;
+}
