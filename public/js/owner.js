@@ -815,7 +815,7 @@ function ownerPhoneParts(value){
  return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10);
 }
 
-let ownerQrObjectUrl='', ownerLocationsCache=[], profileLocationEditIndex=null, profileLocationSaving=false, ownerLocationQrEditIndex=null;
+let ownerQrObjectUrl='', ownerLocationsCache=[], profileLocationsMode='primary', profileLocationEditIndex=null, profileLocationSaving=false, ownerLocationQrEditIndex=null;
 function safeFileName(value){return String(value||'lokacija').toLowerCase().replace(/[š]/g,'s').replace(/[đ]/g,'dj').replace(/[čć]/g,'c').replace(/[ž]/g,'z').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'lokacija'}
 function ownerLocationTitle(l,idx){return (l&&l.name)||('Lokacija '+((idx||0)+1))}
 function ownerLocId(l){return l&&String(l.id||'').startsWith('new-')?'':(l&&l.id?String(l.id):'')}
