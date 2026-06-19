@@ -1,4 +1,6 @@
 const TABLET_TOKEN_KEY='terminiTabletDeviceToken';
+const OWNER_TOKEN_KEY='terminiOwnerToken';
+const TABLET_ADMIN_UNLOCK_KEY='terminiTabletAdminUnlocked';
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const today=()=>new Date().toISOString().split('T')[0];
@@ -9,7 +11,7 @@ function prepareLockedTabletHistoryV133(){
   if(!token)return;
   setCookieTabletV133('terminiTabletMode','1');
   setCookieTabletV133('terminiTabletDevice',token);
-  try{localStorage.removeItem('terminiOwnerToken');localStorage.removeItem('token');sessionStorage.removeItem('terminiTabletAdminUnlocked')}catch(e){}
+  try{localStorage.removeItem('terminiOwnerToken');localStorage.removeItem('token');sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY)}catch(e){}
   try{
     history.replaceState({tabletLocked:true},'',location.pathname+location.search);
     history.pushState({tabletLocked:true,guard:true},'',location.pathname+location.search);
@@ -19,6 +21,39 @@ function prepareLockedTabletHistoryV133(){
   }catch(e){}
 }
 prepareLockedTabletHistoryV133();
+async function plainApi(u,o={}){
+  const r=await fetch(u,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw Error(d.error||'Greška');
+  return d;
+}
+function tabletAdminMsg(text,type=''){
+  const el=document.getElementById('tabletAdminMsg');
+  if(!el)return;
+  el.textContent=text||'';
+  el.className='msg '+(type||'');
+}
+function openTabletAdminModal(){
+  const m=document.getElementById('tabletAdminModal');
+  if(!m)return;
+  tabletAdminMsg('');
+  m.classList.remove('hidden');
+  setTimeout(()=>document.getElementById('tabletAdminEmail')?.focus({preventScroll:true}),80);
+}
+function closeTabletAdminModal(){document.getElementById('tabletAdminModal')?.classList.add('hidden')}
+async function unlockTabletAdminWithToken(data){
+  if(!data||!data.token)throw Error('Neuspešna prijava.');
+  const user=data.user||data;
+  if(user.role&&user.role!=='owner')throw Error('Nije admin nalog firme.');
+  localStorage.setItem(OWNER_TOKEN_KEY,data.token);
+  localStorage.setItem('token',data.token);
+  if(tabletToken()){
+    setCookieTabletV133('terminiTabletMode','1');
+    setCookieTabletV133('terminiTabletDevice',tabletToken());
+  }
+  sessionStorage.setItem(TABLET_ADMIN_UNLOCK_KEY,'1');
+  location.replace('/owner.html');
+}
 let tabletState={me:null,appointments:[],selected:null,services:[],staff:[]};
 
 const tabletEls={
@@ -49,7 +84,14 @@ const tabletEls={
   manualDate:$('#tabletManualDate'),
   manualTime:$('#tabletManualTime'),
   manualNotes:$('#tabletManualNotes'),
-  manualSlotRefresh:$('#tabletManualSlotRefresh')
+  manualSlotRefresh:$('#tabletManualSlotRefresh'),
+  adminOpen:$('#tabletAdminOpen'),
+  adminModal:$('#tabletAdminModal'),
+  adminClose:$('#tabletAdminClose'),
+  adminForm:$('#tabletAdminForm'),
+  adminEmail:$('#tabletAdminEmail'),
+  adminPassword:$('#tabletAdminPassword'),
+  adminNoReg:$('#tabletAdminNoReg')
 };
 
 async function api(u,o={}){
@@ -218,5 +260,23 @@ tabletEls.manualService.onchange=updateTabletManualSlots;
 tabletEls.manualStaff.onchange=updateTabletManualSlots;
 tabletEls.manualSlotRefresh.onclick=updateTabletManualSlots;
 tabletEls.manualForm.onsubmit=e=>submitTabletManual(e).catch(err=>tmsg(err.message||'Greška pri dodavanju termina.','err'));
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeStatusModal();closeManualModal()}});
+tabletEls.adminOpen?.addEventListener('click',openTabletAdminModal);
+tabletEls.adminClose?.addEventListener('click',closeTabletAdminModal);
+tabletEls.adminModal?.addEventListener('mousedown',e=>{if(e.target===tabletEls.adminModal)closeTabletAdminModal()});
+tabletEls.adminForm?.addEventListener('submit',async e=>{
+  e.preventDefault();
+  tabletAdminMsg('Proveravam admin nalog...');
+  try{
+    const data=await plainApi('/api/auth/login',{method:'POST',body:JSON.stringify({email:tabletEls.adminEmail.value,password:tabletEls.adminPassword.value})});
+    await unlockTabletAdminWithToken(data);
+  }catch(err){tabletAdminMsg(err.message||'Neuspešna admin prijava.','err')}
+});
+tabletEls.adminNoReg?.addEventListener('click',async()=>{
+  tabletAdminMsg('Ulazim bez registracije...');
+  try{
+    const data=await plainApi('/api/auth/test-owner-login',{method:'POST'});
+    await unlockTabletAdminWithToken(data);
+  }catch(err){tabletAdminMsg(err.message||'Neuspešan ulaz bez registracije.','err')}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeStatusModal();closeManualModal();closeTabletAdminModal()}});
 loadAppointments().then(()=>loadTabletManualOptions());

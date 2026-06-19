@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Zaključan tablet režim v129 plus vraćen ulazak bez registracije"
+  "description": "V135: admin prijava direktno sa radničkog ekrana"
 }

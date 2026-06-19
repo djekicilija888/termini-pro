@@ -10,6 +10,10 @@ function setCookie(name,value,maxAge){try{document.cookie=name+'='+encodeURIComp
 function clearCookie(name){try{document.cookie=name+'=; path=/; max-age=0; SameSite=Lax'}catch(e){}}
 function setTabletModeCookie(){setCookie('terminiTabletMode','1');if(tabletToken())setCookie('terminiTabletDevice',tabletToken())}
 function clearOwnerSession(){localStorage.removeItem(T);localStorage.removeItem('token')}
+function updateTabletOwnerHeader(){
+ const out=document.getElementById('logout');
+ if(out)out.classList.toggle('hidden', tabletModeActive()&&tabletAdminUnlocked());
+}
 function enterTabletLockedMode(deviceToken){
  if(deviceToken)localStorage.setItem(TABLET_TOKEN_KEY,deviceToken);
  setTabletModeCookie();
@@ -42,6 +46,7 @@ async function api(u,o={}){let h={'Content-Type':'application/json',...(o.header
 async function plainApi(u,o={}){let r=await fetch(u,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Greška');return d}
 function msg(t,c=''){om.textContent=t;om.className='msg '+c}
 function ensureTabletOwnerBanner(){
+ updateTabletOwnerHeader();
  if(!tabletModeActive()||!tabletAdminUnlocked()||document.getElementById('tabletAdminBanner'))return;
  const banner=document.createElement('div');
  banner.id='tabletAdminBanner';
@@ -72,12 +77,12 @@ async function ownerNoRegistrationLogin(buttonEl,msgEl){
 function show(){
  if(!canOpenOwnerPanel())return showTabletAdminLock();
  const lock=$('#tabletAdminLock');if(lock)lock.classList.add('hidden');
- login.classList.add('hidden');app.classList.remove('hidden');ensureTabletOwnerBanner();
+ login.classList.add('hidden');app.classList.remove('hidden');ensureTabletOwnerBanner();updateTabletOwnerHeader();
 }
 function hide(){
  if(!canOpenOwnerPanel())return showTabletAdminLock();
  const lock=$('#tabletAdminLock');if(lock)lock.classList.add('hidden');
- login.classList.remove('hidden');app.classList.add('hidden')
+ login.classList.remove('hidden');app.classList.add('hidden');updateTabletOwnerHeader()
 }
 if(typeof ownerNoRegBtn!=='undefined'&&ownerNoRegBtn)ownerNoRegBtn.onclick=()=>ownerNoRegistrationLogin(ownerNoRegBtn,lm);
 if(typeof tabletAdminNoRegBtn!=='undefined'&&tabletAdminNoRegBtn)tabletAdminNoRegBtn.onclick=()=>ownerNoRegistrationLogin(tabletAdminNoRegBtn,tabletAdminUnlockMsg);
