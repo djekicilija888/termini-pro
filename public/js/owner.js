@@ -108,7 +108,16 @@ const UNSAVED_CHANGES_TEXT='Sačuvati izmene?';
 let unsavedGuardDirty=false;
 let unsavedGuardReady=false;
 let unsavedGuardSnapshots=new WeakMap();
+let unsavedGuardDirtyScopes=new Set();
 function unsavedGuardVisible(el){return !!(el&&el.offsetParent!==null&&!el.closest('.hidden'))}
+function unsavedScopeForTarget(el){
+ const scopes=unsavedGuardScopes();
+ return scopes.find(sc=>sc&&sc.contains&&sc.contains(el))||null;
+}
+function markUnsavedScope(scope){
+ if(scope&&unsavedGuardVisible(scope))unsavedGuardDirtyScopes.add(scope);
+ else unsavedGuardDirty=true;
+}
 function unsavedGuardScopes(){return [...document.querySelectorAll('#app form,#app #profileLocationForm,#app #hoursForm')].filter(el=>el&&el.id!=='loginForm'&&el.id!=='tabletAdminUnlockForm')}
 function unsavedGuardSerialize(scope){
  if(!scope)return '';
@@ -121,18 +130,26 @@ function unsavedGuardSerialize(scope){
 }
 function resetUnsavedGuard(scope){
  try{
-  unsavedGuardDirty=false;
-  const scopes=scope?[scope]:unsavedGuardScopes();
-  scopes.forEach(sc=>unsavedGuardSnapshots.set(sc,unsavedGuardSerialize(sc)));
+  if(scope){
+   unsavedGuardDirtyScopes.delete(scope);
+   unsavedGuardSnapshots.set(scope,unsavedGuardSerialize(scope));
+  }else{
+   unsavedGuardDirty=false;
+   unsavedGuardDirtyScopes.clear();
+   const scopes=unsavedGuardScopes();
+   scopes.forEach(sc=>unsavedGuardSnapshots.set(sc,unsavedGuardSerialize(sc)));
+  }
   unsavedGuardReady=true;
  }catch(_e){}
 }
 function hasUnsavedChanges(){
- return !!(unsavedGuardReady && (unsavedGuardDirty || unsavedChangedScopes().length>0));
+ if(!unsavedGuardReady)return false;
+ if(unsavedGuardDirty)return true;
+ try{return [...unsavedGuardDirtyScopes].some(sc=>unsavedGuardVisible(sc));}catch(_e){return false;}
 }
 function unsavedChangedScopes(){
  try{
-  return unsavedGuardScopes().filter(sc=>unsavedGuardVisible(sc)&&unsavedGuardSerialize(sc)!==unsavedGuardSnapshots.get(sc));
+  return unsavedGuardScopes().filter(sc=>unsavedGuardVisible(sc)&&(unsavedGuardDirtyScopes.has(sc)||unsavedGuardSerialize(sc)!==unsavedGuardSnapshots.get(sc)));
  }catch(_e){return []}
 }
 function currentUnsavedScope(){
@@ -196,8 +213,8 @@ function confirmDiscardUnsavedChanges(){
  if(!hasUnsavedChanges())return true;
  return window.confirm(UNSAVED_CHANGES_TEXT);
 }
-document.addEventListener('input',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly){unsavedGuardDirty=true}},true);
-document.addEventListener('change',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly){unsavedGuardDirty=true}},true);
+document.addEventListener('input',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly){markUnsavedScope(unsavedScopeForTarget(ev.target))}},true);
+document.addEventListener('change',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly){markUnsavedScope(unsavedScopeForTarget(ev.target))}},true);
 window.addEventListener('beforeunload',ev=>{if(hasUnsavedChanges()){ev.preventDefault();ev.returnValue='';}});
 setTimeout(()=>resetUnsavedGuard(),500);
 function msg(t,c=''){om.textContent=t;om.className='msg '+c}
@@ -1027,7 +1044,8 @@ settingsForm.onsubmit=async e=>{
   customer_note:typeof setCustomerNote!=='undefined'?setCustomerNote.value:undefined
  })});
  await saveProfileLocations(true);
- await loadBookingLink(false);
+ if(typeof bookinglink!=='undefined' && bookinglink && !bookinglink.classList.contains('hidden')) await loadBookingLink(false);
+ else setTimeout(()=>{try{loadBookingLink(false)}catch(_e){}},0);
  msg('Podešavanja sačuvana.','ok');
  resetUnsavedGuard();
 };async function loadLogs(){let rows=await api('/api/owner/notifications');logList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.channel} · ${x.status}</h3><p>${x.created_at} · ${x.recipient||''}</p><p class="muted">${(x.body||'').slice(0,220)}</p></article>`).join('')||'<p class="muted">Nema logova.</p>'}
