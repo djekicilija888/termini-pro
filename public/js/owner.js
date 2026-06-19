@@ -101,7 +101,7 @@ window.addEventListener('pageshow', enforceTabletOwnerLock);
 window.addEventListener('focus', enforceTabletOwnerLock);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)enforceTabletOwnerLock()});
 window.addEventListener('popstate',()=>setTimeout(enforceTabletOwnerLock,0));
-async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();if(tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';let method=String(o.method||'GET').toUpperCase();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');if(['POST','PUT','PATCH','DELETE'].includes(method)){try{setTimeout(()=>resetUnsavedGuard(),120)}catch(_e){}}return d}
+async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();if(tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}
 async function plainApi(u,o={}){let r=await fetch(u,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Greška');return d}
 
 const UNSAVED_CHANGES_TEXT='Sačuvati izmene?';
@@ -128,7 +128,7 @@ function resetUnsavedGuard(scope){
  }catch(_e){}
 }
 function hasUnsavedChanges(){
- return !!(unsavedGuardReady&&unsavedGuardDirty);
+ return !!(unsavedGuardReady && (unsavedGuardDirty || unsavedChangedScopes().length>0));
 }
 function unsavedChangedScopes(){
  try{
@@ -467,7 +467,8 @@ async function loadAppointments(){
     s.onchange=async()=>{
       await api('/api/owner/appointments/'+s.dataset.id+'/status',{method:'PATCH',body:JSON.stringify({status:s.value})});
       msg('Status promenjen.','ok');
-      loadAppointments();
+      await loadAppointments();
+      setTimeout(()=>resetUnsavedGuard(),80);
     }
   });
 }
@@ -501,6 +502,7 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   manualName.value='';manualPhone.value='';manualEmail.value='';manualNotes.value='';
   await updateManualSlots();
   await loadAppointments();
+  setTimeout(()=>resetUnsavedGuard(manualForm),80);
 };
 
 function resetSt(){
@@ -640,6 +642,7 @@ if(typeof saveWorkSchedule!=='undefined')saveWorkSchedule.onclick=async()=>{
  await api('/api/owner/staff/'+encodeURIComponent(workScheduleStaff.value)+'/location-schedule',{method:'PUT',body:JSON.stringify({location_schedule:collectWorkScheduleRows()})});
  msg('Raspored rada je sačuvan.','ok');
  await loadWorkSchedule();
+ setTimeout(()=>resetUnsavedGuard(),80);
 };
 
 async function activateTabletForLocation(locationId,locationName){
@@ -692,7 +695,7 @@ serviceForm.onsubmit=async e=>{
  await ensureOwnerLocationsLoaded();
  let id=serviceId.value,p={name:serviceName.value,description:serviceDesc.value,duration:+serviceDuration.value,price:+servicePrice.value,sort_order:+serviceSort.value,active:serviceActive.checked,location_ids:collectLocationChecks('serviceLocationsBox')};
  await api(id?'/api/owner/services/'+id:'/api/owner/services',{method:id?'PUT':'POST',body:JSON.stringify(p)});
- msg('Usluga sačuvana.','ok');resetSv();loadServices()
+ msg('Usluga sačuvana.','ok');resetSv();await loadServices();setTimeout(()=>resetUnsavedGuard(serviceForm),80)
 };
 async function loadServices(){
  await ensureOwnerLocationsLoaded();
@@ -922,6 +925,7 @@ if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
     await api('/api/owner/working-hours',{method:'PUT',body:JSON.stringify({rows})});
     msg('Radno vreme je sačuvano.','ok');
   }
+  setTimeout(()=>resetUnsavedGuard(hoursForm),80);
 };
 
 (function(){
@@ -965,7 +969,8 @@ blockedForm.onsubmit=async e=>{
   });
   msg('Neradni dan/period je dodat.','ok');
   blockedStart.value='';blockedEnd.value='';blockedReason.value='';
-  loadBlocked();
+  await loadBlocked();
+  setTimeout(()=>resetUnsavedGuard(blockedForm),80);
 };
 
 async function loadBlocked(){
@@ -1209,7 +1214,7 @@ async function closeProfileLocationModalFn(force=false){
  if(!force&&!(await confirmDiscardUnsavedChangesAsync()))return;
  profileLocationEditIndex=null;
  if(typeof profileLocationModal!=='undefined')profileLocationModal.classList.add('hidden');
- setTimeout(()=>resetUnsavedGuard(),80);
+ setTimeout(()=>{try{resetUnsavedGuard(profileLocationForm)}catch(_e){}},80);
 }
 async function saveProfileLocations(silent=false){
  if(!ownerHasWrittenLocation() && !profileUsingFullLocations())return;
@@ -1464,7 +1469,7 @@ async function saveProfileLocationFromModal(e){
   if(isNew)ownerLocationsCache.push(loc);
   else ownerLocationsCache[editIndex]=loc;
   profileLocationsMode='all';
-  resetUnsavedGuard();
+  resetUnsavedGuard(profileLocationForm);
   closeProfileLocationModalFn(true);
   renderProfileExtraLocations();
   refreshProfileAddLocationButton();
