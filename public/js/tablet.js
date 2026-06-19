@@ -64,11 +64,25 @@ async function unlockTabletAdminWithToken(data){
 }
 let tabletState={me:null,appointments:[],selected:null,services:[],staff:[]};
 
-const TABLET_UNSAVED_TEXT='Imaš nesačuvane izmene. Sačuvaj izmene pre napuštanja ili nastavi bez čuvanja?';
+const TABLET_UNSAVED_TEXT='Nesačuvano. Napustiti bez čuvanja?';
 let tabletUnsavedDirty=false;
 function resetTabletUnsaved(){tabletUnsavedDirty=false}
 function hasTabletUnsaved(){return !!tabletUnsavedDirty}
-function confirmTabletDiscardUnsaved(){if(!hasTabletUnsaved())return true;return window.confirm(TABLET_UNSAVED_TEXT+'\n\nAko nastaviš bez čuvanja, izmene neće biti sačuvane.')}
+function showTabletUnsavedDialog(){
+ return new Promise(resolve=>{
+  try{document.getElementById('tabletUnsavedModal')?.remove()}catch(_e){}
+  const modal=document.createElement('div');
+  modal.id='tabletUnsavedModal';
+  modal.className='app-confirm-modal-v142';
+  modal.innerHTML='<div class="app-confirm-box-v142"><h3>Nesačuvano</h3><p>Imaš izmene koje nisu sačuvane.</p><div class="app-confirm-actions-v142"><button type="button" class="btn ghost" data-act="stay">Ostani</button><button type="button" class="btn" data-act="leave">Napusti bez čuvanja</button></div></div>';
+  const done=v=>{try{modal.remove()}catch(_e){};resolve(v)};
+  modal.addEventListener('click',ev=>{if(ev.target===modal)done(false);const b=ev.target.closest&&ev.target.closest('[data-act]');if(!b)return;done(b.dataset.act==='leave')});
+  document.body.appendChild(modal);
+  setTimeout(()=>{try{modal.querySelector('[data-act="stay"]').focus()}catch(_e){}},20);
+ });
+}
+async function confirmTabletDiscardUnsavedAsync(){if(!hasTabletUnsaved())return true;return await showTabletUnsavedDialog()}
+function confirmTabletDiscardUnsaved(){if(!hasTabletUnsaved())return true;return window.confirm(TABLET_UNSAVED_TEXT)}
 document.addEventListener('input',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#tabletManualForm')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly)tabletUnsavedDirty=true},true);
 document.addEventListener('change',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#tabletManualForm')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly)tabletUnsavedDirty=true},true);
 window.addEventListener('beforeunload',ev=>{if(hasTabletUnsaved()){ev.preventDefault();ev.returnValue='';}});
@@ -198,8 +212,8 @@ function openManualModal(){
   tabletEls.toggleManual?.setAttribute('aria-expanded','true');
   loadTabletManualOptions().then(()=>setTimeout(()=>tabletEls.manualName?.focus({preventScroll:true}),80));
 }
-function closeManualModal(force=false){
-  if(!force&&!confirmTabletDiscardUnsaved())return;
+async function closeManualModal(force=false){
+  if(!force&&!(await confirmTabletDiscardUnsavedAsync()))return;
   if(!tabletEls.manualPanel)return;
   tabletEls.manualPanel.classList.add('hidden');
   tabletEls.manualPanel.classList.remove('manual-modal-open');

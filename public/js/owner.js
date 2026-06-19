@@ -74,7 +74,7 @@ window.addEventListener('popstate',()=>setTimeout(enforceTabletOwnerLock,0));
 async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();if(tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';let method=String(o.method||'GET').toUpperCase();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');if(['POST','PUT','PATCH','DELETE'].includes(method)){try{setTimeout(()=>resetUnsavedGuard(),120)}catch(_e){}}return d}
 async function plainApi(u,o={}){let r=await fetch(u,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Greška');return d}
 
-const UNSAVED_CHANGES_TEXT='Imaš nesačuvane izmene. Sačuvaj izmene pre napuštanja ili nastavi bez čuvanja?';
+const UNSAVED_CHANGES_TEXT='Nesačuvano. Napustiti bez čuvanja?';
 let unsavedGuardDirty=false;
 let unsavedGuardReady=false;
 let unsavedGuardSnapshots=new WeakMap();
@@ -100,13 +100,29 @@ function resetUnsavedGuard(scope){
 function hasUnsavedChanges(){
  return !!(unsavedGuardReady&&unsavedGuardDirty);
 }
+function showUnsavedGuardDialog(){
+ return new Promise(resolve=>{
+  try{document.getElementById('unsavedGuardModal')?.remove()}catch(_e){}
+  const modal=document.createElement('div');
+  modal.id='unsavedGuardModal';
+  modal.className='app-confirm-modal-v142';
+  modal.innerHTML='<div class="app-confirm-box-v142"><h3>Nesačuvano</h3><p>Imaš izmene koje nisu sačuvane.</p><div class="app-confirm-actions-v142"><button type="button" class="btn ghost" data-act="stay">Ostani</button><button type="button" class="btn" data-act="leave">Napusti bez čuvanja</button></div></div>';
+  const done=v=>{try{modal.remove()}catch(_e){};resolve(v)};
+  modal.addEventListener('click',ev=>{if(ev.target===modal)done(false);const b=ev.target.closest&&ev.target.closest('[data-act]');if(!b)return;done(b.dataset.act==='leave')});
+  document.body.appendChild(modal);
+  setTimeout(()=>{try{modal.querySelector('[data-act="stay"]').focus()}catch(_e){}},20);
+ });
+}
+async function confirmDiscardUnsavedChangesAsync(){
+ if(!hasUnsavedChanges())return true;
+ return await showUnsavedGuardDialog();
+}
 function confirmDiscardUnsavedChanges(){
  if(!hasUnsavedChanges())return true;
- return window.confirm(UNSAVED_CHANGES_TEXT+'\n\nAko nastaviš bez čuvanja, izmene neće biti sačuvane.');
+ return window.confirm(UNSAVED_CHANGES_TEXT);
 }
 document.addEventListener('input',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly){unsavedGuardDirty=true}},true);
 document.addEventListener('change',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly){unsavedGuardDirty=true}},true);
-document.addEventListener('submit',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app'))setTimeout(()=>resetUnsavedGuard(ev.target),800)},true);
 window.addEventListener('beforeunload',ev=>{if(hasUnsavedChanges()){ev.preventDefault();ev.returnValue='';}});
 setTimeout(()=>resetUnsavedGuard(),500);
 function msg(t,c=''){om.textContent=t;om.className='msg '+c}
@@ -166,8 +182,8 @@ if(typeof tabletAdminUnlockForm!=='undefined'&&tabletAdminUnlockForm){
  };
 }
 loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};
-logout.onclick=()=>{if(!confirmDiscardUnsavedChanges())return;resetUnsavedGuard();clearOwnerSession();sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);hide()};
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(b.classList.contains('active'))return;if(!confirmDiscardUnsavedChanges())return;resetUnsavedGuard();tab(b.dataset.tab)});
+logout.onclick=async()=>{if(!await confirmDiscardUnsavedChangesAsync())return;resetUnsavedGuard();clearOwnerSession();sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);hide()};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=async()=>{if(b.classList.contains('active'))return;if(!await confirmDiscardUnsavedChangesAsync())return;resetUnsavedGuard();tab(b.dataset.tab)});
 function tab(id){if(!canOpenOwnerPanel())return showTabletAdminLock();document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');let loader=({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}));let res=loader();if(res&&typeof res.finally==='function')res.finally(()=>setTimeout(()=>resetUnsavedGuard(),120));else setTimeout(()=>resetUnsavedGuard(),120)}
 async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
 let ownerServiceCache=[], ownerStaffCache=[];
@@ -635,8 +651,8 @@ function openLocationHoursModal(locationId){
    setHoursEditorRows(loc?loc.hours:[], hoursForm);
  }
 }
-function closeLocationHoursModal(force=false){
- if(!force&&!confirmDiscardUnsavedChanges())return;
+async function closeLocationHoursModal(force=false){
+ if(!force&&!(await confirmDiscardUnsavedChangesAsync()))return;
  const modal=document.getElementById('locationHoursModal');
  if(!modal)return;
  modal.classList.add('hidden');
@@ -875,7 +891,8 @@ settingsForm.onsubmit=async e=>{
  })});
  await saveProfileLocations(true);
  await loadBookingLink(false);
- msg('Podešavanja sačuvana.','ok')
+ msg('Podešavanja sačuvana.','ok');
+ resetUnsavedGuard();
 };async function loadLogs(){let rows=await api('/api/owner/notifications');logList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.channel} · ${x.status}</h3><p>${x.created_at} · ${x.recipient||''}</p><p class="muted">${(x.body||'').slice(0,220)}</p></article>`).join('')||'<p class="muted">Nema logova.</p>'}
 
 function htmlEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -1054,8 +1071,8 @@ function openProfileLocationModal(idx=null){
   setTimeout(()=>{try{profileModalCity.focus()}catch(_e){}},50);
  }
 }
-function closeProfileLocationModalFn(force=false){
- if(!force&&!confirmDiscardUnsavedChanges())return;
+async function closeProfileLocationModalFn(force=false){
+ if(!force&&!(await confirmDiscardUnsavedChangesAsync()))return;
  profileLocationEditIndex=null;
  if(typeof profileLocationModal!=='undefined')profileLocationModal.classList.add('hidden');
  setTimeout(()=>resetUnsavedGuard(),80);
@@ -2131,8 +2148,8 @@ init();
     }
   }
 
-  function closeModal(force=false){
-    if(!force && typeof confirmDiscardUnsavedChanges==='function' && !confirmDiscardUnsavedChanges()) return;
+  async function closeModal(force=false){
+    if(!force && typeof confirmDiscardUnsavedChangesAsync==='function' && !(await confirmDiscardUnsavedChangesAsync())) return;
     const btn = document.getElementById('toggleManualAppointment');
     const panel = document.getElementById('manualAppointmentPanel');
     if(!btn || !panel) return;

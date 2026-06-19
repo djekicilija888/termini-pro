@@ -1505,3 +1505,60 @@ body.manual-modal-body-open{
 .manual-panel.manual-modal-open .worker-manual-form-v136 .form-actions{grid-column:1 / -1 !important;display:flex !important;gap:10px !important;justify-content:flex-start !important}
 @media(max-width:900px){.manual-panel.manual-modal-open .worker-manual-form-v136{width:calc(100vw - 24px) !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;max-height:calc(100vh - 90px) !important;gap:8px !important}}
 @media(max-width:620px){.worker-shell-v136{padding:10px}.manual-panel.manual-modal-open .worker-manual-form-v136{grid-template-columns:1fr !important}.manual-panel.manual-modal-open .worker-manual-notes-wrap-v136{grid-column:auto !important}}
+
+/* v142: lepši i kraći prozor za nesačuvane izmene */
+.app-confirm-modal-v142{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:rgba(17,24,39,.48);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+.app-confirm-box-v142{
+  width:min(430px,100%);
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:24px;
+  box-shadow:0 24px 80px rgba(17,24,39,.28);
+  padding:22px;
+}
+.app-confirm-box-v142 h3{
+  font-size:26px;
+  margin:0 0 8px;
+}
+.app-confirm-box-v142 p{
+  margin:0;
+  color:var(--muted);
+  font-weight:800;
+  line-height:1.45;
+}
+.app-confirm-actions-v142{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:20px;
+  flex-wrap:wrap;
+}
+.app-confirm-actions-v142 .btn{
+  min-width:110px;
+}
+@media(max-width:760px){
+  .app-confirm-modal-v142{
+    align-items:flex-end;
+    padding:10px;
+  }
+  .app-confirm-box-v142{
+    border-radius:24px 24px 18px 18px;
+    padding:20px;
+  }
+  .app-confirm-actions-v142{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .app-confirm-actions-v142 .btn{
+    width:100%;
+  }
+}
