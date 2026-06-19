@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "9.1.2",
+  "version": "9.1.3",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "V136: radnički QR pristup preko telefona i čist login"
+  "description": "V141: upozorenje za nesačuvane izmene"
 }

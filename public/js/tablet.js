@@ -64,6 +64,15 @@ async function unlockTabletAdminWithToken(data){
 }
 let tabletState={me:null,appointments:[],selected:null,services:[],staff:[]};
 
+const TABLET_UNSAVED_TEXT='Imaš nesačuvane izmene. Sačuvaj izmene pre napuštanja ili nastavi bez čuvanja?';
+let tabletUnsavedDirty=false;
+function resetTabletUnsaved(){tabletUnsavedDirty=false}
+function hasTabletUnsaved(){return !!tabletUnsavedDirty}
+function confirmTabletDiscardUnsaved(){if(!hasTabletUnsaved())return true;return window.confirm(TABLET_UNSAVED_TEXT+'\n\nAko nastaviš bez čuvanja, izmene neće biti sačuvane.')}
+document.addEventListener('input',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#tabletManualForm')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly)tabletUnsavedDirty=true},true);
+document.addEventListener('change',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#tabletManualForm')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly)tabletUnsavedDirty=true},true);
+window.addEventListener('beforeunload',ev=>{if(hasTabletUnsaved()){ev.preventDefault();ev.returnValue='';}});
+
 const tabletEls={
   locked:$('#tabletLocked'),
   main:$('#tabletMain'),
@@ -189,13 +198,15 @@ function openManualModal(){
   tabletEls.toggleManual?.setAttribute('aria-expanded','true');
   loadTabletManualOptions().then(()=>setTimeout(()=>tabletEls.manualName?.focus({preventScroll:true}),80));
 }
-function closeManualModal(){
+function closeManualModal(force=false){
+  if(!force&&!confirmTabletDiscardUnsaved())return;
   if(!tabletEls.manualPanel)return;
   tabletEls.manualPanel.classList.add('hidden');
   tabletEls.manualPanel.classList.remove('manual-modal-open');
   document.body.classList.remove('manual-modal-body-open');
   tabletEls.toggleManual?.classList.remove('open');
   tabletEls.toggleManual?.setAttribute('aria-expanded','false');
+  setTimeout(resetTabletUnsaved,80);
 }
 
 async function loadAppointments(){
@@ -254,7 +265,8 @@ async function submitTabletManual(e){
   tabletEls.manualPhone.value='';
   tabletEls.manualEmail.value='';
   tabletEls.manualNotes.value='';
-  closeManualModal();
+  resetTabletUnsaved();
+  closeManualModal(true);
   await loadAppointments();
   await loadTabletManualOptions();
 }

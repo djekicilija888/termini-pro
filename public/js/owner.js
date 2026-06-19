@@ -71,8 +71,44 @@ window.addEventListener('pageshow', enforceTabletOwnerLock);
 window.addEventListener('focus', enforceTabletOwnerLock);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)enforceTabletOwnerLock()});
 window.addEventListener('popstate',()=>setTimeout(enforceTabletOwnerLock,0));
-async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();if(tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');return d}
+async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();if(tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';let method=String(o.method||'GET').toUpperCase();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');if(['POST','PUT','PATCH','DELETE'].includes(method)){try{setTimeout(()=>resetUnsavedGuard(),120)}catch(_e){}}return d}
 async function plainApi(u,o={}){let r=await fetch(u,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Greška');return d}
+
+const UNSAVED_CHANGES_TEXT='Imaš nesačuvane izmene. Sačuvaj izmene pre napuštanja ili nastavi bez čuvanja?';
+let unsavedGuardDirty=false;
+let unsavedGuardReady=false;
+let unsavedGuardSnapshots=new WeakMap();
+function unsavedGuardVisible(el){return !!(el&&el.offsetParent!==null&&!el.closest('.hidden'))}
+function unsavedGuardScopes(){return [...document.querySelectorAll('#app form,#app #profileLocationForm')].filter(el=>el&&el.id!=='loginForm'&&el.id!=='tabletAdminUnlockForm')}
+function unsavedGuardSerialize(scope){
+ if(!scope)return '';
+ return [...scope.querySelectorAll('input,select,textarea')].filter(el=>!el.disabled&&el.type!=='button'&&el.type!=='submit'&&el.type!=='reset'&&!el.readOnly).map(el=>{
+  const key=el.id||el.name||el.placeholder||el.type||el.tagName;
+  if(el.type==='checkbox'||el.type==='radio')return key+'='+(el.checked?'1':'0');
+  if(el.tagName==='SELECT'&&el.multiple)return key+'='+[...el.selectedOptions].map(o=>o.value).join('|');
+  return key+'='+(el.value||'');
+ }).join('&');
+}
+function resetUnsavedGuard(scope){
+ try{
+  unsavedGuardDirty=false;
+  const scopes=scope?[scope]:unsavedGuardScopes();
+  scopes.forEach(sc=>unsavedGuardSnapshots.set(sc,unsavedGuardSerialize(sc)));
+  unsavedGuardReady=true;
+ }catch(_e){}
+}
+function hasUnsavedChanges(){
+ return !!(unsavedGuardReady&&unsavedGuardDirty);
+}
+function confirmDiscardUnsavedChanges(){
+ if(!hasUnsavedChanges())return true;
+ return window.confirm(UNSAVED_CHANGES_TEXT+'\n\nAko nastaviš bez čuvanja, izmene neće biti sačuvane.');
+}
+document.addEventListener('input',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly){unsavedGuardDirty=true}},true);
+document.addEventListener('change',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app')&&ev.target.matches('input,select,textarea')&&!ev.target.readOnly){unsavedGuardDirty=true}},true);
+document.addEventListener('submit',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('#app'))setTimeout(()=>resetUnsavedGuard(ev.target),800)},true);
+window.addEventListener('beforeunload',ev=>{if(hasUnsavedChanges()){ev.preventDefault();ev.returnValue='';}});
+setTimeout(()=>resetUnsavedGuard(),500);
 function msg(t,c=''){om.textContent=t;om.className='msg '+c}
 function ensureTabletOwnerBanner(){
  updateTabletOwnerHeader();
@@ -130,9 +166,9 @@ if(typeof tabletAdminUnlockForm!=='undefined'&&tabletAdminUnlockForm){
  };
 }
 loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};
-logout.onclick=()=>{clearOwnerSession();sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);hide()};
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
-function tab(id){if(!canOpenOwnerPanel())return showTabletAdminLock();document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}))()}
+logout.onclick=()=>{if(!confirmDiscardUnsavedChanges())return;resetUnsavedGuard();clearOwnerSession();sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);hide()};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(b.classList.contains('active'))return;if(!confirmDiscardUnsavedChanges())return;resetUnsavedGuard();tab(b.dataset.tab)});
+function tab(id){if(!canOpenOwnerPanel())return showTabletAdminLock();document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#'+id).classList.remove('hidden');msg('');let loader=({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}));let res=loader();if(res&&typeof res.finally==='function')res.finally(()=>setTimeout(()=>resetUnsavedGuard(),120));else setTimeout(()=>resetUnsavedGuard(),120)}
 async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
 let ownerServiceCache=[], ownerStaffCache=[];
 
@@ -599,12 +635,14 @@ function openLocationHoursModal(locationId){
    setHoursEditorRows(loc?loc.hours:[], hoursForm);
  }
 }
-function closeLocationHoursModal(){
+function closeLocationHoursModal(force=false){
+ if(!force&&!confirmDiscardUnsavedChanges())return;
  const modal=document.getElementById('locationHoursModal');
  if(!modal)return;
  modal.classList.add('hidden');
  modal.classList.remove('manual-modal-open');
  document.body.classList.remove('manual-modal-body-open');
+ setTimeout(()=>resetUnsavedGuard(),80);
 }
 function renderLocationHoursList(){
  if(typeof locationHoursList==='undefined')return;
@@ -716,7 +754,7 @@ async function loadHours(){
     renderLocationHoursList();
     if(typeof hoursEditorCard!=='undefined')hoursEditorCard.classList.add('hidden');
   }else{
-    closeLocationHoursModal();
+    closeLocationHoursModal(true);
     selectedHoursLocationId='';
     if(typeof hoursEditorCard!=='undefined')hoursEditorCard.classList.remove('hidden');
     let rows=await api('/api/owner/working-hours');
@@ -759,7 +797,8 @@ if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
     const rows=collectHoursRows(form);
     await api('/api/owner/location-working-hours/'+encodeURIComponent(selectedHoursLocationId),{method:'PUT',body:JSON.stringify({rows})});
     msg('Radno vreme lokacije je sačuvano.','ok');
-    closeLocationHoursModal();
+    resetUnsavedGuard();
+    closeLocationHoursModal(true);
     await loadHours();
   });
  }
@@ -1015,9 +1054,11 @@ function openProfileLocationModal(idx=null){
   setTimeout(()=>{try{profileModalCity.focus()}catch(_e){}},50);
  }
 }
-function closeProfileLocationModalFn(){
+function closeProfileLocationModalFn(force=false){
+ if(!force&&!confirmDiscardUnsavedChanges())return;
  profileLocationEditIndex=null;
  if(typeof profileLocationModal!=='undefined')profileLocationModal.classList.add('hidden');
+ setTimeout(()=>resetUnsavedGuard(),80);
 }
 async function saveProfileLocations(silent=false){
  if(!ownerHasWrittenLocation() && !profileUsingFullLocations())return;
@@ -1272,7 +1313,8 @@ async function saveProfileLocationFromModal(e){
   if(isNew)ownerLocationsCache.push(loc);
   else ownerLocationsCache[editIndex]=loc;
   profileLocationsMode='all';
-  closeProfileLocationModalFn();
+  resetUnsavedGuard();
+  closeProfileLocationModalFn(true);
   renderProfileExtraLocations();
   refreshProfileAddLocationButton();
   if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
@@ -2089,7 +2131,8 @@ init();
     }
   }
 
-  function closeModal(){
+  function closeModal(force=false){
+    if(!force && typeof confirmDiscardUnsavedChanges==='function' && !confirmDiscardUnsavedChanges()) return;
     const btn = document.getElementById('toggleManualAppointment');
     const panel = document.getElementById('manualAppointmentPanel');
     if(!btn || !panel) return;
