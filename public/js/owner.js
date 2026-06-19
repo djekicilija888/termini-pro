@@ -74,12 +74,12 @@ window.addEventListener('popstate',()=>setTimeout(enforceTabletOwnerLock,0));
 async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};if(tok())h.Authorization='Bearer '+tok();if(tabletAdminUnlocked())h['X-Tablet-Admin-Unlocked']='1';let method=String(o.method||'GET').toUpperCase();let r=await fetch(u,{...o,headers:h}),d=await r.json();if(!r.ok)throw Error(d.error||'Greška');if(['POST','PUT','PATCH','DELETE'].includes(method)){try{setTimeout(()=>resetUnsavedGuard(),120)}catch(_e){}}return d}
 async function plainApi(u,o={}){let r=await fetch(u,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Greška');return d}
 
-const UNSAVED_CHANGES_TEXT='Nesačuvano. Napustiti bez čuvanja?';
+const UNSAVED_CHANGES_TEXT='Sačuvati izmene?';
 let unsavedGuardDirty=false;
 let unsavedGuardReady=false;
 let unsavedGuardSnapshots=new WeakMap();
 function unsavedGuardVisible(el){return !!(el&&el.offsetParent!==null&&!el.closest('.hidden'))}
-function unsavedGuardScopes(){return [...document.querySelectorAll('#app form,#app #profileLocationForm')].filter(el=>el&&el.id!=='loginForm'&&el.id!=='tabletAdminUnlockForm')}
+function unsavedGuardScopes(){return [...document.querySelectorAll('#app form,#app #profileLocationForm,#app #hoursForm')].filter(el=>el&&el.id!=='loginForm'&&el.id!=='tabletAdminUnlockForm')}
 function unsavedGuardSerialize(scope){
  if(!scope)return '';
  return [...scope.querySelectorAll('input,select,textarea')].filter(el=>!el.disabled&&el.type!=='button'&&el.type!=='submit'&&el.type!=='reset'&&!el.readOnly).map(el=>{
@@ -100,22 +100,67 @@ function resetUnsavedGuard(scope){
 function hasUnsavedChanges(){
  return !!(unsavedGuardReady&&unsavedGuardDirty);
 }
+function unsavedChangedScopes(){
+ try{
+  return unsavedGuardScopes().filter(sc=>unsavedGuardVisible(sc)&&unsavedGuardSerialize(sc)!==unsavedGuardSnapshots.get(sc));
+ }catch(_e){return []}
+}
+function currentUnsavedScope(){
+ const changed=unsavedChangedScopes();
+ const modalScope=changed.find(sc=>sc.closest&&sc.closest('#profileLocationModal:not(.hidden),#locationHoursModal:not(.hidden),#manualAppointmentPanel:not(.hidden)'));
+ if(modalScope)return modalScope;
+ const active=document.querySelector('#app .tab:not(.hidden)');
+ return changed.find(sc=>active&&active.contains(sc))||changed[0]||null;
+}
+function waitUnsavedSaved(ms=3500){
+ const start=Date.now();
+ return new Promise(resolve=>{
+  const check=()=>{
+   if(!hasUnsavedChanges())return resolve(true);
+   if(Date.now()-start>ms)return resolve(false);
+   setTimeout(check,100);
+  };
+  setTimeout(check,120);
+ });
+}
+async function saveCurrentUnsavedChanges(){
+ const scope=currentUnsavedScope();
+ if(!scope){resetUnsavedGuard();return true;}
+ try{
+  if(scope.id==='profileLocationForm'&&typeof profileModalSaveBtn!=='undefined'&&profileModalSaveBtn){profileModalSaveBtn.click();}
+  else if(scope.id==='hoursForm'&&typeof saveHours!=='undefined'&&saveHours){saveHours.click();}
+  else if(scope.tagName==='FORM'){
+   if(scope.requestSubmit)scope.requestSubmit();
+   else scope.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+  }else{
+   const btn=scope.querySelector('button[type="submit"],.btn:not(.ghost)');
+   if(btn)btn.click();
+   else return false;
+  }
+  const ok=await waitUnsavedSaved();
+  if(!ok){try{msg('Promene nisu sačuvane. Proveri polja i pokušaj ponovo.','err')}catch(_e){};return false;}
+  return true;
+ }catch(e){try{msg(e.message||'Promene nisu sačuvane.','err')}catch(_e){};return false;}
+}
 function showUnsavedGuardDialog(){
  return new Promise(resolve=>{
   try{document.getElementById('unsavedGuardModal')?.remove()}catch(_e){}
   const modal=document.createElement('div');
   modal.id='unsavedGuardModal';
-  modal.className='app-confirm-modal-v142';
-  modal.innerHTML='<div class="app-confirm-box-v142"><h3>Nesačuvano</h3><p>Imaš izmene koje nisu sačuvane.</p><div class="app-confirm-actions-v142"><button type="button" class="btn ghost" data-act="stay">Ostani</button><button type="button" class="btn" data-act="leave">Napusti bez čuvanja</button></div></div>';
+  modal.className='app-confirm-modal-v143';
+  modal.innerHTML='<div class="app-confirm-box-v143"><h3>Sačuvati izmene?</h3><div class="app-confirm-actions-v143"><button type="button" class="btn ghost" data-act="stay">Ostani</button><button type="button" class="btn ghost danger" data-act="leave">Napusti bez čuvanja</button><button type="button" class="btn" data-act="save">Sačuvaj</button></div></div>';
   const done=v=>{try{modal.remove()}catch(_e){};resolve(v)};
-  modal.addEventListener('click',ev=>{if(ev.target===modal)done(false);const b=ev.target.closest&&ev.target.closest('[data-act]');if(!b)return;done(b.dataset.act==='leave')});
+  modal.addEventListener('click',ev=>{if(ev.target===modal)done('stay');const b=ev.target.closest&&ev.target.closest('[data-act]');if(!b)return;done(b.dataset.act)});
   document.body.appendChild(modal);
-  setTimeout(()=>{try{modal.querySelector('[data-act="stay"]').focus()}catch(_e){}},20);
+  setTimeout(()=>{try{modal.querySelector('[data-act="save"]').focus()}catch(_e){}},20);
  });
 }
 async function confirmDiscardUnsavedChangesAsync(){
  if(!hasUnsavedChanges())return true;
- return await showUnsavedGuardDialog();
+ const act=await showUnsavedGuardDialog();
+ if(act==='leave')return true;
+ if(act==='save')return await saveCurrentUnsavedChanges();
+ return false;
 }
 function confirmDiscardUnsavedChanges(){
  if(!hasUnsavedChanges())return true;
