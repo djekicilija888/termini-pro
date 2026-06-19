@@ -49,7 +49,7 @@ console.log('Using database:',DB_PATH);
 
 app.set('trust proxy',1);app.use(helmet({contentSecurityPolicy:false}));app.use(cors());app.use(express.json({limit:'500kb'}));
 app.use((req,res,next)=>{
- if(['/', '/owner.html', '/tablet', '/tablet.html'].includes(req.path)){
+ if(['/', '/owner.html', '/tablet', '/tablet.html', '/worker.html'].includes(req.path) || req.path.startsWith('/w/')){
   res.set('Cache-Control','no-store, no-cache, must-revalidate, private');
   res.set('Pragma','no-cache');
   res.set('Expires','0');
@@ -109,12 +109,37 @@ function sign(u){return jwt.sign({id:u.id,business_id:u.business_id,name:u.name,
 function auth(req,res,next){let h=req.headers.authorization||'',t=h.startsWith('Bearer ')?h.slice(7):'';if(!t)return res.status(401).json({error:'Moraš biti prijavljen.'});try{req.user=jwt.verify(t,JWT_SECRET);next()}catch{return res.status(401).json({error:'Sesija je istekla.'})}}
 const owner=(req,res,next)=>req.user&&req.user.role==='owner'&&req.user.business_id?next():res.status(403).json({error:'Nemaš dozvolu.'});
 const superadmin=(req,res,next)=>req.user&&req.user.role==='superadmin'?next():res.status(403).json({error:'Nemaš dozvolu.'});
+function workerSign(st){return jwt.sign({role:'worker',business_id:st.business_id,staff_id:st.id,name:st.name,email:st.email||''},JWT_SECRET,{expiresIn:'30d'})}
+function workerAuth(req,res,next){let h=req.headers.authorization||'',t=h.startsWith('Bearer ')?h.slice(7):'';if(!t)return res.status(401).json({error:'Radnik mora biti prijavljen.'});try{let u=jwt.verify(t,JWT_SECRET);if(u.role!=='worker'||!u.business_id||!u.staff_id)return res.status(403).json({error:'Nemaš dozvolu.'});req.worker=u;next()}catch{return res.status(401).json({error:'Radnička sesija je istekla.'})}}
+async function workerAllowedLocationIds(bid,staffId,date){
+ await ensureDefaultLocation(bid);
+ let active=await activeLocationIds(bid);
+ let assigned=await assignedLocationIds('staff_locations','staff_id',bid,staffId);
+ let allowed=assigned.filter(x=>active.includes(Number(x)));
+ let cnt=await get('SELECT COUNT(*) total FROM staff_location_schedule WHERE business_id=? AND staff_id=?',[bid,Number(staffId)]);
+ if(cnt&&Number(cnt.total||0)>0&&validDate(date)){
+  let r=await get('SELECT * FROM staff_location_schedule WHERE business_id=? AND staff_id=? AND day=?',[bid,Number(staffId),dow(date)]);
+  if(!r||!r.is_working||!r.location_id)return [];
+  let lid=Number(r.location_id||0);
+  return allowed.includes(lid)?[lid]:[];
+ }
+ return allowed;
+}
+async function ensureWorkerStaff(req,res,next){
+ let st=await get('SELECT * FROM staff WHERE business_id=? AND id=? AND active=1 AND worker_access=1',[req.worker.business_id,req.worker.staff_id]);
+ if(!st)return res.status(403).json({error:'Radnički pristup je isključen.'});
+ let plan=await bizPlanOk(req.worker.business_id);if(!plan.ok)return res.status(402).json({error:plan.reason||'Pretplata nije aktivna.'});
+ req.workerStaff=st;next();
+}
 async function init(){await run('PRAGMA foreign_keys=ON');
  await run(`CREATE TABLE IF NOT EXISTS businesses(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,slug TEXT UNIQUE,type TEXT,city TEXT,phone TEXT,instagram TEXT,address TEXT,website TEXT,logo_url TEXT,cover_url TEXT,description TEXT,active INTEGER DEFAULT 1,subscription_plan TEXT DEFAULT 'basic',subscription_status TEXT DEFAULT 'trial',subscription_expires_at TEXT,google_play_product_id TEXT,google_play_purchase_token TEXT,google_play_order_id TEXT,google_play_state TEXT,google_play_last_check TEXT,created_at TEXT,updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS business_locations(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,name TEXT,city TEXT,address TEXT,phone TEXT,email TEXT,active INTEGER DEFAULT 1,sort_order INTEGER DEFAULT 0,created_at TEXT,updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,name TEXT,email TEXT UNIQUE,password_hash TEXT,role TEXT,created_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS settings(business_id INTEGER PRIMARY KEY,interval INTEGER DEFAULT 15,min_notice INTEGER DEFAULT 2,max_days INTEGER DEFAULT 45,notify_customer_email INTEGER DEFAULT 1,notify_owner_email INTEGER DEFAULT 1,notify_sms INTEGER DEFAULT 0,notify_viber INTEGER DEFAULT 0,msg_booking TEXT DEFAULT 'Hvala, vaš termin je uspešno zakazan.',msg_cancel TEXT DEFAULT 'Vaš termin je otkazan.',customer_note TEXT DEFAULT 'Molimo vas da dođete 5 minuta ranije.',updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS staff(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,name TEXT,title TEXT,phone TEXT,email TEXT,active INTEGER DEFAULT 1,sort_order INTEGER DEFAULT 0,created_at TEXT,updated_at TEXT)`);
+ await addColumnIfMissing('staff','worker_access',`INTEGER DEFAULT 0`);
+ await addColumnIfMissing('staff','worker_pin_hash',`TEXT DEFAULT ''`);
+ await addColumnIfMissing('staff','worker_access_token',`TEXT DEFAULT ''`);
  await run(`CREATE TABLE IF NOT EXISTS services(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,name TEXT,description TEXT,duration INTEGER,price INTEGER DEFAULT 0,active INTEGER DEFAULT 1,sort_order INTEGER DEFAULT 0,created_at TEXT,updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS hours(business_id INTEGER,day INTEGER,is_open INTEGER,open_time TEXT,close_time TEXT,break_start TEXT,break_end TEXT,PRIMARY KEY(business_id,day))`);
  await run(`CREATE TABLE IF NOT EXISTS location_hours(business_id INTEGER,location_id INTEGER,day INTEGER,is_open INTEGER,open_time TEXT,close_time TEXT,break_start TEXT,break_end TEXT,updated_at TEXT,PRIMARY KEY(business_id,location_id,day))`);
@@ -364,7 +389,7 @@ async function notify(req,a,ctx){
  if(s.notify_sms)await logN({business_id:a.business_id,appointment_id:a.id,channel:'sms',recipient:a.phone,subject:'SMS termin',body,status:'logged',provider:process.env.SMS_PROVIDER||'demo'});
  if(s.notify_viber)await logN({business_id:a.business_id,appointment_id:a.id,channel:'viber',recipient:a.phone,subject:'Viber termin',body,status:'logged',provider:process.env.VIBER_PROVIDER||'demo'})
 }
-app.get('/b/:slug',(req,res)=>res.sendFile(path.join(__dirname,'public','business.html')));app.get('/m/:tok',(req,res)=>res.sendFile(path.join(__dirname,'public','manage.html')));app.get('/tablet',(req,res)=>res.sendFile(path.join(__dirname,'public','tablet.html')));app.get('/api/health',(req,res)=>res.json({ok:true}));app.get('/api/platform',(req,res)=>res.json({name:PLATFORM_NAME,plans:PLANS}));
+app.get('/b/:slug',(req,res)=>res.sendFile(path.join(__dirname,'public','business.html')));app.get('/m/:tok',(req,res)=>res.sendFile(path.join(__dirname,'public','manage.html')));app.get('/tablet',(req,res)=>res.sendFile(path.join(__dirname,'public','tablet.html')));app.get('/w/:tok',(req,res)=>res.sendFile(path.join(__dirname,'public','worker.html')));app.get('/api/health',(req,res)=>res.json({ok:true}));app.get('/api/platform',(req,res)=>res.json({name:PLATFORM_NAME,plans:PLANS}));
 app.post('/api/auth/register-business',async(req,res)=>{
  res.status(403).json({error:'Registracija firme nije dostupna preko web sajta. Registracija se radi kroz Android aplikaciju preko Google Play-a.'});
 });
@@ -563,17 +588,42 @@ app.get('/api/owner/staff',auth,owner,async(req,res)=>{
 });
 app.post('/api/owner/staff',auth,owner,async(req,res)=>{
  let b=await get('SELECT * FROM businesses WHERE id=?',[req.user.business_id]);
- let r=await run('INSERT INTO staff(business_id,name,title,phone,email,active,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)',[b.id,clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),req.body.active===false?0:1,Number(req.body.sort_order||0),now(),now()]);
+ const access=req.body.worker_access?1:0;
+ const pin=clean(req.body.worker_pin||'',40);
+ if(access&&!pin)return res.status(400).json({error:'Unesi PIN radnika za pristup preko telefona.'});
+ const pinHash=access?await bcrypt.hash(pin,10):'';
+ const accToken=access?token():'';
+ let r=await run('INSERT INTO staff(business_id,name,title,phone,email,active,sort_order,worker_access,worker_pin_hash,worker_access_token,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',[b.id,clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),req.body.active===false?0:1,Number(req.body.sort_order||0),access,pinHash,accToken,now(),now()]);
  await saveAssignedLocationIds('staff_locations','staff_id',b.id,r.lastID,req.body.location_ids);
  await saveStaffLocationSchedule(b.id,r.lastID,req.body.location_schedule);
  res.status(201).json({id:r.lastID,message:'Radnik je dodat.'})
 });
 app.put('/api/owner/staff/:id',auth,owner,async(req,res)=>{
  let id=Number(req.params.id);
- await run('UPDATE staff SET name=?,title=?,phone=?,email=?,active=?,sort_order=?,updated_at=? WHERE id=? AND business_id=?',[clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),req.body.active?1:0,Number(req.body.sort_order||0),now(),id,req.user.business_id]);
+ let old=await get('SELECT * FROM staff WHERE business_id=? AND id=?',[req.user.business_id,id]);
+ if(!old)return res.status(404).json({error:'Radnik nije pronađen.'});
+ const access=req.body.worker_access?1:0;
+ const pin=clean(req.body.worker_pin||'',40);
+ if(access&&!old.worker_pin_hash&&!pin)return res.status(400).json({error:'Unesi PIN radnika za pristup preko telefona.'});
+ let pinHash=old.worker_pin_hash||'';
+ if(pin)pinHash=await bcrypt.hash(pin,10);
+ let accToken=old.worker_access_token||'';
+ if(access&&!accToken)accToken=token();
+ if(!access){pinHash='';accToken=''}
+ await run('UPDATE staff SET name=?,title=?,phone=?,email=?,active=?,sort_order=?,worker_access=?,worker_pin_hash=?,worker_access_token=?,updated_at=? WHERE id=? AND business_id=?',[clean(req.body.name,120),clean(req.body.title,120),phone(req.body.phone),email(req.body.email),req.body.active?1:0,Number(req.body.sort_order||0),access,pinHash,accToken,now(),id,req.user.business_id]);
  await saveAssignedLocationIds('staff_locations','staff_id',req.user.business_id,id,req.body.location_ids);
  await saveStaffLocationSchedule(req.user.business_id,id,req.body.location_schedule);
  res.json({message:'Radnik je sačuvan.'})
+});
+app.get('/api/owner/staff/:id/access-qr',auth,owner,async(req,res)=>{
+ let id=Number(req.params.id);let st=await get('SELECT * FROM staff WHERE business_id=? AND id=?',[req.user.business_id,id]);
+ if(!st)return res.status(404).json({error:'Radnik nije pronađen.'});
+ if(!st.worker_access)return res.status(400).json({error:'Prvo uključi „Radnički pristup preko telefona” i sačuvaj PIN radnika.'});
+ let accToken=st.worker_access_token||'';
+ if(!accToken){accToken=token();await run('UPDATE staff SET worker_access_token=?,updated_at=? WHERE id=? AND business_id=?',[accToken,now(),id,req.user.business_id]);}
+ const worker_url=abs(req,`/w/${accToken}`);
+ const qr=await QRCode.toDataURL(worker_url,{margin:1,width:340,errorCorrectionLevel:'M'});
+ res.json({worker_url,qr,staff:{id:st.id,name:st.name}});
 });
 app.put('/api/owner/staff/:id/location-schedule',auth,owner,async(req,res)=>{
  let id=Number(req.params.id);
@@ -838,6 +888,101 @@ app.put('/api/owner/settings',auth,owner,async(req,res)=>{
 app.get('/api/owner/notifications',auth,owner,async(req,res)=>res.json(await all('SELECT * FROM notifications WHERE business_id=? ORDER BY created_at DESC LIMIT 100',[req.user.business_id])));
 
 
+
+
+app.post('/api/worker/login',async(req,res)=>{
+ const accessToken=clean(req.body.access_token||req.body.token||'',200);
+ const pin=clean(req.body.pin||'',40);
+ if(!accessToken||!pin)return res.status(400).json({error:'Unesi radnički PIN.'});
+ const st=await get(`SELECT st.*,b.active business_active,b.name business_name,b.slug business_slug
+  FROM staff st JOIN businesses b ON b.id=st.business_id
+  WHERE st.worker_access_token=? AND st.worker_access=1 AND st.active=1`,[accessToken]);
+ if(!st||!st.business_active)return res.status(404).json({error:'Radnički pristup nije pronađen ili je isključen.'});
+ const plan=await bizPlanOk(st.business_id);if(!plan.ok)return res.status(402).json({error:plan.reason||'Pretplata nije aktivna.'});
+ if(!st.worker_pin_hash||!await bcrypt.compare(pin,st.worker_pin_hash))return res.status(401).json({error:'PIN nije tačan.'});
+ res.json({token:workerSign(st),worker:{id:st.id,name:st.name,title:st.title||'',business_id:st.business_id,business_name:st.business_name}});
+});
+app.get('/api/worker/me',workerAuth,ensureWorkerStaff,async(req,res)=>{
+ await ensureDefaultLocation(req.worker.business_id);
+ const locs=await all('SELECT id,name,city,address,phone,email,active,sort_order FROM business_locations WHERE business_id=? AND active=1 ORDER BY sort_order,id',[req.worker.business_id]);
+ const allowed=await assignedLocationIds('staff_locations','staff_id',req.worker.business_id,req.worker.staff_id);
+ const b=await get('SELECT * FROM businesses WHERE id=?',[req.worker.business_id]);
+ res.json({business:{id:b.id,name:b.name,slug:b.slug},worker:{id:req.workerStaff.id,name:req.workerStaff.name,title:req.workerStaff.title||''},locations:locs.filter(l=>allowed.map(Number).includes(Number(l.id)))})
+});
+app.get('/api/worker/locations-for-date',workerAuth,ensureWorkerStaff,async(req,res)=>{
+ const date=validDate(req.query.date)?clean(req.query.date,20):today();
+ const ids=await workerAllowedLocationIds(req.worker.business_id,req.worker.staff_id,date);
+ let locs=[];
+ if(ids.length)locs=await all(`SELECT id,name,city,address FROM business_locations WHERE business_id=? AND active=1 AND id IN (${ids.map(()=>'?').join(',')}) ORDER BY sort_order,id`,[req.worker.business_id,...ids]);
+ res.json({date,locations:locs});
+});
+app.get('/api/worker/options',workerAuth,ensureWorkerStaff,async(req,res)=>{
+ const date=validDate(req.query.date)?clean(req.query.date,20):today();
+ const allowed=await workerAllowedLocationIds(req.worker.business_id,req.worker.staff_id,date);
+ let locationId=Number(req.query.location_id||0)||0;
+ if(!locationId)locationId=allowed[0]||0;
+ if(!locationId||!allowed.includes(locationId))return res.status(403).json({error:'Nemaš pristup ovoj lokaciji za izabrani datum.'});
+ let services=await all('SELECT * FROM services WHERE business_id=? AND active=1 ORDER BY sort_order,id',[req.worker.business_id]);
+ services=await filterRowsForLocation(services,'service_locations','service_id',req.worker.business_id,locationId);
+ let staff=await all('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY sort_order,id',[req.worker.business_id]);
+ staff=await filterRowsForLocation(staff,'staff_locations','staff_id',req.worker.business_id,locationId);
+ let out=[];
+ for(let st of staff){
+  let sch=await staffScheduleForDate(req.worker.business_id,st.id,locationId,date);
+  if(sch!==false)out.push({id:st.id,name:st.name,title:st.title||''});
+ }
+ res.json({location_id:locationId,services,staff:out});
+});
+app.get('/api/worker/available-slots',workerAuth,ensureWorkerStaff,async(req,res)=>{
+ const date=clean(req.query.date,20);
+ const allowed=await workerAllowedLocationIds(req.worker.business_id,req.worker.staff_id,date);
+ const locationId=Number(req.query.location_id||0)||0;
+ if(!locationId||!allowed.includes(locationId))return res.status(403).json({error:'Nemaš pristup ovoj lokaciji za izabrani datum.'});
+ const srv=await get('SELECT * FROM services WHERE business_id=? AND id=? AND active=1',[req.worker.business_id,Number(req.query.service_id||0)]);
+ if(!srv)return res.status(404).json({error:'Usluga nije pronađena.'});
+ let rows=await slots(req.worker.business_id,date,srv,req.query.staff_id?Number(req.query.staff_id):null,{ignoreMinNotice:true,locationId});
+ res.json(rows);
+});
+app.get('/api/worker/appointments',workerAuth,ensureWorkerStaff,async(req,res)=>{
+ const date=validDate(req.query.date)?clean(req.query.date,20):today();
+ const allowed=await workerAllowedLocationIds(req.worker.business_id,req.worker.staff_id,date);
+ let locationId=Number(req.query.location_id||0)||0;
+ if(locationId&&!allowed.includes(locationId))return res.status(403).json({error:'Nemaš pristup ovoj lokaciji.'});
+ let ids=locationId?[locationId]:allowed;
+ if(!ids.length)return res.json([]);
+ let p=[req.worker.business_id,date,...ids], w=`WHERE a.business_id=? AND a.date=? AND a.location_id IN (${ids.map(()=>'?').join(',')})`;
+ if(req.query.status){w+=' AND a.status=?';p.push(clean(req.query.status,40));}
+ let rows=await all(`SELECT a.*,s.name service_name,s.price,st.name staff_name,bl.name location_name FROM appointments a JOIN services s ON s.id=a.service_id LEFT JOIN staff st ON st.id=a.staff_id LEFT JOIN business_locations bl ON bl.id=a.location_id ${w} ORDER BY bl.sort_order,a.start_time,a.id`,p);
+ res.json(rows);
+});
+app.post('/api/worker/appointments',workerAuth,ensureWorkerStaff,async(req,res)=>{
+ const date=clean(req.body.date,20);
+ const allowed=await workerAllowedLocationIds(req.worker.business_id,req.worker.staff_id,date);
+ const locationId=Number(req.body.location_id||0)||0;
+ if(!locationId||!allowed.includes(locationId))return res.status(403).json({error:'Nemaš pristup ovoj lokaciji za izabrani datum.'});
+ const srv=await get('SELECT * FROM services WHERE business_id=? AND id=? AND active=1',[req.worker.business_id,Number(req.body.service_id||0)]);
+ if(!srv)return res.status(404).json({error:'Usluga nije pronađena.'});
+ let rows=await slots(req.worker.business_id,date,srv,req.body.staff_id?Number(req.body.staff_id):null,{ignoreMinNotice:true,locationId});
+ let sel=rows.find(x=>x.start_time===clean(req.body.start_time,10));
+ if(!sel)return res.status(409).json({error:'Termin nije slobodan za ovu lokaciju/radnika.'});
+ let tok=token();
+ let r=await run("INSERT INTO appointments(business_id,location_id,service_id,staff_id,appt_token,customer_name,phone,email,date,start_time,end_time,status,notes,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,'booked',?,?,?)",[
+  req.worker.business_id,locationId,srv.id,sel.staff_id,tok,clean(req.body.customer_name,120),phone(req.body.phone),email(req.body.email),date,sel.start_time,sel.end_time,clean(req.body.notes,500),now(),now()
+ ]);
+ await logN({business_id:req.worker.business_id,appointment_id:r.lastID,channel:'system',subject:'Radnik ručno dodao termin',body:`Radnik ${req.workerStaff.name} je dodao termin: ${clean(req.body.customer_name,120)} ${date} ${sel.start_time}`,status:'logged'});
+ res.status(201).json({message:'Termin je dodat.',id:r.lastID});
+});
+app.patch('/api/worker/appointments/:id/status',workerAuth,ensureWorkerStaff,async(req,res)=>{
+ const ap=await get('SELECT * FROM appointments WHERE business_id=? AND id=?',[req.worker.business_id,Number(req.params.id)]);
+ if(!ap)return res.status(404).json({error:'Termin nije pronađen.'});
+ const allowed=await workerAllowedLocationIds(req.worker.business_id,req.worker.staff_id,ap.date);
+ if(!allowed.includes(Number(ap.location_id||0)))return res.status(403).json({error:'Nemaš pristup ovom terminu.'});
+ const status=clean(req.body.status,40);
+ if(!['booked','completed','cancelled','no_show'].includes(status))return res.status(400).json({error:'Pogrešan status.'});
+ await run('UPDATE appointments SET status=?,updated_at=? WHERE id=? AND business_id=?',[status,now(),ap.id,req.worker.business_id]);
+ await logN({business_id:req.worker.business_id,appointment_id:ap.id,channel:'system',subject:'Radnik promena statusa',body:`Radnik ${req.workerStaff.name} je promenio status u ${status}. Razlog: ${clean(req.body.reason||'',250)}`,status:'logged'});
+ res.json({message:'Status je promenjen.'});
+});
 
 app.get('/api/superadmin/businesses',auth,superadmin,async(req,res)=>{let rows=await all(`SELECT b.*,(SELECT COUNT(*) FROM appointments a WHERE a.business_id=b.id) appointments_count,(SELECT COUNT(*) FROM services s WHERE s.business_id=b.id) services_count,(SELECT COUNT(*) FROM staff st WHERE st.business_id=b.id) staff_count FROM businesses b ORDER BY b.created_at DESC LIMIT 500`);res.json(rows.map(b=>({...pubBiz(b),appointments_count:b.appointments_count,services_count:b.services_count,staff_count:b.staff_count,booking_url:bookUrl(req,b.slug),google_play_product_id:b.google_play_product_id||'',google_play_order_id:b.google_play_order_id||'',google_play_state:b.google_play_state||'',google_play_last_check:b.google_play_last_check||''})))});
 app.patch('/api/superadmin/businesses/:id/active',auth,superadmin,async(req,res)=>{await run('UPDATE businesses SET active=?,updated_at=? WHERE id=?',[req.body.active?1:0,now(),Number(req.params.id)]);res.json({message:req.body.active?'Firma je aktivirana.':'Firma je deaktivirana.'})});

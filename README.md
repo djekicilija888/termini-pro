@@ -11,3 +11,6 @@ npm start
 ```
 
 Superadmin: `admin@platform.local` / `platform123` lokalno. Na Render-u promeni `SUPERADMIN_PASSWORD`.
+
+
+V136: dodat radnički QR pristup preko telefona, bez velikog izbora admin/radnik na glavnoj prijavi.

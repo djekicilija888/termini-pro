@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>Radnički pristup</title>
+  <link rel="stylesheet" href="/css/styles.css?v=v136-worker-qr-pristup">
+</head>
+<body>
+  <main class="shell stack worker-shell-v136">
+    <header class="top">
+      <div class="nav">
+        <a class="brand" href="/worker.html"><span class="mark">T</span><span>Radnički pristup</span></a>
+        <button id="workerLogout" class="btn small ghost hidden" type="button">Odjava</button>
+      </div>
+    </header>
+
+    <section id="workerLogin" class="card worker-login-card-v136">
+      <p class="eyebrow">Radnički pristup</p>
+      <h1>Prijava preko QR koda</h1>
+      <p class="muted">Skeniraj QR koji ti je dao vlasnik. QR otvara ovaj ekran i prepoznaje firmu/radnika. Za ulazak unesi svoj PIN.</p>
+      <form id="workerLoginForm" class="stack">
+        <label id="workerAccessWrap">Radnički link ili kod<input id="workerAccessToken" placeholder="Nalepi link ili kod ako nisi skenirao QR"></label>
+        <label>PIN radnika<input id="workerPin" type="password" inputmode="numeric" maxlength="12" autocomplete="current-password"></label>
+        <button class="btn" type="submit">Uđi u radnički ekran</button>
+      </form>
+      <p id="workerLoginMsg" class="msg"></p>
+      <p class="muted small-note">Glavni admin panel se ne otvara ovde. Vlasnik se prijavljuje normalno preko emaila i lozinke.</p>
+    </section>
+
+    <section id="workerApp" class="card hidden">
+      <div class="worker-head-v136">
+        <div>
+          <p class="eyebrow">Radnički ekran</p>
+          <h1 id="workerTitle">Moji termini</h1>
+          <p id="workerSub" class="muted"></p>
+        </div>
+      </div>
+      <p id="workerMsg" class="msg"></p>
+
+      <div class="card soft-card manual-appointment-card worker-manual-card-v136">
+        <button id="workerToggleManual" class="manual-toggle" type="button" aria-expanded="false"><span class="manual-plus">+</span><span>Ručno dodaj termin za mušteriju</span></button>
+        <div id="workerManualPanel" class="manual-panel hidden" role="dialog" aria-modal="true">
+          <div class="manual-modal-head">
+            <div><h3>Ručno dodaj termin za mušteriju</h3><p class="muted">Termin se dodaje samo za lokaciju kojoj imaš pristup tog dana.</p></div>
+            <button id="workerCloseManual" class="manual-close" type="button" aria-label="Zatvori">×</button>
+          </div>
+          <form id="workerManualForm" class="formgrid worker-manual-form-v136">
+            <label>Ime mušterije<input id="workerManualName" placeholder="Ime i prezime"></label>
+            <label>Telefon<input id="workerManualPhone" placeholder="Telefon"></label>
+            <label>Email, nije obavezno<input id="workerManualEmail" type="email" placeholder="email@example.com"></label>
+            <label>Lokacija<select id="workerManualLocation"></select></label>
+            <label>Usluga<select id="workerManualService"></select></label>
+            <label>Radnik<select id="workerManualStaff"><option value="">Bilo koji slobodan radnik</option></select></label>
+            <label>Datum<input id="workerManualDate" type="date"></label>
+            <label>Slobodno vreme<select id="workerManualTime"></select></label>
+            <label class="worker-manual-notes-wrap-v136">Napomena<textarea id="workerManualNotes" placeholder="Napomena, nije obavezno"></textarea></label>
+            <div class="form-actions">
+              <button id="workerManualSlotRefresh" type="button" class="btn small ghost">Osveži slobodna vremena</button>
+              <button class="btn small" type="submit">Dodaj termin</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="tablet-toolbar-v126 worker-toolbar-v136">
+        <label>Datum<input id="workerDate" type="date"></label>
+        <label>Lokacija<select id="workerLocation"></select></label>
+        <select id="workerStatus"><option value="">Svi termini</option><option value="booked">Zakazani</option><option value="completed">Završeni</option><option value="cancelled">Otkazani</option><option value="no_show">Nije došao</option></select>
+        <button id="workerLoad" class="btn small" type="button">Učitaj</button>
+      </div>
+      <div class="table tablet-table-v126"><table><tbody id="workerAppointments"></tbody></table></div>
+    </section>
+  </main>
+
+  <div id="workerStatusModal" class="location-modal-v115 hidden" role="dialog" aria-modal="true">
+    <div class="location-modal-box-v115 tablet-status-modal-box-v126">
+      <div class="location-modal-head-v115"><div><h3 id="workerModalTitle">Termin</h3><p id="workerModalHint" class="muted"></p></div><button id="workerModalClose" class="manual-close" type="button" aria-label="Zatvori">×</button></div>
+      <div class="stack"><p class="muted">Promena se neće desiti slučajnim dodirom. Izaberi novu oznaku pa potvrdi.</p><div class="tablet-status-actions-v126"><button data-status="booked" class="btn small ghost" type="button">Zakazan</button><button data-status="completed" class="btn small" type="button">Završeno</button><button data-status="no_show" class="btn small ghost" type="button">Nije došao</button><button data-status="cancelled" class="btn small danger" type="button">Otkazan</button></div><label>Razlog, ako je potrebno<input id="workerStatusReason" placeholder="npr. Mušterija otkazala"></label></div>
+    </div>
+  </div>
+  <script src="/js/worker.js?v=v136-worker-qr-pristup"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "9.1.1",
+  "version": "9.1.2",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "V135: admin prijava direktno sa radničkog ekrana"
+  "description": "V136: radnički QR pristup preko telefona i čist login"
 }

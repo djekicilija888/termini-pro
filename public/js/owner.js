@@ -333,13 +333,25 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
 };
 
 function resetSt(){
- staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true;renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());renderStaffLocationScheduleBox([],selectedActiveLocationIds());
+ staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true;
+ if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.checked=false;
+ if(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)staffWorkerPin.value='';
+ updateStaffWorkerPinVisibility();
+ renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());renderStaffLocationScheduleBox([],selectedActiveLocationIds());
 }
+function updateStaffWorkerPinVisibility(){
+ const wrap=document.getElementById('staffWorkerPinWrap');
+ if(!wrap)return;
+ wrap.classList.toggle('hidden',!(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess&&staffWorkerAccess.checked));
+ const input=document.getElementById('staffWorkerPin');
+ if(input)input.placeholder=staffId&&staffId.value?'Ostavi prazno ako ne menjaš PIN':'npr. 1234';
+}
+if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.onchange=updateStaffWorkerPinVisibility;
 resetStaff.onclick=resetSt;
 staffForm.onsubmit=async e=>{
  e.preventDefault();
  await ensureOwnerLocationsLoaded();
- let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
+ let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,worker_access:(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)?staffWorkerAccess.checked:false,worker_pin:(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)?staffWorkerPin.value:'',location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
  await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
  msg('Radnik sačuvan.','ok');resetSt();loadStaff()
 };
@@ -348,9 +360,29 @@ async function loadStaff(){
  let rows=await api('/api/owner/staff');
  renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
  renderStaffLocationScheduleBox([],selectedActiveLocationIds());
- staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span></div><button class="btn small ghost" data-id="${x.id}">Izmeni</button></article>`).join('');
- staffList.querySelectorAll('button').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active;const ids=x.location_ids||selectedActiveLocationIds();renderLocationChecks('staffLocationsBox',ids);renderStaffLocationScheduleBox(x.location_schedule||[],ids)})
+ staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span><span>${x.worker_access?'Ima radnički pristup':'Bez pristupa telefonom'}</span></div><div class="actions"><button class="btn small ghost staff-edit-v136" data-id="${x.id}">Izmeni</button><button class="btn small staff-qr-v136" data-id="${x.id}" type="button" ${x.worker_access?'':'disabled'}>QR za radnika</button></div></article>`).join('');
+ staffList.querySelectorAll('.staff-edit-v136').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active;if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.checked=!!x.worker_access;if(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)staffWorkerPin.value='';updateStaffWorkerPinVisibility();const ids=x.location_ids||selectedActiveLocationIds();renderLocationChecks('staffLocationsBox',ids);renderStaffLocationScheduleBox(x.location_schedule||[],ids)});
+ staffList.querySelectorAll('.staff-qr-v136').forEach(b=>b.onclick=()=>showWorkerQr(b.dataset.id));
 }
+
+function closeWorkerQr(){document.getElementById('workerQrModal')?.classList.add('hidden')}
+async function showWorkerQr(id){
+ const m=document.getElementById('workerQrModal'),img=document.getElementById('workerQrImg'),url=document.getElementById('workerQrUrl'),open=document.getElementById('workerQrOpen'),title=document.getElementById('workerQrTitle'),out=document.getElementById('workerQrMsg');
+ if(!m)return;
+ if(out){out.textContent='Učitavam QR...';out.className='msg'}
+ m.classList.remove('hidden');
+ try{
+  const d=await api('/api/owner/staff/'+encodeURIComponent(id)+'/access-qr');
+  if(title)title.textContent='QR za radnika: '+(d.staff&&d.staff.name?d.staff.name:'');
+  if(img)img.src=d.qr;
+  if(url)url.value=d.worker_url;
+  if(open)open.href=d.worker_url;
+  if(out){out.textContent='Radnik skenira QR i unosi svoj PIN.';out.className='msg ok'}
+ }catch(e){if(out){out.textContent=e.message||'Ne mogu da učitam QR.';out.className='msg err'}}
+}
+if(typeof workerQrClose!=='undefined'&&workerQrClose)workerQrClose.onclick=closeWorkerQr;
+if(typeof workerQrModal!=='undefined'&&workerQrModal)workerQrModal.addEventListener('mousedown',e=>{if(e.target===workerQrModal)closeWorkerQr()});
+if(typeof workerQrCopy!=='undefined'&&workerQrCopy)workerQrCopy.onclick=async()=>{try{await navigator.clipboard.writeText(workerQrUrl.value);workerQrMsg.textContent='Link je kopiran.';workerQrMsg.className='msg ok'}catch(e){workerQrUrl.select();document.execCommand('copy');workerQrMsg.textContent='Link je kopiran.';workerQrMsg.className='msg ok'}};
 
 let workScheduleStaffRows=[];
 function renderWorkScheduleForStaff(staffObj){

@@ -1466,3 +1466,42 @@ body.manual-modal-body-open{
   .manual-panel.manual-modal-open .tablet-manual-form-v128{grid-template-columns:1fr !important}
   .manual-panel.manual-modal-open .tablet-manual-notes-wrap-v128{grid-column:auto !important}
 }
+
+/* v136 - radnički QR pristup preko telefona */
+.worker-entry-note-v136{margin-top:12px;text-align:center}
+.worker-entry-note-v136 a{font-weight:700;text-decoration:none}
+.worker-access-check-v136{grid-column:1 / -1;display:flex !important;align-items:center;gap:8px}
+.worker-access-check-v136 input{width:auto !important;min-height:auto !important}
+.worker-pin-wrap-v136{grid-column:1 / -1}
+.worker-qr-modal-box-v136{max-width:560px}
+.worker-qr-body-v136{display:grid;gap:12px}
+.worker-qr-body-v136 img{width:240px;max-width:100%;margin:0 auto;display:block;background:#fff;border-radius:16px;border:1px solid #e5e7eb;padding:10px}
+.worker-shell-v136{max-width:1180px;margin:0 auto;padding:18px}
+.worker-login-card-v136{max-width:560px;margin:40px auto 0;width:100%;box-sizing:border-box}
+.worker-head-v136{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.worker-toolbar-v136 label{min-width:180px}
+.worker-manual-card-v136{margin:16px 0}
+.manual-panel.manual-modal-open .worker-manual-form-v136{
+  width:min(1120px, calc(100vw - 70px)) !important;
+  background:#ffffff !important;
+  box-sizing:border-box !important;
+  border:1px solid #e5e7eb !important;
+  border-top:0 !important;
+  border-radius:0 0 22px 22px !important;
+  padding:8px 18px 16px !important;
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+  gap:9px 12px !important;
+  max-height:calc(100vh - 112px) !important;
+  overflow:auto !important;
+  box-shadow:0 26px 70px rgba(0,0,0,.42) !important;
+}
+.manual-panel.manual-modal-open .worker-manual-form-v136 label{margin:0 !important;font-size:14px !important}
+.manual-panel.manual-modal-open .worker-manual-form-v136 input,
+.manual-panel.manual-modal-open .worker-manual-form-v136 select,
+.manual-panel.manual-modal-open .worker-manual-form-v136 textarea{min-height:40px !important;padding:8px 11px !important;font-size:15px !important}
+.manual-panel.manual-modal-open .worker-manual-form-v136 #workerManualNotes{min-height:78px !important}
+.manual-panel.manual-modal-open .worker-manual-notes-wrap-v136{grid-column:span 2 !important}
+.manual-panel.manual-modal-open .worker-manual-form-v136 .form-actions{grid-column:1 / -1 !important;display:flex !important;gap:10px !important;justify-content:flex-start !important}
+@media(max-width:900px){.manual-panel.manual-modal-open .worker-manual-form-v136{width:calc(100vw - 24px) !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;max-height:calc(100vh - 90px) !important;gap:8px !important}}
+@media(max-width:620px){.worker-shell-v136{padding:10px}.manual-panel.manual-modal-open .worker-manual-form-v136{grid-template-columns:1fr !important}.manual-panel.manual-modal-open .worker-manual-notes-wrap-v136{grid-column:auto !important}}
