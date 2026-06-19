@@ -29,6 +29,11 @@ function rememberCurrentOwnerDomTab(){
 window.addEventListener('pagehide', rememberCurrentOwnerDomTab);
 window.addEventListener('beforeunload', rememberCurrentOwnerDomTab);
 window.addEventListener('visibilitychange',()=>{if(document.hidden)rememberCurrentOwnerDomTab()});
+const OWNER_TAB_FAST_TTL=30000;
+let ownerTabLoadedAt={};
+function markOwnerTabsStale(...ids){try{ids.flat().filter(Boolean).forEach(id=>{ownerTabLoadedAt[id]=0})}catch(_e){}}
+function ownerTabCanUseCached(id){try{return !!(ownerTabLoadedAt[id] && Date.now()-ownerTabLoadedAt[id]<OWNER_TAB_FAST_TTL)}catch(_e){return false}}
+function ownerMarkTabLoaded(id){try{ownerTabLoadedAt[id]=Date.now()}catch(_e){}}
 const TABLET_TOKEN_KEY='terminiTabletDeviceToken';
 const TABLET_ADMIN_UNLOCK_KEY='terminiTabletAdminUnlocked';
 let tok=()=>localStorage.getItem(T)||localStorage.getItem('token')||'',today=()=>new Date().toISOString().split('T')[0],add=n=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]};
@@ -170,13 +175,13 @@ function currentUnsavedScope(){
  const active=document.querySelector('#app .tab:not(.hidden)');
  return changed.find(sc=>active&&active.contains(sc))||changed[0]||null;
 }
-function waitUnsavedSaved(ms=1400){
+function waitUnsavedSaved(ms=700){
  const start=Date.now();
  return new Promise(resolve=>{
   const check=()=>{
    if(!hasUnsavedChanges())return resolve(true);
    if(Date.now()-start>ms)return resolve(false);
-   setTimeout(check,35);
+   setTimeout(check,20);
   };
   check();
  });
@@ -185,6 +190,7 @@ async function saveCurrentUnsavedChanges(){
  const scope=currentUnsavedScope();
  if(!scope){resetUnsavedGuard();return true;}
  try{
+  if(scope.id==='settingsForm'&&typeof saveSettingsFormFast==='function')return await saveSettingsFormFast();
   if(scope.id==='profileLocationForm'&&typeof profileModalSaveBtn!=='undefined'&&profileModalSaveBtn){profileModalSaveBtn.click();}
   else if(scope.id==='hoursForm'&&typeof saveHours!=='undefined'&&saveHours){saveHours.click();}
   else if(scope.tagName==='FORM'){
@@ -296,11 +302,18 @@ function tab(id){
  const panel=$('#'+id);
  if(panel)panel.classList.remove('hidden');
  msg('');
+ // Ako je kartica već skoro učitana, nemoj ponovo da zoveš server na svaki klik.
+ // Time prelazak između kartica ostaje trenutni, a podaci se osvežavaju posle čuvanja/brisanja.
+ if(ownerTabCanUseCached(id)){
+  setTimeout(()=>resetUnsavedGuardForVisible(),15);
+  return Promise.resolve();
+ }
  let loader=({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}));
  let res;
  try{res=loader()}catch(e){try{msg(e.message||'Greška pri učitavanju.','err')}catch(_e){}}
- if(res&&typeof res.finally==='function')return res.finally(()=>setTimeout(()=>resetUnsavedGuardForVisible(),40));
- setTimeout(()=>resetUnsavedGuardForVisible(),40);
+ if(res&&typeof res.finally==='function')return res.finally(()=>{ownerMarkTabLoaded(id);setTimeout(()=>resetUnsavedGuardForVisible(),20)});
+ ownerMarkTabLoaded(id);
+ setTimeout(()=>resetUnsavedGuardForVisible(),20);
  return Promise.resolve();
 }
 async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
@@ -529,7 +542,9 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   msg('Termin je dodat.','ok');
   manualName.value='';manualPhone.value='';manualEmail.value='';manualNotes.value='';
   await updateManualSlots();
+  markOwnerTabsStale('appointments','dash');
   await loadAppointments();
+  ownerMarkTabLoaded('appointments');
   setTimeout(()=>resetUnsavedGuard(manualForm),80);
 };
 
@@ -590,8 +605,10 @@ staffForm.onsubmit=async e=>{
  let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,worker_access:(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)?staffWorkerAccess.checked:false,worker_pin:(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)?staffWorkerPin.value:'',location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
  await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
  msg('Radnik sačuvan.','ok');
+ markOwnerTabsStale('staff','appointments','bookinglink','dash');
  await closeStaffModal(true);
  await loadStaff();
+ ownerMarkTabLoaded('staff');
 };
 async function loadStaff(){
  await ensureOwnerLocationsLoaded();
@@ -723,7 +740,7 @@ serviceForm.onsubmit=async e=>{
  await ensureOwnerLocationsLoaded();
  let id=serviceId.value,p={name:serviceName.value,description:serviceDesc.value,duration:+serviceDuration.value,price:+servicePrice.value,sort_order:+serviceSort.value,active:serviceActive.checked,location_ids:collectLocationChecks('serviceLocationsBox')};
  await api(id?'/api/owner/services/'+id:'/api/owner/services',{method:id?'PUT':'POST',body:JSON.stringify(p)});
- msg('Usluga sačuvana.','ok');resetSv();await loadServices();setTimeout(()=>resetUnsavedGuard(serviceForm),80)
+ msg('Usluga sačuvana.','ok');markOwnerTabsStale('services','appointments','bookinglink','dash');resetSv();await loadServices();ownerMarkTabLoaded('services');setTimeout(()=>resetUnsavedGuard(serviceForm),80)
 };
 async function loadServices(){
  await ensureOwnerLocationsLoaded();
@@ -997,7 +1014,9 @@ blockedForm.onsubmit=async e=>{
   });
   msg('Neradni dan/period je dodat.','ok');
   blockedStart.value='';blockedEnd.value='';blockedReason.value='';
+  markOwnerTabsStale('hours','appointments','dash');
   await loadBlocked();
+  ownerMarkTabLoaded('hours');
   setTimeout(()=>resetUnsavedGuard(blockedForm),80);
 };
 
@@ -1042,9 +1061,10 @@ async function loadSettings(){
  if(typeof setCustomerNote!=='undefined')setCustomerNote.value=s.customer_note||'Molimo vas da dođete 5 minuta ranije.';
  renderProfileExtraLocations();
  refreshProfileAddLocationButton();
+ rememberProfileLocationSnapshot();
 }
-settingsForm.onsubmit=async e=>{
- e.preventDefault();
+async function saveSettingsFormFast(){
+ const mustSaveLocations=profileLocationNeedsSave();
  await api('/api/owner/settings',{method:'PUT',body:JSON.stringify({
   name:setName.value,type:setType.value,city:setCity.value,phone:setPhone.value,
   instagram:setInstagram.value,address:setAddress.value,website:setWebsite.value,description:setDesc.value,
@@ -1054,12 +1074,15 @@ settingsForm.onsubmit=async e=>{
   msg_cancel:typeof setMsgCancel!=='undefined'?setMsgCancel.value:undefined,
   customer_note:typeof setCustomerNote!=='undefined'?setCustomerNote.value:undefined
  })});
- await saveProfileLocations(true);
- if(typeof bookinglink!=='undefined' && bookinglink && !bookinglink.classList.contains('hidden')) await loadBookingLink(false);
- else setTimeout(()=>{try{loadBookingLink(false)}catch(_e){}},0);
+ if(mustSaveLocations) await saveProfileLocations(true);
+ else rememberProfileLocationSnapshot();
+ markOwnerTabsStale('settings','bookinglink','dash','appointments','staff','services','hours');
+ if(typeof bookinglink!=='undefined' && bookinglink && !bookinglink.classList.contains('hidden')) setTimeout(()=>{try{loadBookingLink(false);ownerMarkTabLoaded('bookinglink')}catch(_e){}},0);
  msg('Podešavanja sačuvana.','ok');
  resetUnsavedGuard();
-};async function loadLogs(){let rows=await api('/api/owner/notifications');logList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.channel} · ${x.status}</h3><p>${x.created_at} · ${x.recipient||''}</p><p class="muted">${(x.body||'').slice(0,220)}</p></article>`).join('')||'<p class="muted">Nema logova.</p>'}
+ return true;
+}
+settingsForm.onsubmit=async e=>{e.preventDefault();await saveSettingsFormFast();};async function loadLogs(){let rows=await api('/api/owner/notifications');logList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.channel} · ${x.status}</h3><p>${x.created_at} · ${x.recipient||''}</p><p class="muted">${(x.body||'').slice(0,220)}</p></article>`).join('')||'<p class="muted">Nema logova.</p>'}
 
 function htmlEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function ownerPhoneParts(value){
@@ -1067,6 +1090,18 @@ function ownerPhoneParts(value){
 }
 
 let ownerQrObjectUrl='', ownerLocationsCache=[], profileLocationsMode='primary', profileLocationEditIndex=null, profileLocationSaving=false, ownerLocationQrEditIndex=null;
+let profileLocationSaveSnapshot='';
+function profileLocationSnapshot(){
+ try{
+  return JSON.stringify({
+   mode:profileLocationsMode,
+   primary:{city:(typeof setCity!=='undefined'?setCity.value:''),address:(typeof setAddress!=='undefined'?setAddress.value:''),phone:(typeof setPhone!=='undefined'?setPhone.value:'')},
+   locations:profileUsingFullLocations()?collectProfileExtraLocations():[]
+  });
+ }catch(_e){return ''}
+}
+function rememberProfileLocationSnapshot(){try{profileLocationSaveSnapshot=profileLocationSnapshot()}catch(_e){}}
+function profileLocationNeedsSave(){try{return profileLocationSnapshot()!==profileLocationSaveSnapshot}catch(_e){return true}}
 function safeFileName(value){return String(value||'lokacija').toLowerCase().replace(/[š]/g,'s').replace(/[đ]/g,'dj').replace(/[čć]/g,'c').replace(/[ž]/g,'z').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'lokacija'}
 function ownerLocationTitle(l,idx){return (l&&l.name)||('Lokacija '+((idx||0)+1))}
 function ownerLocId(l){return l&&String(l.id||'').startsWith('new-')?'':(l&&l.id?String(l.id):'')}
@@ -1286,6 +1321,8 @@ async function saveProfileLocations(silent=false){
  invalidateOwnerLocationsCache();
  await ensureOwnerLocationsLoaded(true);
  if((ownerLocationsCache||[]).length>1)profileLocationsMode='all';
+ rememberProfileLocationSnapshot();
+ markOwnerTabsStale('settings','bookinglink','appointments','staff','services','hours','dash');
  renderProfileExtraLocations();
  refreshProfileAddLocationButton();
  if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
@@ -1521,7 +1558,7 @@ async function saveProfileLocationFromModal(e){
   refreshProfileAddLocationButton();
   if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
   await saveProfileLocations(true);
-  await loadBookingLink(false);
+  setTimeout(()=>{try{loadBookingLink(false);ownerMarkTabLoaded('bookinglink')}catch(_e){}},0);
   renderProfileExtraLocations();
   refreshProfileAddLocationButton();
   if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
