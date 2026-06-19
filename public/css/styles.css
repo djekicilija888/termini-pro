@@ -1659,3 +1659,10 @@ body.manual-modal-body-open{
   .section-title-row-v145 .btn{width:100%;margin-top:12px}
   .staff-modal-box-v145{width:calc(100vw - 24px);max-height:calc(100vh - 24px);border-radius:20px}
 }
+
+/* v146: sakrij privremene ekrane dok se proverava prijava/tablet režim */
+body.owner-booting #login,
+body.owner-booting #app,
+body.owner-booting #tabletAdminLock{
+  visibility:hidden !important;
+}

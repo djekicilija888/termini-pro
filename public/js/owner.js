@@ -2008,10 +2008,23 @@ if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{awai
 
 
 async function init(){
- from.value=today();to.value=add(30);
- await validateTabletModeForOwner();
- if(!tok())return hide();
- try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}
+ document.body.classList.add('owner-booting');
+ try{
+  if(typeof from!=='undefined'&&from)from.value=today();
+  if(typeof to!=='undefined'&&to)to.value=add(30);
+  await validateTabletModeForOwner();
+  if(!tok()){hide();return;}
+  try{
+   let me=await api('/api/auth/me');
+   if(me.user.role!=='owner')throw Error();
+   show();
+   tab('dash');
+  }catch(_e){
+   hide();
+  }
+ }finally{
+  setTimeout(()=>document.body.classList.remove('owner-booting'),0);
+ }
 }
 init();
 
