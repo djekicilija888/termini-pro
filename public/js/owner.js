@@ -142,6 +142,17 @@ function resetUnsavedGuard(scope){
   unsavedGuardReady=true;
  }catch(_e){}
 }
+function resetUnsavedGuardForVisible(){
+ try{
+  unsavedGuardDirty=false;
+  const visible=unsavedGuardScopes().filter(unsavedGuardVisible);
+  visible.forEach(sc=>{
+   unsavedGuardDirtyScopes.delete(sc);
+   unsavedGuardSnapshots.set(sc,unsavedGuardSerialize(sc));
+  });
+  unsavedGuardReady=true;
+ }catch(_e){resetUnsavedGuard()}
+}
 function hasUnsavedChanges(){
  if(!unsavedGuardReady)return false;
  if(unsavedGuardDirty)return true;
@@ -159,15 +170,15 @@ function currentUnsavedScope(){
  const active=document.querySelector('#app .tab:not(.hidden)');
  return changed.find(sc=>active&&active.contains(sc))||changed[0]||null;
 }
-function waitUnsavedSaved(ms=3500){
+function waitUnsavedSaved(ms=1400){
  const start=Date.now();
  return new Promise(resolve=>{
   const check=()=>{
    if(!hasUnsavedChanges())return resolve(true);
    if(Date.now()-start>ms)return resolve(false);
-   setTimeout(check,100);
+   setTimeout(check,35);
   };
-  setTimeout(check,120);
+  check();
  });
 }
 async function saveCurrentUnsavedChanges(){
@@ -288,8 +299,8 @@ function tab(id){
  let loader=({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}));
  let res;
  try{res=loader()}catch(e){try{msg(e.message||'Greška pri učitavanju.','err')}catch(_e){}}
- if(res&&typeof res.finally==='function')return res.finally(()=>setTimeout(()=>resetUnsavedGuard(),120));
- setTimeout(()=>resetUnsavedGuard(),120);
+ if(res&&typeof res.finally==='function')return res.finally(()=>setTimeout(()=>resetUnsavedGuardForVisible(),40));
+ setTimeout(()=>resetUnsavedGuardForVisible(),40);
  return Promise.resolve();
 }
 async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
@@ -1086,12 +1097,26 @@ function makeEmptyProfileLocation(idx){
 function ownerActiveLocationCount(){
  return (ownerLocationsCache||[]).filter(l=>l&&l.active!==0).length;
 }
-async function ensureOwnerLocationsLoaded(){
- ownerLocationsCache=await api('/api/owner/locations');
+let ownerLocationsCacheLoadedAt=0, ownerLocationsLoadingPromise=null;
+function invalidateOwnerLocationsCache(){ownerLocationsCacheLoadedAt=0;}
+function refreshOwnerLocationsDependentUi(){
  refreshProfileAddLocationButton();
  refreshManualLocationSelects();
  if(typeof profileLocationsList!=='undefined')renderProfileExtraLocations();
- return ownerLocationsCache;
+}
+async function ensureOwnerLocationsLoaded(force=false){
+ if(!force && ownerLocationsCacheLoadedAt && Date.now()-ownerLocationsCacheLoadedAt<15000){
+  refreshOwnerLocationsDependentUi();
+  return ownerLocationsCache;
+ }
+ if(ownerLocationsLoadingPromise)return ownerLocationsLoadingPromise;
+ ownerLocationsLoadingPromise=api('/api/owner/locations').then(rows=>{
+  ownerLocationsCache=rows||[];
+  ownerLocationsCacheLoadedAt=Date.now();
+  refreshOwnerLocationsDependentUi();
+  return ownerLocationsCache;
+ }).finally(()=>{ownerLocationsLoadingPromise=null});
+ return ownerLocationsLoadingPromise;
 }
 function ownerAuthHeaders(){
  let h={};
@@ -1163,7 +1188,8 @@ function renderProfileExtraLocations(){
   }else{
    await api('/api/owner/locations/'+loc.id,{method:'DELETE'});
    msg('Lokacija je obrisana.','ok');
-   await ensureOwnerLocationsLoaded();
+   invalidateOwnerLocationsCache();
+   await ensureOwnerLocationsLoaded(true);
    await refreshTabletModeAfterLocationChange();
   }
   // Kada posle brisanja ostane samo jedna lokacija, ona postaje glavna lokacija u gornjim poljima.
@@ -1257,7 +1283,8 @@ async function saveProfileLocations(silent=false){
   if(first&&first.id&&!String(first.id).startsWith('new-'))await api('/api/owner/locations/'+first.id,{method:'PUT',body:JSON.stringify(firstBody)});
   else await api('/api/owner/locations',{method:'POST',body:JSON.stringify(firstBody)});
  }
- await ensureOwnerLocationsLoaded();
+ invalidateOwnerLocationsCache();
+ await ensureOwnerLocationsLoaded(true);
  if((ownerLocationsCache||[]).length>1)profileLocationsMode='all';
  renderProfileExtraLocations();
  refreshProfileAddLocationButton();
@@ -1352,6 +1379,7 @@ async function deleteOwnerLocationQrModal(){
  if(!confirm('Da li sigurno želiš da obrišeš ovu lokaciju?'))return;
  try{
   await api('/api/owner/locations/'+encodeURIComponent(loc.id),{method:'DELETE'});
+  invalidateOwnerLocationsCache();
   closeOwnerLocationQrModalFn();
   await loadBookingLink(false);
   renderProfileExtraLocations();
