@@ -9,6 +9,35 @@ function canOpenOwnerPanel(){return !tabletModeActive()||tabletAdminUnlocked()}
 function setCookie(name,value,maxAge){try{document.cookie=name+'='+encodeURIComponent(value||'')+'; path=/; max-age='+(maxAge||31536000)+'; SameSite=Lax'}catch(e){}}
 function clearCookie(name){try{document.cookie=name+'=; path=/; max-age=0; SameSite=Lax'}catch(e){}}
 function setTabletModeCookie(){setCookie('terminiTabletMode','1');if(tabletToken())setCookie('terminiTabletDevice',tabletToken())}
+function clearTabletModeMemory(){
+ try{localStorage.removeItem(TABLET_TOKEN_KEY)}catch(e){}
+ try{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY)}catch(e){}
+ clearCookie('terminiTabletMode');
+ clearCookie('terminiTabletDevice');
+ const banner=document.getElementById('tabletAdminBanner');
+ if(banner)banner.remove();
+ updateTabletOwnerHeader();
+}
+async function refreshTabletModeAfterLocationChange(){
+ if(!tabletModeActive())return false;
+ const ok=await validateTabletModeForOwner();
+ if(!ok){
+  updateTabletOwnerHeader();
+  const banner=document.getElementById('tabletAdminBanner');
+  if(banner)banner.remove();
+ }
+ return ok;
+}
+async function validateTabletModeForOwner(){
+ const token=tabletToken();
+ if(!token){clearTabletModeMemory();return false;}
+ try{
+  const r=await fetch('/api/tablet/me',{headers:{'Content-Type':'application/json','X-Device-Token':token},cache:'no-store'});
+  if(r.ok){setTabletModeCookie();return true;}
+  if([401,403,404,423].includes(r.status)){clearTabletModeMemory();return false;}
+  return true;
+ }catch(e){return true;}
+}
 function clearOwnerSession(){localStorage.removeItem(T);localStorage.removeItem('token')}
 function updateTabletOwnerHeader(){
  const out=document.getElementById('logout');
@@ -917,16 +946,20 @@ function renderProfileExtraLocations(){
  profileLocationsList.querySelectorAll('.profile-loc-delete').forEach(btn=>btn.onclick=async()=>{
   const idx=Number(btn.dataset.idx),loc=ownerLocationsCache[idx];
   if(ownerLocationsCache.length<=1)return msg('Mora ostati bar jedna lokacija.','err');
+  const keepFullLocationList=profileUsingFullLocations();
   if(String(loc&&loc.id||'').startsWith('new-')){
    ownerLocationsCache.splice(idx,1);
   }else{
    await api('/api/owner/locations/'+loc.id,{method:'DELETE'});
    msg('Lokacija je obrisana.','ok');
    await ensureOwnerLocationsLoaded();
+   await refreshTabletModeAfterLocationChange();
   }
-  if((ownerLocationsCache||[]).length<=1){
+  // Ako je vlasnik već radio sa više lokacija, brisanje jedne lokacije ne sme da sakrije preostalu lokaciju.
+  // Zato ostajemo u prikazu liste lokacija čak i kada posle brisanja ostane samo jedna.
+  if(keepFullLocationList)profileLocationsMode='all';
+  if((ownerLocationsCache||[]).length===1){
    const remaining=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:{};
-   profileLocationsMode='primary';
    if(typeof setCity!=='undefined')setCity.value=remaining.city||'';
    if(typeof setAddress!=='undefined')setAddress.value=remaining.address||'';
    if(typeof setPhone!=='undefined')setPhone.value=remaining.phone||'';
@@ -1826,7 +1859,13 @@ async function printA4DoorPoster(){
 if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{await loadBookingLink();printA4DoorPoster()};
 
 
-async function init(){from.value=today();to.value=add(30);if(!tok())return hide();try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}}init();
+async function init(){
+ from.value=today();to.value=add(30);
+ await validateTabletModeForOwner();
+ if(!tok())return hide();
+ try{let me=await api('/api/auth/me');if(me.user.role!=='owner')throw Error();show();tab('dash')}catch{hide()}
+}
+init();
 
 
 /* Owner Nav Clean Final v72 */

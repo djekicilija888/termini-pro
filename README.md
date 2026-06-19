@@ -14,3 +14,6 @@ Superadmin: `admin@platform.local` / `platform123` lokalno. Na Render-u promeni 
 
 
 V136: dodat radnički QR pristup preko telefona, bez velikog izbora admin/radnik na glavnoj prijavi.
+
+
+V139: popravljen stari tablet zapis posle Render resetovanja; dugme za zaključavanje se prikazuje samo kada je uređaj stvarno povezan.

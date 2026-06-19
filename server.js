@@ -577,6 +577,9 @@ app.delete('/api/owner/locations/:id',auth,owner,async(req,res)=>{
  await run('DELETE FROM service_locations WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
  await run('DELETE FROM staff_locations WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
  await run('DELETE FROM staff_location_schedule WHERE business_id=? AND location_id=?',[req.user.business_id,Number(req.params.id)]);
+ // Ako je neki računar/tablet bio povezan baš sa ovom lokacijom, odmah ga deaktiviramo.
+ // Time se sprečava da posle brisanja lokacije ostane staro dugme/tablet režim za nepostojeću lokaciju.
+ await run('UPDATE location_devices SET active=0,updated_at=? WHERE business_id=? AND location_id=?',[now(),req.user.business_id,Number(req.params.id)]);
  await run('DELETE FROM business_locations WHERE business_id=? AND id=?',[req.user.business_id,Number(req.params.id)]);
  res.json({message:'Lokacija je obrisana.'});
 });
