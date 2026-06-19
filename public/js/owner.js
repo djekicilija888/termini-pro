@@ -107,7 +107,7 @@ function unsavedChangedScopes(){
 }
 function currentUnsavedScope(){
  const changed=unsavedChangedScopes();
- const modalScope=changed.find(sc=>sc.closest&&sc.closest('#profileLocationModal:not(.hidden),#locationHoursModal:not(.hidden),#manualAppointmentPanel:not(.hidden)'));
+ const modalScope=changed.find(sc=>sc.closest&&sc.closest('#profileLocationModal:not(.hidden),#locationHoursModal:not(.hidden),#manualAppointmentPanel:not(.hidden),#staffModal:not(.hidden)'));
  if(modalScope)return modalScope;
  const active=document.querySelector('#app .tab:not(.hidden)');
  return changed.find(sc=>active&&active.contains(sc))||changed[0]||null;
@@ -472,22 +472,61 @@ function updateStaffWorkerPinVisibility(){
  const input=document.getElementById('staffWorkerPin');
  if(input)input.placeholder=staffId&&staffId.value?'Ostavi prazno ako ne menjaš PIN':'npr. 1234';
 }
+function fillStaffForm(x){
+ if(!x){resetSt();if(staffModalTitle)staffModalTitle.textContent='Dodaj radnika';return;}
+ staffId.value=x.id;
+ staffName.value=x.name||'';
+ staffTitle.value=x.title||'';
+ staffPhone.value=x.phone||'';
+ staffEmail.value=x.email||'';
+ staffSort.value=x.sort_order||0;
+ staffActive.checked=!!x.active;
+ if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.checked=!!x.worker_access;
+ if(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)staffWorkerPin.value='';
+ updateStaffWorkerPinVisibility();
+ const ids=x.location_ids||selectedActiveLocationIds();
+ renderLocationChecks('staffLocationsBox',ids);
+ renderStaffLocationScheduleBox(x.location_schedule||[],ids);
+ if(staffModalTitle)staffModalTitle.textContent='Izmeni radnika';
+}
+function openStaffModal(x){
+ fillStaffForm(x||null);
+ if(typeof staffModal!=='undefined'&&staffModal)staffModal.classList.remove('hidden');
+ setTimeout(()=>resetUnsavedGuard(staffForm),60);
+ setTimeout(()=>{try{staffName.focus()}catch(_e){}},80);
+}
+async function closeStaffModal(force=false){
+ if(!force){
+  const changed=unsavedChangedScopes().some(sc=>sc===staffForm||staffForm.contains(sc));
+  if(changed&&!await confirmDiscardUnsavedChangesAsync())return;
+ }
+ if(typeof staffModal!=='undefined'&&staffModal)staffModal.classList.add('hidden');
+ resetSt();
+ setTimeout(()=>resetUnsavedGuard(),60);
+}
 if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.onchange=updateStaffWorkerPinVisibility;
-resetStaff.onclick=resetSt;
+if(typeof addStaffBtn!=='undefined'&&addStaffBtn)addStaffBtn.onclick=async()=>{if(await confirmDiscardUnsavedChangesAsync())openStaffModal(null)};
+if(typeof staffModalClose!=='undefined'&&staffModalClose)staffModalClose.onclick=()=>closeStaffModal(false);
+if(typeof staffModal!=='undefined'&&staffModal)staffModal.addEventListener('mousedown',e=>{if(e.target===staffModal)closeStaffModal(false)});
+if(typeof resetStaff!=='undefined'&&resetStaff)resetStaff.onclick=()=>{resetSt();setTimeout(()=>resetUnsavedGuard(staffForm),60)};
 staffForm.onsubmit=async e=>{
  e.preventDefault();
  await ensureOwnerLocationsLoaded();
  let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,worker_access:(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)?staffWorkerAccess.checked:false,worker_pin:(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)?staffWorkerPin.value:'',location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
  await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
- msg('Radnik sačuvan.','ok');resetSt();loadStaff()
+ msg('Radnik sačuvan.','ok');
+ await closeStaffModal(true);
+ await loadStaff();
 };
 async function loadStaff(){
  await ensureOwnerLocationsLoaded();
  let rows=await api('/api/owner/staff');
- renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
- renderStaffLocationScheduleBox([],selectedActiveLocationIds());
- staffList.innerHTML=rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span><span>${x.worker_access?'Ima radnički pristup':'Bez pristupa telefonom'}</span></div><div class="actions"><button class="btn small ghost staff-edit-v136" data-id="${x.id}">Izmeni</button><button class="btn small staff-qr-v136" data-id="${x.id}" type="button" ${x.worker_access?'':'disabled'}>QR za radnika</button></div></article>`).join('');
- staffList.querySelectorAll('.staff-edit-v136').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);staffId.value=x.id;staffName.value=x.name;staffTitle.value=x.title||'';staffPhone.value=x.phone||'';staffEmail.value=x.email||'';staffSort.value=x.sort_order;staffActive.checked=!!x.active;if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.checked=!!x.worker_access;if(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)staffWorkerPin.value='';updateStaffWorkerPinVisibility();const ids=x.location_ids||selectedActiveLocationIds();renderLocationChecks('staffLocationsBox',ids);renderStaffLocationScheduleBox(x.location_schedule||[],ids)});
+ if(typeof staffModal==='undefined'||!staffModal||staffModal.classList.contains('hidden')){
+  renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
+  renderStaffLocationScheduleBox([],selectedActiveLocationIds());
+ }
+ staffList.innerHTML=rows.length?rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span><span>${x.worker_access?'Ima radnički pristup':'Bez pristupa telefonom'}</span></div><div class="actions"><button class="btn small ghost staff-edit-v136" data-id="${x.id}" type="button">Izmeni</button><button class="btn small staff-qr-v136" data-id="${x.id}" type="button" ${x.worker_access?'':'disabled'}>QR za radnika</button></div></article>`).join(''):'<p class="muted">Nema dodatih radnika. Klikni + Dodaj radnika.</p>';
+ staffList.querySelectorAll('.staff-edit-v136').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);openStaffModal(x)});
  staffList.querySelectorAll('.staff-qr-v136').forEach(b=>b.onclick=()=>showWorkerQr(b.dataset.id));
 }
 

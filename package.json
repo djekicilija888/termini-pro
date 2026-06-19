@@ -1,6 +1,6 @@
 {
   "name": "termini-platforma-pro",
-  "version": "9.1.3",
+  "version": "9.1.4",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "V141: upozorenje za nesačuvane izmene"
+  "description": "V145: Radnici dodavanje i izmena kroz popup prozor"
 }

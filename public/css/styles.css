@@ -1618,3 +1618,44 @@ body.manual-modal-body-open{
     width:100%;
   }
 }
+
+/* v145: Radnici kroz popup prozor */
+.section-title-row-v145{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:18px;
+}
+.section-title-row-v145 h2{margin-top:0}
+.section-title-row-v145 .btn{white-space:nowrap;margin-top:4px}
+.staff-modal-box-v145{
+  width:min(1080px, calc(100vw - 38px));
+  max-height:calc(100vh - 42px);
+  overflow:auto;
+}
+.staff-modal-form-v145 #staffLocationsBox,
+.staff-modal-form-v145 #staffLocationScheduleBox,
+.staff-worker-access-v145,
+.staff-modal-form-v145 .worker-pin-wrap-v136{
+  grid-column:1 / -1;
+}
+.staff-modal-form-v145 #staffLocationsBox,
+.staff-modal-form-v145 #staffLocationScheduleBox{
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  padding:12px;
+  background:#fbfcff;
+}
+.staff-modal-actions-v145{
+  position:sticky;
+  bottom:0;
+  background:#fff;
+  padding-top:12px;
+  border-top:1px solid #eef2f7;
+}
+@media(max-width:850px){
+  .section-title-row-v145{display:block}
+  .section-title-row-v145 .btn{width:100%;margin-top:12px}
+  .staff-modal-box-v145{width:calc(100vw - 24px);max-height:calc(100vh - 24px);border-radius:20px}
+}
