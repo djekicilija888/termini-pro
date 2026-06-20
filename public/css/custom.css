@@ -1,0 +1,60 @@
+/* =========================================================
+   TERMINI PRO - CUSTOM CSS
+   ---------------------------------------------------------
+   Ovo je fajl za tvoje buduće vizuelne izmene.
+   Učitava se POSLE styles.css, zato ovde možeš lakše da
+   pregaziš stare stilove bez traženja kroz veliki fajl.
+
+   Pravilo:
+   - HTML struktura: public/*.html
+   - Ponašanje dugmadi i forma: public/js/*.js
+   - Izgled i pozicije: public/css/custom.css
+   - Server, baza i API rute: server.js
+========================================================= */
+
+/* =========================================================
+   RADNICI - POPUP
+========================================================= */
+
+/* Pozicija checkboxa "Aktivan" u popupu Radnici */
+.staff-modal-form-v145 .staff-active-field{
+  grid-column:3 / 4 !important;
+  justify-self:end !important;
+  transform:none !important;
+  margin-right:120px;
+}
+
+/*
+   Ako želiš veće checkboxove u popupu Radnici, odkomentariši
+   ovaj blok i promeni 22px na 24px ili 28px.
+
+.staff-modal-form-v145 #staffActive,
+.staff-modal-form-v145 #staffWorkerAccess{
+  width:22px !important;
+  height:22px !important;
+  min-height:22px !important;
+  padding:0 !important;
+  flex:0 0 auto !important;
+}
+*/
+
+/* =========================================================
+   LINK / QR KOD
+========================================================= */
+
+/* PDF vizit karte se ne podešavaju u CSS-u.
+   One se podešavaju u: public/js/owner.js
+   Traži funkciju: printQrPdfList
+*/
+
+/* =========================================================
+   DUGMAD
+========================================================= */
+
+/* Ovde dodaj buduće izmene za dugmad. */
+
+/* =========================================================
+   MOBILNI PRIKAZ
+========================================================= */
+
+/* Ovde dodaj buduće izmene za telefon/tablet prikaz. */
