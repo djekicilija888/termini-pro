@@ -328,6 +328,10 @@ function tab(id){
 }
 async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
 let ownerServiceCache=[], ownerStaffCache=[];
+let manualOptionsLoadedAt=0, manualOptionsStale=true;
+const MANUAL_OPTIONS_TTL=180000;
+function manualPanelIsOpen(){try{const p=document.getElementById('manualAppointmentPanel');return !!(p&&!p.classList.contains('hidden'))}catch(_e){return false}}
+function markManualOptionsStale(){manualOptionsStale=true;manualOptionsLoadedAt=0;}
 
 function locIdsOf(x){return (x&&Array.isArray(x.location_ids)?x.location_ids:[]).map(String)}
 function selectedActiveLocationIds(){return (ownerLocationsCache||[]).filter(l=>l&&l.active!==0).map(l=>String(l.id))}
@@ -453,19 +457,26 @@ async function updateManualChoices(){
   manualStaff.innerHTML='<option value="">Bilo koji slobodan radnik</option>'+staffRows.map(x=>`<option value="${x.id}">${htmlEsc(x.name)}</option>`).join('');
   if(oldStaff && staffRows.some(x=>String(x.id)===String(oldStaff)))manualStaff.value=oldStaff;
  }
- await updateManualSlots();
+ if(manualPanelIsOpen()) await updateManualSlots();
 }
 
-async function loadManualOptions(){
+async function loadManualOptions(force=false){
   try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
-  ownerServiceCache = await api('/api/owner/services');
-  ownerStaffCache = await api('/api/owner/staff');
+  const fresh=!force && !manualOptionsStale && ownerServiceCache.length && ownerStaffCache.length && (Date.now()-manualOptionsLoadedAt<MANUAL_OPTIONS_TTL);
+  if(!fresh){
+    const [services,staff]=await Promise.all([api('/api/owner/services'), api('/api/owner/staff')]);
+    ownerServiceCache=services;
+    ownerStaffCache=staff;
+    manualOptionsLoadedAt=Date.now();
+    manualOptionsStale=false;
+  }
   refreshManualLocationSelects();
   if(typeof manualDate!=='undefined' && !manualDate.value) manualDate.value = today();
-  await updateManualChoices();
+  if(manualPanelIsOpen()) await updateManualChoices();
 }
 
 async function updateManualSlots(){
+  if(!manualPanelIsOpen()) return;
   if(typeof manualTime==='undefined' || !manualService || !manualDate || !manualDate.value) return;
   if(!manualService.value){manualTime.innerHTML='<option value="">Nema usluga za ovu lokaciju</option>';return;}
   manualTime.innerHTML = '<option value="">Učitavam...</option>';
@@ -486,7 +497,7 @@ async function updateManualSlots(){
 async function loadAppointments(){
   try{ await ensureOwnerLocationsLoaded(); }catch(_e){}
   refreshManualLocationSelects();
-  if(typeof manualService!=='undefined') await loadManualOptions();
+  if(typeof manualService!=='undefined' && manualPanelIsOpen()) await loadManualOptions();
 
   if(!from.value)from.value=today();
   if(!to.value)to.value=add(30);
@@ -524,10 +535,10 @@ async function loadAppointments(){
   });
 }
 
-if(typeof manualLocation!=='undefined') manualLocation.onchange=()=>updateManualChoices().catch(e=>msg(e.message,'err'));
+if(typeof manualLocation!=='undefined') manualLocation.onchange=()=>loadManualOptions().catch(e=>msg(e.message,'err'));
 if(typeof manualService!=='undefined') manualService.onchange=updateManualSlots;
 if(typeof manualStaff!=='undefined') manualStaff.onchange=updateManualSlots;
-if(typeof manualDate!=='undefined') manualDate.onchange=()=>updateManualChoices().catch(e=>msg(e.message,'err'));
+if(typeof manualDate!=='undefined') manualDate.onchange=()=>loadManualOptions().catch(e=>msg(e.message,'err'));
 if(typeof appointmentLocationFilter!=='undefined') appointmentLocationFilter.onchange=loadAppointments;
 if(typeof loadA!=='undefined') loadA.onclick=loadAppointments;
 if(typeof manualSlotRefresh!=='undefined') manualSlotRefresh.onclick=updateManualSlots;
@@ -617,6 +628,7 @@ staffForm.onsubmit=async e=>{
  await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
  msg('Radnik sačuvan.','ok');
  markOwnerTabsStale('staff','appointments','bookinglink','dash');
+ markManualOptionsStale();
  await closeStaffModal(true);
  await loadStaff();
  ownerMarkTabLoaded('staff');
@@ -751,7 +763,7 @@ serviceForm.onsubmit=async e=>{
  await ensureOwnerLocationsLoaded();
  let id=serviceId.value,p={name:serviceName.value,description:serviceDesc.value,duration:+serviceDuration.value,price:+servicePrice.value,sort_order:+serviceSort.value,active:serviceActive.checked,location_ids:collectLocationChecks('serviceLocationsBox')};
  await api(id?'/api/owner/services/'+id:'/api/owner/services',{method:id?'PUT':'POST',body:JSON.stringify(p)});
- msg('Usluga sačuvana.','ok');markOwnerTabsStale('services','appointments','bookinglink','dash');resetSv();await loadServices();ownerMarkTabLoaded('services');setTimeout(()=>resetUnsavedGuard(serviceForm),80)
+ msg('Usluga sačuvana.','ok');markOwnerTabsStale('services','appointments','bookinglink','dash');markManualOptionsStale();resetSv();await loadServices();ownerMarkTabLoaded('services');setTimeout(()=>resetUnsavedGuard(serviceForm),80)
 };
 async function loadServices(){
  await ensureOwnerLocationsLoaded();
@@ -1085,9 +1097,15 @@ async function saveSettingsFormFast(){
   msg_cancel:typeof setMsgCancel!=='undefined'?setMsgCancel.value:undefined,
   customer_note:typeof setCustomerNote!=='undefined'?setCustomerNote.value:undefined
  })});
- if(mustSaveLocations) await saveProfileLocations(true);
- else rememberProfileLocationSnapshot();
- markOwnerTabsStale('settings','bookinglink','dash','appointments','staff','services','hours');
+ if(mustSaveLocations){
+  await saveProfileLocations(true);
+  markManualOptionsStale();
+  markOwnerTabsStale('settings','bookinglink','appointments','staff','services','hours','dash');
+ }else{
+  rememberProfileLocationSnapshot();
+  markOwnerTabsStale('settings','bookinglink','dash');
+ }
+ ownerMarkTabLoaded('settings');
  if(typeof bookinglink!=='undefined' && bookinglink && !bookinglink.classList.contains('hidden')) setTimeout(()=>{try{loadBookingLink(false);ownerMarkTabLoaded('bookinglink')}catch(_e){}},0);
  msg('Podešavanja sačuvana.','ok');
  resetUnsavedGuard();
@@ -1334,6 +1352,7 @@ async function saveProfileLocations(silent=false){
  if((ownerLocationsCache||[]).length>1)profileLocationsMode='all';
  rememberProfileLocationSnapshot();
  markOwnerTabsStale('settings','bookinglink','appointments','staff','services','hours','dash');
+ markManualOptionsStale();
  renderProfileExtraLocations();
  refreshProfileAddLocationButton();
  if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
@@ -1569,7 +1588,9 @@ async function saveProfileLocationFromModal(e){
   refreshProfileAddLocationButton();
   if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
   await saveProfileLocations(true);
-  setTimeout(()=>{try{loadBookingLink(false);ownerMarkTabLoaded('bookinglink')}catch(_e){}},0);
+  if(typeof bookinglink!=='undefined' && bookinglink && !bookinglink.classList.contains('hidden')){
+   setTimeout(()=>{try{loadBookingLink(false);ownerMarkTabLoaded('bookinglink')}catch(_e){}},0);
+  }
   renderProfileExtraLocations();
   refreshProfileAddLocationButton();
   if(typeof ownerLocationsList!=='undefined')renderOwnerLocations();
@@ -2213,12 +2234,15 @@ init();
     });
   }
 
+  let ownerFacebookBusinessNameCache=null;
   async function businessName(){
+    if(ownerFacebookBusinessNameCache) return ownerFacebookBusinessNameCache;
     try{
       const data = await ownerApi('/api/auth/me');
-      return (data.business && data.business.name) ? data.business.name : 'Firma';
+      ownerFacebookBusinessNameCache=(data.business && data.business.name) ? data.business.name : 'Firma';
+      return ownerFacebookBusinessNameCache;
     }catch(_){
-      return 'Firma';
+      return ownerFacebookBusinessNameCache||'Firma';
     }
   }
 
@@ -2286,7 +2310,7 @@ init();
   });
 
   document.addEventListener('click', () => {
-    setTimeout(installFixedWideHeader, 120);
+    setTimeout(()=>{ if(!document.getElementById('ownerFacebookHeader')) installFixedWideHeader(); }, 120);
   }, true);
 })();
 
