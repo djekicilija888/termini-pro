@@ -29,7 +29,7 @@ function rememberCurrentOwnerDomTab(){
 window.addEventListener('pagehide', rememberCurrentOwnerDomTab);
 window.addEventListener('beforeunload', rememberCurrentOwnerDomTab);
 window.addEventListener('visibilitychange',()=>{if(document.hidden)rememberCurrentOwnerDomTab()});
-const OWNER_TAB_FAST_TTL=30000;
+const OWNER_TAB_FAST_TTL=180000;
 let ownerTabLoadedAt={};
 function markOwnerTabsStale(...ids){try{ids.flat().filter(Boolean).forEach(id=>{ownerTabLoadedAt[id]=0})}catch(_e){}}
 function ownerTabCanUseCached(id){try{return !!(ownerTabLoadedAt[id] && Date.now()-ownerTabLoadedAt[id]<OWNER_TAB_FAST_TTL)}catch(_e){return false}}
@@ -116,12 +116,22 @@ let unsavedGuardSnapshots=new WeakMap();
 let unsavedGuardDirtyScopes=new Set();
 function unsavedGuardVisible(el){return !!(el&&el.offsetParent!==null&&!el.closest('.hidden'))}
 function unsavedScopeForTarget(el){
- const scopes=unsavedGuardScopes();
- return scopes.find(sc=>sc&&sc.contains&&sc.contains(el))||null;
+ try{
+  if(!el||!el.closest)return null;
+  const scope=el.closest('#app form,#app #profileLocationForm,#app #hoursForm');
+  if(!scope||scope.id==='loginForm'||scope.id==='tabletAdminUnlockForm')return null;
+  return scope;
+ }catch(_e){return null}
 }
 function markUnsavedScope(scope){
  if(scope&&unsavedGuardVisible(scope))unsavedGuardDirtyScopes.add(scope);
+ else if(scope)unsavedGuardDirtyScopes.add(scope);
  else unsavedGuardDirty=true;
+}
+function clearUnsavedGuardDirtyFast(){
+ unsavedGuardDirty=false;
+ try{unsavedGuardDirtyScopes.clear()}catch(_e){}
+ unsavedGuardReady=true;
 }
 function unsavedGuardScopes(){return [...document.querySelectorAll('#app form,#app #profileLocationForm,#app #hoursForm')].filter(el=>el&&el.id!=='loginForm'&&el.id!=='tabletAdminUnlockForm')}
 function unsavedGuardSerialize(scope){
@@ -292,7 +302,7 @@ if(typeof tabletAdminUnlockForm!=='undefined'&&tabletAdminUnlockForm){
 }
 loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};
 logout.onclick=async()=>{if(!await confirmDiscardUnsavedChangesAsync())return;resetUnsavedGuard();clearOwnerSession();sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);hide()};
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=async()=>{if(b.classList.contains('active'))return;if(!await confirmDiscardUnsavedChangesAsync())return;resetUnsavedGuard();tab(b.dataset.tab)});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=async()=>{if(b.classList.contains('active'))return;if(!await confirmDiscardUnsavedChangesAsync())return;clearUnsavedGuardDirtyFast();tab(b.dataset.tab)});
 function tab(id){
  if(!canOpenOwnerPanel())return showTabletAdminLock();
  if(!OWNER_VALID_TABS.includes(id))id='dash';
@@ -305,15 +315,15 @@ function tab(id){
  // Ako je kartica već skoro učitana, nemoj ponovo da zoveš server na svaki klik.
  // Time prelazak između kartica ostaje trenutni, a podaci se osvežavaju posle čuvanja/brisanja.
  if(ownerTabCanUseCached(id)){
-  setTimeout(()=>resetUnsavedGuardForVisible(),15);
+  setTimeout(()=>resetUnsavedGuardForVisible(),1);
   return Promise.resolve();
  }
  let loader=({dash:loadDash,bookinglink:loadBookingLink,appointments:loadAppointments,staff:loadStaff,services:loadServices,hours:loadHours,settings:loadSettings,logs:loadLogs}[id]||(()=>{}));
  let res;
  try{res=loader()}catch(e){try{msg(e.message||'Greška pri učitavanju.','err')}catch(_e){}}
- if(res&&typeof res.finally==='function')return res.finally(()=>{ownerMarkTabLoaded(id);setTimeout(()=>resetUnsavedGuardForVisible(),20)});
+ if(res&&typeof res.finally==='function')return res.finally(()=>{ownerMarkTabLoaded(id);setTimeout(()=>resetUnsavedGuardForVisible(),1)});
  ownerMarkTabLoaded(id);
- setTimeout(()=>resetUnsavedGuardForVisible(),20);
+ setTimeout(()=>resetUnsavedGuardForVisible(),1);
  return Promise.resolve();
 }
 async function loadDash(){let d=await api('/api/owner/dashboard');bn.textContent='Osnovna strana';cards.innerHTML=`<div class="item clean-stat"><b>Danas</b><h2>${d.cards.today}</h2><p>zakazanih termina</p></div><div class="item clean-stat"><b>7 dana</b><h2>${d.cards.week}</h2><p>u narednoj nedelji</p></div><div class="item clean-stat"><b>Radnici</b><h2>${d.cards.staff}</h2><p>aktivnih radnika</p></div><div class="item clean-stat"><b>Usluge</b><h2>${d.cards.services}</h2><p>aktivnih usluga</p></div>`;upcoming.innerHTML='<tr><th>Datum</th><th>Vreme</th><th>Mušterija</th><th>Usluga</th><th>Radnik</th><th>Lokacija</th><th>Status</th></tr>'+d.upcoming.map(a=>`<tr><td>${a.date}</td><td>${a.start_time}</td><td>${a.customer_name}<br>${a.phone}</td><td>${a.service_name}</td><td>${a.staff_name||'-'}</td><td>${a.location_name||'-'}</td><td>${a.status}</td></tr>`).join('')}
@@ -592,10 +602,11 @@ async function closeStaffModal(force=false){
  }
  if(typeof staffModal!=='undefined'&&staffModal)staffModal.classList.add('hidden');
  resetSt();
- setTimeout(()=>resetUnsavedGuard(),60);
+ clearUnsavedGuardDirtyFast();
+ setTimeout(()=>resetUnsavedGuardForVisible(),30);
 }
 if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.onchange=updateStaffWorkerPinVisibility;
-if(typeof addStaffBtn!=='undefined'&&addStaffBtn)addStaffBtn.onclick=async()=>{if(await confirmDiscardUnsavedChangesAsync())openStaffModal(null)};
+if(typeof addStaffBtn!=='undefined'&&addStaffBtn)addStaffBtn.onclick=async()=>{if(await confirmDiscardUnsavedChangesAsync()){clearUnsavedGuardDirtyFast();openStaffModal(null)}};
 if(typeof staffModalClose!=='undefined'&&staffModalClose)staffModalClose.onclick=()=>closeStaffModal(false);
 if(typeof staffModal!=='undefined'&&staffModal)staffModal.addEventListener('mousedown',e=>{if(e.target===staffModal)closeStaffModal(false)});
 if(typeof resetStaff!=='undefined'&&resetStaff)resetStaff.onclick=()=>{resetSt();setTimeout(()=>resetUnsavedGuard(staffForm),60)};
