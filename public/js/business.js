@@ -11,12 +11,12 @@ function esc(v){
 window.esc=window.esc||esc;
 
 function publicPhoneList(value){
-  return String(value||'')
-    .split(/[\n,;|]+/)
-    .map(x=>x.trim())
-    .filter(Boolean)
-    .filter((x,i,a)=>a.indexOf(x)===i)
-    .slice(0,10);
+  let raw;
+  const txt=String(value||'').replace(/\r\n?/g,'\n').trim();
+  if(!txt)return [];
+  if(txt[0]==='['){try{const arr=JSON.parse(txt);if(Array.isArray(arr))raw=arr;}catch(_e){}}
+  if(!raw)raw=txt.split(/[\n,;|]+/);
+  return raw.map(x=>String(x||'').trim()).filter(Boolean).slice(0,10);
 }
 function phoneChips(value){
   const nums = publicPhoneList(value);

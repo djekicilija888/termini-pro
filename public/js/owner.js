@@ -639,8 +639,25 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   setTimeout(()=>resetUnsavedGuard(manualForm),80);
 };
 
+function splitOwnerPhoneRows(value,max=10){
+ let raw;
+ if(Array.isArray(value))raw=value;
+ else{
+  const txt=String(value||'').replace(/\r\n?/g,'\n').trim();
+  if(!txt)return [];
+  if(txt[0]==='['){try{const arr=JSON.parse(txt);if(Array.isArray(arr))raw=arr;}catch(_e){}}
+  if(!raw)raw=txt.split(/[\n,;|]+/);
+ }
+ const out=[];
+ for(const item of raw){
+  const p=String(item||'').trim();
+  if(p)out.push(p);
+  if(out.length>=max)break;
+ }
+ return out;
+}
 function splitStaffPhones(value){
- return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10);
+ return splitOwnerPhoneRows(value,10);
 }
 function addStaffPhoneField(value=''){
  const box=document.getElementById('staffPhonesBox');
@@ -680,7 +697,7 @@ function renderStaffPhones(value=''){
 function collectStaffPhones(){
  const box=document.getElementById('staffPhonesBox');
  if(!box)return '';
- return [...box.querySelectorAll('.staff-phone-input-v158')].map(i=>i.value.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10).join('\n');
+ return [...box.querySelectorAll('.staff-phone-input-v158')].map(i=>i.value.trim()).filter(Boolean).slice(0,10).join('\n');
 }
 function staffPhoneListText(value){
  const phones=splitStaffPhones(value);
@@ -1239,7 +1256,7 @@ async function loadSettings(){
 async function saveSettingsFormFast(){
  const loadingDone = window.AppLoading ? window.AppLoading.begin('Čuvam podešavanja...', {immediate:true}) : null;
  try{
- const mustSaveLocations=profileLocationNeedsSave();
+ const mustSaveLocations=profileLocationNeedsSave() || ownerHasWrittenLocation() || profileUsingFullLocations();
  await api('/api/owner/settings',{method:'PUT',body:JSON.stringify({
   name:setName.value,type:setType.value,city:setCity.value,phone:syncBusinessPhones(),
   instagram:setInstagram.value,address:setAddress.value,website:setWebsite.value,description:setDesc.value,
@@ -1268,11 +1285,11 @@ settingsForm.onsubmit=async e=>{e.preventDefault();await saveSettingsFormFast();
 
 function htmlEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function ownerPhoneParts(value){
- return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10);
+ return splitOwnerPhoneRows(value,10);
 }
 
 function ownerPhonePartsLimited(value,max=10){
- return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,max);
+ return splitOwnerPhoneRows(value,max);
 }
 function collectMultiPhonesBox(boxId,max=10){
  const box=document.getElementById(boxId);
@@ -1280,7 +1297,6 @@ function collectMultiPhonesBox(boxId,max=10){
  return [...box.querySelectorAll('.multi-phone-input-v159')]
   .map(i=>i.value.trim())
   .filter(Boolean)
-  .filter((x,i,a)=>a.indexOf(x)===i)
   .slice(0,max)
   .join('\n');
 }
@@ -1883,7 +1899,7 @@ async function printQrPdfList(locationArg=null){
   const businessName=(b.name||'Vaša firma').trim();
   const rawPhoneText=String((loc&&loc.phone)||b.phone||'').trim();
   const phoneList=rawPhoneText
-    ? rawPhoneText.split(/[\n,;|]+/).map(p=>p.trim()).filter(Boolean).slice(0,4)
+    ? ownerPhonePartsLimited(rawPhoneText,4)
     : ['Telefon nije unet'];
   const locCity=(loc&&loc.city)||b.city||'';
   const locAddress=(loc&&loc.address)||b.address||'';

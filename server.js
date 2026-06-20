@@ -71,7 +71,30 @@ const run=(s,p=[])=>new Promise((res,rej)=>db.run(s,p,function(e){e?rej(e):res(t
 async function addColumnIfMissing(table,column,definition){try{await run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)}catch(e){if(!String(e.message||'').toLowerCase().includes('duplicate column'))throw e}}
 const get=(s,p=[])=>new Promise((res,rej)=>db.get(s,p,(e,r)=>e?rej(e):res(r)));
 const all=(s,p=[])=>new Promise((res,rej)=>db.all(s,p,(e,r)=>e?rej(e):res(r)));
-const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toLowerCase(),normalizeEmail=email,phone=v=>String(v||'').split(/[\n,;]+/).map(x=>x.trim().replace(/[^0-9+()\-\s\/]/g,'').replace(/\s+/g,' ')).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10).join('\n'),now=()=>new Date().toISOString(),token=()=>crypto.randomBytes(24).toString('hex');
+const clean=(v,n=255)=>String(v||'').trim().slice(0,n),email=v=>clean(v,255).toLowerCase(),normalizeEmail=email,now=()=>new Date().toISOString(),token=()=>crypto.randomBytes(24).toString('hex');
+// Telefoni se čuvaju kao lista redova razdvojena novim redom. VAŽNO: znak / je deo broja (npr. 064/123-456) i ne sme da deli broj.
+function normalizePhoneList(v,max=10){
+ let raw;
+ if(Array.isArray(v))raw=v;
+ else{
+  const txt=String(v||'').replace(/\r\n?/g,'\n').trim();
+  if(!txt)return '';
+  if(txt[0]==='['){try{const arr=JSON.parse(txt);if(Array.isArray(arr))raw=arr;}catch(_e){}}
+  if(!raw){
+   // Kada vrednost dolazi iz više polja u aplikaciji, razdvojena je novim redom.
+   // Zarez, tačka-zarez i | su podržani samo kao dodatni razdvajači; / se nikada ne koristi kao razdvajač.
+   raw=txt.split(/[\n,;|]+/);
+  }
+ }
+ const out=[];
+ for(const item of raw){
+  const p=String(item||'').trim().replace(/[^0-9+()\-\s\/]/g,'').replace(/\s+/g,' ');
+  if(p)out.push(p);
+  if(out.length>=max)break;
+ }
+ return out.join('\n');
+}
+const phone=v=>normalizePhoneList(v,10);
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function addDays(ds,n){let d=new Date(`${ds}T12:00:00`);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 const validDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(String(d||'')),validTime=t=>/^\d{2}:\d{2}$/.test(String(t||'')),tm=t=>{let [h,m]=t.split(':').map(Number);return h*60+m},mt=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`,dow=d=>new Date(`${d}T12:00:00`).getDay(),over=(a,b,c,d)=>a<d&&c<b;
@@ -91,7 +114,7 @@ async function tabletDeviceFromRequest(req){
  await run('UPDATE location_devices SET last_seen_at=?,updated_at=? WHERE id=?',[now(),now(),d.id]).catch(()=>{});
  return d;
 }
-const phone4=v=>String(v||'').split(/[\n,;|]+/).map(x=>x.trim().replace(/[^0-9+()\-\s/]/g,'').replace(/\s+/g,' ')).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,4).join('\n');
+const phone4=v=>normalizePhoneList(v,4);
 function slugify(t){const map={'š':'s','đ':'dj','č':'c','ć':'c','ž':'z','Š':'s','Đ':'dj','Č':'c','Ć':'c','Ž':'z'};return String(t||'firma').replace(/[šđčćžŠĐČĆŽ]/g,c=>map[c]||c).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'firma'}
 async function uniqueSlug(n){let b=slugify(n),s=b,i=2;while(await get('SELECT id FROM businesses WHERE slug=?',[s]))s=`${b}-${i++}`;return s}
 const abs=(req,p)=>`${req.protocol}://${req.get('host')}${p}`,bookUrl=(req,s)=>abs(req,`/b/${s}`),bookUrlLoc=(req,s,lid)=>abs(req,`/b/${s}${lid?`?loc=${lid}`:''}`),manageUrl=(req,t)=>abs(req,`/m/${t}`);
