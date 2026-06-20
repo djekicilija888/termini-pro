@@ -1656,6 +1656,27 @@ body.manual-modal-body-open{
 .staff-modal-form-v145 .worker-pin-wrap-v136{
   grid-column:1 / -1;
 }
+
+/* Checkbox "Dozvoli radnički pristup preko telefona" u popupu Radnici.
+   Labela je namerno široka samo koliko tekst, da prazan prostor desno ne čekira checkbox. */
+.staff-modal-form-v145 .staff-worker-access-v145{
+  justify-self:start !important;
+  width:fit-content !important;
+  max-width:100% !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  cursor:pointer;
+}
+
+.staff-modal-form-v145 #staffWorkerAccess{
+  width:22px !important;
+  height:22px !important;
+  min-height:22px !important;
+  padding:0 !important;
+  margin:0 !important;
+  flex:0 0 auto !important;
+}
 /* Checkbox "Aktivan" u popupu Radnici */
 .staff-modal-form-v145 .staff-active-field{
   grid-column:3 / 4 !important;

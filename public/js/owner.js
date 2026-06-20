@@ -456,7 +456,9 @@ function renderStaffLocationScheduleBox(schedule=null,allowedIds=null){
  const box=document.getElementById('staffLocationScheduleBox');
  if(!box)return;
  const locs=(ownerLocationsCache||[]).filter(l=>l&&l.active!==0);
- if(locs.length<=1){box.innerHTML='';box.classList.add('hidden');return;}
+ // Raspored rada radnika treba da bude vidljiv i kada firma ima samo jednu lokaciju.
+ // Ranije se ovde krio za locs.length<=1, pa je raspored nestajao kod firmi sa jednom lokacijom.
+ if(!locs.length){box.innerHTML='';box.classList.add('hidden');return;}
  const ids=(allowedIds&&allowedIds.length?allowedIds:collectLocationChecks('staffLocationsBox')).map(String);
  const allowedLocs=locs.filter(l=>ids.includes(String(l.id)));
  if(!allowedLocs.length){box.innerHTML='<p class="muted">Izaberi bar jednu lokaciju za radnika.</p>';box.classList.remove('hidden');return;}
