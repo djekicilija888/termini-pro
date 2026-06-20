@@ -208,7 +208,11 @@
         <label>Naziv firme<input id="setName"></label>
         <label>Delatnost<input id="setType"></label>
         <label id="primaryCityField">Grad<input id="setCity"></label>
-        <label id="primaryPhoneField">Telefoni firme, najviše 10 brojeva<textarea id="setPhone" rows="5" placeholder="Svaki broj u novi red"></textarea></label>
+        <div id="primaryPhoneField" class="multi-phone-field-v159 profile-phone-field-v159">
+          <div class="multi-phone-title-v159">Telefoni firme, najviše 10 brojeva</div>
+          <input id="setPhone" type="hidden">
+          <div id="businessPhonesBox" class="multi-phones-box-v159"></div>
+        </div>
         <label>Instagram/Facebook link<input id="setInstagram"></label>
         <label id="primaryAddressField">Adresa<input id="setAddress"></label>
         <label>Website<input id="setWebsite"></label>
@@ -239,7 +243,11 @@
         <div id="profileLocationForm" class="location-modal-form-v115">
           <label>Grad<input id="profileModalCity"></label>
           <label>Adresa<input id="profileModalAddress"></label>
-          <label>Telefoni lokacije, najviše 4 broja<textarea id="profileModalPhone" rows="4" placeholder="Svaki broj u novi red"></textarea></label>
+          <div class="multi-phone-field-v159 location-phone-field-v159">
+            <div class="multi-phone-title-v159">Telefoni lokacije, najviše 4 broja</div>
+            <input id="profileModalPhone" type="hidden">
+            <div id="profileModalPhonesBox" class="multi-phones-box-v159"></div>
+          </div>
           <label class="inline-check location-modal-check-v115"><input id="profileModalActive" type="checkbox" checked> Aktivna lokacija</label>
           <div class="location-modal-actions-v115">
             <button id="cancelProfileLocationModal" type="button" class="btn small ghost">Otkaži</button>

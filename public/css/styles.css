@@ -1798,3 +1798,71 @@ body.owner-booting #tabletAdminLock{
   visibility:hidden !important;
   opacity:0 !important;
 }
+
+/* v159: Telefoni firme i telefoni lokacije kao pojedinačna polja */
+.profile-phone-field-v159,
+.location-phone-field-v159{
+  grid-column:1 / -1;
+  display:block;
+  min-width:0;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  padding:12px;
+  background:#fbfcff;
+}
+.multi-phone-title-v159{
+  font-weight:900;
+  margin:0 0 10px;
+  font-size:14px;
+}
+.multi-phones-box-v159{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px 10px;
+  align-items:start;
+}
+.multi-phone-row-v159{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  width:100%;
+}
+.multi-phone-row-v159 input{
+  flex:1 1 auto;
+  min-width:0;
+}
+.multi-phone-remove-v159{
+  width:36px;
+  height:36px;
+  flex:0 0 36px;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  background:#fff;
+  color:#6b7280;
+  font-size:20px;
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+}
+.multi-phone-remove-v159:hover{
+  background:#f9fafb;
+  color:#111827;
+}
+.multi-add-phone-v159{
+  grid-column:1 / -1;
+  justify-self:start;
+  width:fit-content;
+  border:0;
+  background:transparent;
+  padding:4px 0;
+  color:#2563eb;
+  font-weight:900;
+  cursor:pointer;
+}
+.multi-add-phone-v159:hover{
+  text-decoration:underline;
+}
+@media(max-width:900px){
+  .multi-phones-box-v159{grid-template-columns:1fr;}
+}

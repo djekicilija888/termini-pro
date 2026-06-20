@@ -1220,6 +1220,7 @@ async function loadSettings(){
  // Ako je ranije obrisana primarna lokacija, ne smeju ostati stari podaci iz tabele firme.
  setCity.value=hasOwnerLocation?(firstLoc.city||b.city||''):(b.city||'');
  setPhone.value=hasOwnerLocation?(firstLoc.phone||b.phone||''):(b.phone||'');
+ renderBusinessPhones(setPhone.value);
  setInstagram.value=b.instagram||'';
  setAddress.value=hasOwnerLocation?(firstLoc.address||b.address||''):(b.address||'');
  setWebsite.value=b.website||'';
@@ -1236,7 +1237,7 @@ async function loadSettings(){
 async function saveSettingsFormFast(){
  const mustSaveLocations=profileLocationNeedsSave();
  await api('/api/owner/settings',{method:'PUT',body:JSON.stringify({
-  name:setName.value,type:setType.value,city:setCity.value,phone:setPhone.value,
+  name:setName.value,type:setType.value,city:setCity.value,phone:syncBusinessPhones(),
   instagram:setInstagram.value,address:setAddress.value,website:setWebsite.value,description:setDesc.value,
   interval:+setInterval.value,min_notice:+setMin.value,max_days:+setMax.value,
   notify_customer_email:nCust.checked,notify_owner_email:nOwner.checked,notify_sms:nSms.checked,notify_viber:nViber.checked,
@@ -1265,10 +1266,92 @@ function ownerPhoneParts(value){
  return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10);
 }
 
+function ownerPhonePartsLimited(value,max=10){
+ return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,max);
+}
+function collectMultiPhonesBox(boxId,max=10){
+ const box=document.getElementById(boxId);
+ if(!box)return '';
+ return [...box.querySelectorAll('.multi-phone-input-v159')]
+  .map(i=>i.value.trim())
+  .filter(Boolean)
+  .filter((x,i,a)=>a.indexOf(x)===i)
+  .slice(0,max)
+  .join('\n');
+}
+function syncMultiPhonesBox(boxId,hiddenId,max=10){
+ const hidden=document.getElementById(hiddenId);
+ if(hidden)hidden.value=collectMultiPhonesBox(boxId,max);
+ refreshMultiPhonesAddButton(boxId,max);
+ return hidden?hidden.value:'';
+}
+function refreshMultiPhonesAddButton(boxId,max=10){
+ const box=document.getElementById(boxId);
+ if(!box)return;
+ const add=box.querySelector('.multi-add-phone-v159');
+ if(!add)return;
+ const count=box.querySelectorAll('.multi-phone-input-v159').length;
+ add.classList.toggle('hidden',count>=max);
+}
+function addMultiPhoneField(boxId,hiddenId,max=10,value='',placeholder='Telefon',scopeEl=null){
+ const box=document.getElementById(boxId);
+ if(!box)return null;
+ const existing=box.querySelectorAll('.multi-phone-input-v159').length;
+ if(existing>=max)return null;
+ const addBtn=box.querySelector('.multi-add-phone-v159');
+ const row=document.createElement('div');
+ row.className='multi-phone-row-v159';
+ const input=document.createElement('input');
+ input.type='tel';
+ input.className='multi-phone-input-v159';
+ input.placeholder=placeholder;
+ input.value=value||'';
+ const remove=document.createElement('button');
+ remove.type='button';
+ remove.className='multi-phone-remove-v159';
+ remove.setAttribute('aria-label','Ukloni telefon');
+ remove.title='Ukloni telefon';
+ remove.textContent='×';
+ const sync=()=>{syncMultiPhonesBox(boxId,hiddenId,max);if(scopeEl)markUnsavedScope(scopeEl)};
+ input.addEventListener('input',sync);
+ remove.onclick=()=>{row.remove();sync();};
+ row.appendChild(input);
+ row.appendChild(remove);
+ if(addBtn)box.insertBefore(row,addBtn);else box.appendChild(row);
+ syncMultiPhonesBox(boxId,hiddenId,max);
+ return input;
+}
+function renderMultiPhonesBox(boxId,hiddenId,max=10,value='',placeholder='Telefon',scopeEl=null){
+ const box=document.getElementById(boxId);
+ const hidden=document.getElementById(hiddenId);
+ if(!box)return;
+ box.innerHTML='';
+ const phones=ownerPhonePartsLimited(value,max);
+ if(hidden)hidden.value=phones.join('\n');
+ phones.forEach(v=>addMultiPhoneField(boxId,hiddenId,max,v,placeholder,scopeEl));
+ const add=document.createElement('button');
+ add.type='button';
+ add.className='multi-add-phone-v159';
+ add.textContent='+ Dodaj telefon';
+ add.onclick=()=>{const input=addMultiPhoneField(boxId,hiddenId,max,'',placeholder,scopeEl);if(input){if(scopeEl)markUnsavedScope(scopeEl);input.focus();}};
+ box.appendChild(add);
+ refreshMultiPhonesAddButton(boxId,max);
+}
+function renderBusinessPhones(value=''){
+ renderMultiPhonesBox('businessPhonesBox','setPhone',10,value,'Telefon firme',typeof settingsForm!=='undefined'?settingsForm:null);
+}
+function renderProfileModalPhones(value=''){
+ renderMultiPhonesBox('profileModalPhonesBox','profileModalPhone',4,value,'Telefon lokacije',typeof profileLocationForm!=='undefined'?profileLocationForm:null);
+}
+function syncBusinessPhones(){return syncMultiPhonesBox('businessPhonesBox','setPhone',10)}
+function syncProfileModalPhones(){return syncMultiPhonesBox('profileModalPhonesBox','profileModalPhone',4)}
+
+
 let ownerQrObjectUrl='', ownerLocationsCache=[], profileLocationsMode='primary', profileLocationEditIndex=null, profileLocationSaving=false, ownerLocationQrEditIndex=null;
 let profileLocationSaveSnapshot='';
 function profileLocationSnapshot(){
  try{
+  syncBusinessPhones();
   return JSON.stringify({
    mode:profileLocationsMode,
    primary:{city:(typeof setCity!=='undefined'?setCity.value:''),address:(typeof setAddress!=='undefined'?setAddress.value:''),phone:(typeof setPhone!=='undefined'?setPhone.value:'')},
@@ -1411,6 +1494,7 @@ function renderProfileExtraLocations(){
    if(typeof setCity!=='undefined')setCity.value=remaining.city||'';
    if(typeof setAddress!=='undefined')setAddress.value=remaining.address||'';
    if(typeof setPhone!=='undefined')setPhone.value=remaining.phone||'';
+   renderBusinessPhones(typeof setPhone!=='undefined'?setPhone.value:'');
   }else if(keepFullLocationList){
    profileLocationsMode='all';
   }
@@ -1433,6 +1517,7 @@ function collectProfileExtraLocations(){
  }));
 }
 function ensureFullLocationModeFromPrimary(){
+ syncBusinessPhones();
  if(profileUsingFullLocations())return true;
  if(!ownerHasWrittenLocation())return false;
  const first=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:makeEmptyProfileLocation(1);
@@ -1459,6 +1544,7 @@ function openProfileLocationModal(idx=null){
  if(typeof profileModalCity!=='undefined')profileModalCity.value=loc.city||'';
  if(typeof profileModalAddress!=='undefined')profileModalAddress.value=loc.address||'';
  if(typeof profileModalPhone!=='undefined')profileModalPhone.value=loc.phone||'';
+ renderProfileModalPhones(typeof profileModalPhone!=='undefined'?profileModalPhone.value:'');
  if(typeof profileModalActive!=='undefined')profileModalActive.checked=loc.active!==0;
  if(typeof profileLocationModal!=='undefined'){
   profileLocationModal.classList.remove('hidden');
@@ -1472,6 +1558,7 @@ async function closeProfileLocationModalFn(force=false){
  setTimeout(()=>{try{resetUnsavedGuard(profileLocationForm)}catch(_e){}},80);
 }
 async function saveProfileLocations(silent=false){
+ syncBusinessPhones();
  if(!ownerHasWrittenLocation() && !profileUsingFullLocations())return;
  if(profileUsingFullLocations()){
   for(const loc of collectProfileExtraLocations()){
@@ -1709,6 +1796,7 @@ if(typeof profileAddLocationBtn!=='undefined')profileAddLocationBtn.onclick=()=>
 };
 if(typeof setCity!=='undefined')setCity.addEventListener('input',refreshProfileAddLocationButton);
 if(typeof setAddress!=='undefined')setAddress.addEventListener('input',refreshProfileAddLocationButton);
+if(typeof setPhone!=='undefined')setPhone.addEventListener('input',refreshProfileAddLocationButton);
 async function saveProfileLocationFromModal(e){
  if(e){e.preventDefault();e.stopPropagation();}
  if(profileLocationSaving)return;
@@ -1720,6 +1808,7 @@ async function saveProfileLocationFromModal(e){
  if(btn){btn.disabled=true;btn.textContent='Čuvam...';}
  try{
   const loc=isNew?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[editIndex]||makeEmptyProfileLocation(editIndex+1));
+  syncProfileModalPhones();
   loc.city=profileModalCity.value;
   loc.address=profileModalAddress.value;
   loc.phone=profileModalPhone.value;
