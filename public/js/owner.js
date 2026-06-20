@@ -688,18 +688,31 @@ if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.o
 if(typeof addStaffBtn!=='undefined'&&addStaffBtn)addStaffBtn.onclick=async()=>{if(await confirmDiscardUnsavedChangesAsync()){openStaffModal(null)}};
 if(typeof staffModalClose!=='undefined'&&staffModalClose)staffModalClose.onclick=()=>closeStaffModal(false);
 if(typeof staffModal!=='undefined'&&staffModal)staffModal.addEventListener('mousedown',e=>{if(e.target===staffModal)closeStaffModal(false)});
-if(typeof resetStaff!=='undefined'&&resetStaff)resetStaff.onclick=()=>{resetSt();setTimeout(()=>resetUnsavedGuard(staffForm),60)};
+if(typeof resetStaff!=='undefined'&&resetStaff)resetStaff.onclick=()=>closeStaffModal(true);
+let staffSaveInProgress=false;
 staffForm.onsubmit=async e=>{
  e.preventDefault();
- await ensureOwnerLocationsLoaded();
- let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,worker_access:(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)?staffWorkerAccess.checked:false,worker_pin:(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)?staffWorkerPin.value:'',location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
- await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
- msg('Radnik sačuvan.','ok');
- markOwnerTabsStale('staff','appointments','bookinglink','dash');
- markManualOptionsStale();
- await closeStaffModal(true);
- await loadStaff();
- ownerMarkTabLoaded('staff');
+ if(staffSaveInProgress)return;
+ staffSaveInProgress=true;
+ const submitBtn=staffForm.querySelector('button[type="submit"]');
+ const oldSubmitText=submitBtn?submitBtn.textContent:'';
+ if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Čuvam...'}
+ try{
+  await ensureOwnerLocationsLoaded();
+  let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,worker_access:(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)?staffWorkerAccess.checked:false,worker_pin:(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)?staffWorkerPin.value:'',location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
+  await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
+  msg('Radnik sačuvan.','ok');
+  markOwnerTabsStale('staff','appointments','bookinglink','dash');
+  markManualOptionsStale();
+  await closeStaffModal(true);
+  await loadStaff();
+  ownerMarkTabLoaded('staff');
+ }catch(err){
+  msg(err.message||'Radnik nije sačuvan.','err');
+ }finally{
+  staffSaveInProgress=false;
+  if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=oldSubmitText||'Sačuvaj radnika'}
+ }
 };
 async function loadStaff(){
  await ensureOwnerLocationsLoaded();
@@ -708,9 +721,23 @@ async function loadStaff(){
   renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
   renderStaffLocationScheduleBox([],selectedActiveLocationIds());
  }
- staffList.innerHTML=rows.length?rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span><span>${x.worker_access?'Ima radnički pristup':'Bez pristupa telefonom'}</span></div><div class="actions"><button class="btn small ghost staff-edit-v136" data-id="${x.id}" type="button">Izmeni</button><button class="btn small staff-qr-v136" data-id="${x.id}" type="button" ${x.worker_access?'':'disabled'}>QR za radnika</button></div></article>`).join(''):'<p class="muted">Nema dodatih radnika. Klikni + Dodaj radnika.</p>';
+ staffList.innerHTML=rows.length?rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span><span>${x.worker_access?'Ima radnički pristup':'Bez pristupa telefonom'}</span></div><div class="actions"><button class="btn small ghost staff-edit-v136" data-id="${x.id}" type="button">Izmeni</button><button class="btn small staff-qr-v136" data-id="${x.id}" type="button" ${x.worker_access?'':'disabled'}>QR za radnika</button><button class="btn small ghost staff-delete-v157" data-id="${x.id}" type="button">Ukloni</button></div></article>`).join(''):'<p class="muted">Nema dodatih radnika. Klikni + Dodaj radnika.</p>';
  staffList.querySelectorAll('.staff-edit-v136').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);openStaffModal(x)});
  staffList.querySelectorAll('.staff-qr-v136').forEach(b=>b.onclick=()=>showWorkerQr(b.dataset.id));
+ staffList.querySelectorAll('.staff-delete-v157').forEach(b=>b.onclick=()=>deleteStaff(b.dataset.id,rows.find(r=>r.id==b.dataset.id)));
+}
+async function deleteStaff(id,x){
+ if(!id)return;
+ const name=x&&x.name?x.name:'ovog radnika';
+ if(!confirm('Ukloniti radnika „'+name+'”? Radnik se više neće prikazivati mušterijama i izgubiće radnički pristup.'))return;
+ try{
+  await api('/api/owner/staff/'+encodeURIComponent(id),{method:'DELETE'});
+  msg('Radnik uklonjen.','ok');
+  markOwnerTabsStale('staff','appointments','bookinglink','dash');
+  markManualOptionsStale();
+  await loadStaff();
+  ownerMarkTabLoaded('staff');
+ }catch(e){msg(e.message||'Radnik nije uklonjen.','err')}
 }
 
 function closeWorkerQr(){document.getElementById('workerQrModal')?.classList.add('hidden')}

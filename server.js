@@ -140,6 +140,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
  await addColumnIfMissing('staff','worker_access',`INTEGER DEFAULT 0`);
  await addColumnIfMissing('staff','worker_pin_hash',`TEXT DEFAULT ''`);
  await addColumnIfMissing('staff','worker_access_token',`TEXT DEFAULT ''`);
+ await addColumnIfMissing('staff','deleted_at',`TEXT DEFAULT ''`);
  await run(`CREATE TABLE IF NOT EXISTS services(id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER,name TEXT,description TEXT,duration INTEGER,price INTEGER DEFAULT 0,active INTEGER DEFAULT 1,sort_order INTEGER DEFAULT 0,created_at TEXT,updated_at TEXT)`);
  await run(`CREATE TABLE IF NOT EXISTS hours(business_id INTEGER,day INTEGER,is_open INTEGER,open_time TEXT,close_time TEXT,break_start TEXT,break_end TEXT,PRIMARY KEY(business_id,day))`);
  await run(`CREATE TABLE IF NOT EXISTS location_hours(business_id INTEGER,location_id INTEGER,day INTEGER,is_open INTEGER,open_time TEXT,close_time TEXT,break_start TEXT,break_end TEXT,updated_at TEXT,PRIMARY KEY(business_id,location_id,day))`);
@@ -585,7 +586,7 @@ app.delete('/api/owner/locations/:id',auth,owner,async(req,res)=>{
 });
 
 app.get('/api/owner/staff',auth,owner,async(req,res)=>{
- let rows=await all('SELECT * FROM staff WHERE business_id=? ORDER BY sort_order,id',[req.user.business_id]);
+ let rows=await all("SELECT * FROM staff WHERE business_id=? AND COALESCE(deleted_at,'')='' ORDER BY sort_order,id",[req.user.business_id]);
  rows=await attachLocationsToRows(rows,'staff_locations','staff_id',req.user.business_id);
  res.json(await attachStaffSchedules(rows,req.user.business_id));
 });
@@ -617,6 +618,15 @@ app.put('/api/owner/staff/:id',auth,owner,async(req,res)=>{
  await saveAssignedLocationIds('staff_locations','staff_id',req.user.business_id,id,req.body.location_ids);
  await saveStaffLocationSchedule(req.user.business_id,id,req.body.location_schedule);
  res.json({message:'Radnik je sačuvan.'})
+});
+app.delete('/api/owner/staff/:id',auth,owner,async(req,res)=>{
+ let id=Number(req.params.id);
+ let old=await get("SELECT * FROM staff WHERE business_id=? AND id=? AND COALESCE(deleted_at,'')=''",[req.user.business_id,id]);
+ if(!old)return res.status(404).json({error:'Radnik nije pronađen.'});
+ await run("UPDATE staff SET active=0,worker_access=0,worker_pin_hash='',worker_access_token='',deleted_at=?,updated_at=? WHERE id=? AND business_id=?",[now(),now(),id,req.user.business_id]);
+ await run('DELETE FROM staff_locations WHERE business_id=? AND staff_id=?',[req.user.business_id,id]);
+ await run('DELETE FROM staff_location_schedule WHERE business_id=? AND staff_id=?',[req.user.business_id,id]);
+ res.json({message:'Radnik je uklonjen.'})
 });
 app.get('/api/owner/staff/:id/access-qr',auth,owner,async(req,res)=>{
  let id=Number(req.params.id);let st=await get('SELECT * FROM staff WHERE business_id=? AND id=?',[req.user.business_id,id]);
