@@ -113,6 +113,7 @@ const UNSAVED_CHANGES_TEXT='Sačuvati izmene?';
 let unsavedGuardDirty=false;
 let unsavedGuardReady=false;
 let unsavedGuardSnapshots=new WeakMap();
+let unsavedGuardValueSnapshots=new WeakMap();
 let unsavedGuardDirtyScopes=new Set();
 function unsavedGuardVisible(el){return !!(el&&el.offsetParent!==null&&!el.closest('.hidden'))}
 function unsavedScopeForTarget(el){
@@ -134,6 +135,21 @@ function clearUnsavedGuardDirtyFast(){
  unsavedGuardReady=true;
 }
 function unsavedGuardScopes(){return [...document.querySelectorAll('#app form,#app #profileLocationForm,#app #hoursForm')].filter(el=>el&&el.id!=='loginForm'&&el.id!=='tabletAdminUnlockForm')}
+function unsavedGuardVisibleScopes(){
+ try{
+  const containers=[];
+  const active=document.querySelector('#app .tab:not(.hidden)');
+  if(active)containers.push(active);
+  ['profileLocationModal','locationHoursModal','manualAppointmentPanel','staffModal'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.classList.contains('hidden'))containers.push(el)});
+  const out=[];
+  containers.forEach(c=>{
+   c.querySelectorAll('form,#profileLocationForm,#hoursForm').forEach(sc=>{
+    if(sc&&sc.id!=='loginForm'&&sc.id!=='tabletAdminUnlockForm'&&unsavedGuardVisible(sc)&&!out.includes(sc))out.push(sc);
+   });
+  });
+  return out;
+ }catch(_e){return unsavedGuardScopes().filter(unsavedGuardVisible)}
+}
 function unsavedGuardSerialize(scope){
  if(!scope)return '';
  return [...scope.querySelectorAll('input,select,textarea')].filter(el=>!el.disabled&&el.type!=='button'&&el.type!=='submit'&&el.type!=='reset'&&!el.readOnly).map(el=>{
@@ -143,16 +159,44 @@ function unsavedGuardSerialize(scope){
   return key+'='+(el.value||'');
  }).join('&');
 }
+function unsavedGuardControls(scope){
+ try{return [...(scope||document).querySelectorAll('input,select,textarea')].filter(el=>!el.disabled&&el.type!=='button'&&el.type!=='submit'&&el.type!=='reset'&&!el.readOnly)}catch(_e){return []}
+}
+function unsavedGuardTakeValueSnapshot(scope){
+ try{
+  const controls=unsavedGuardControls(scope);
+  unsavedGuardValueSnapshots.set(scope,controls.map(el=>({
+   tag:el.tagName,type:el.type,
+   value:el.tagName==='SELECT'&&el.multiple?[...el.options].map(o=>!!o.selected):(el.value||''),
+   checked:!!el.checked
+  })));
+ }catch(_e){}
+}
+function unsavedGuardRestoreValueSnapshot(scope){
+ try{
+  const snap=unsavedGuardValueSnapshots.get(scope);
+  if(!snap)return;
+  const controls=unsavedGuardControls(scope);
+  controls.forEach((el,i)=>{
+   const v=snap[i];
+   if(!v)return;
+   if(el.type==='checkbox'||el.type==='radio')el.checked=!!v.checked;
+   else if(el.tagName==='SELECT'&&el.multiple&&Array.isArray(v.value)){[...el.options].forEach((o,idx)=>{o.selected=!!v.value[idx]})}
+   else el.value=v.value==null?'':v.value;
+  });
+ }catch(_e){}
+}
 function resetUnsavedGuard(scope){
  try{
   if(scope){
    unsavedGuardDirtyScopes.delete(scope);
    unsavedGuardSnapshots.set(scope,unsavedGuardSerialize(scope));
+   unsavedGuardTakeValueSnapshot(scope);
   }else{
    unsavedGuardDirty=false;
    unsavedGuardDirtyScopes.clear();
    const scopes=unsavedGuardScopes();
-   scopes.forEach(sc=>unsavedGuardSnapshots.set(sc,unsavedGuardSerialize(sc)));
+   scopes.forEach(sc=>{unsavedGuardSnapshots.set(sc,unsavedGuardSerialize(sc));unsavedGuardTakeValueSnapshot(sc);});
   }
   unsavedGuardReady=true;
  }catch(_e){}
@@ -160,10 +204,11 @@ function resetUnsavedGuard(scope){
 function resetUnsavedGuardForVisible(){
  try{
   unsavedGuardDirty=false;
-  const visible=unsavedGuardScopes().filter(unsavedGuardVisible);
+  const visible=unsavedGuardVisibleScopes();
   visible.forEach(sc=>{
    unsavedGuardDirtyScopes.delete(sc);
    unsavedGuardSnapshots.set(sc,unsavedGuardSerialize(sc));
+   unsavedGuardTakeValueSnapshot(sc);
   });
   unsavedGuardReady=true;
  }catch(_e){resetUnsavedGuard()}
@@ -171,12 +216,35 @@ function resetUnsavedGuardForVisible(){
 function hasUnsavedChanges(){
  if(!unsavedGuardReady)return false;
  if(unsavedGuardDirty)return true;
- try{return [...unsavedGuardDirtyScopes].some(sc=>unsavedGuardVisible(sc));}catch(_e){return false;}
+ try{
+  for(const sc of unsavedGuardDirtyScopes){
+   if(sc&&unsavedGuardVisible(sc)&&unsavedGuardSerialize(sc)!==unsavedGuardSnapshots.get(sc))return true;
+  }
+  return false;
+ }catch(_e){return false;}
 }
 function unsavedChangedScopes(){
  try{
-  return unsavedGuardScopes().filter(sc=>unsavedGuardVisible(sc)&&(unsavedGuardDirtyScopes.has(sc)||unsavedGuardSerialize(sc)!==unsavedGuardSnapshots.get(sc)));
+  const out=[];
+  for(const sc of unsavedGuardDirtyScopes){
+   if(sc&&unsavedGuardVisible(sc)&&unsavedGuardSerialize(sc)!==unsavedGuardSnapshots.get(sc)&&!out.includes(sc))out.push(sc);
+  }
+  return out;
  }catch(_e){return []}
+}
+function discardUnsavedChanges(){
+ try{
+  const scopes=unsavedChangedScopes();
+  scopes.forEach(sc=>{
+   unsavedGuardRestoreValueSnapshot(sc);
+   unsavedGuardDirtyScopes.delete(sc);
+   unsavedGuardSnapshots.set(sc,unsavedGuardSerialize(sc));
+   unsavedGuardTakeValueSnapshot(sc);
+  });
+  unsavedGuardDirty=false;
+  try{ if(typeof refreshProfileAddLocationButton==='function')refreshProfileAddLocationButton(); }catch(_e){}
+  try{ if(typeof updateStaffWorkerPinVisibility==='function')updateStaffWorkerPinVisibility(); }catch(_e){}
+ }catch(_e){clearUnsavedGuardDirtyFast()}
 }
 function currentUnsavedScope(){
  const changed=unsavedChangedScopes();
@@ -232,7 +300,7 @@ function showUnsavedGuardDialog(){
 async function confirmDiscardUnsavedChangesAsync(){
  if(!hasUnsavedChanges())return true;
  const act=await showUnsavedGuardDialog();
- if(act==='leave')return true;
+ if(act==='leave'){discardUnsavedChanges();return true;}
  if(act==='save')return await saveCurrentUnsavedChanges();
  return false;
 }
@@ -302,7 +370,7 @@ if(typeof tabletAdminUnlockForm!=='undefined'&&tabletAdminUnlockForm){
 }
 loginForm.onsubmit=async e=>{e.preventDefault();try{let d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:em.value,password:pw.value})});if(d.user.role!=='owner')throw Error('Nije nalog firme.');localStorage.setItem(T,d.token);localStorage.setItem('token',d.token);show();tab('dash')}catch(er){lm.textContent=er.message;lm.className='msg err'}};
 logout.onclick=async()=>{if(!await confirmDiscardUnsavedChangesAsync())return;resetUnsavedGuard();clearOwnerSession();sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);hide()};
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=async()=>{if(b.classList.contains('active'))return;if(!await confirmDiscardUnsavedChangesAsync())return;clearUnsavedGuardDirtyFast();tab(b.dataset.tab)});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=async()=>{if(b.classList.contains('active'))return;if(!await confirmDiscardUnsavedChangesAsync())return;tab(b.dataset.tab)});
 function tab(id){
  if(!canOpenOwnerPanel())return showTabletAdminLock();
  if(!OWNER_VALID_TABS.includes(id))id='dash';
@@ -617,7 +685,7 @@ async function closeStaffModal(force=false){
  setTimeout(()=>resetUnsavedGuardForVisible(),30);
 }
 if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.onchange=updateStaffWorkerPinVisibility;
-if(typeof addStaffBtn!=='undefined'&&addStaffBtn)addStaffBtn.onclick=async()=>{if(await confirmDiscardUnsavedChangesAsync()){clearUnsavedGuardDirtyFast();openStaffModal(null)}};
+if(typeof addStaffBtn!=='undefined'&&addStaffBtn)addStaffBtn.onclick=async()=>{if(await confirmDiscardUnsavedChangesAsync()){openStaffModal(null)}};
 if(typeof staffModalClose!=='undefined'&&staffModalClose)staffModalClose.onclick=()=>closeStaffModal(false);
 if(typeof staffModal!=='undefined'&&staffModal)staffModal.addEventListener('mousedown',e=>{if(e.target===staffModal)closeStaffModal(false)});
 if(typeof resetStaff!=='undefined'&&resetStaff)resetStaff.onclick=()=>{resetSt();setTimeout(()=>resetUnsavedGuard(staffForm),60)};
