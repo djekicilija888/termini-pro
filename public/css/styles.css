@@ -1686,26 +1686,38 @@ body.manual-modal-body-open{
 }
 
 
-/* Telefoni radnika u popupu Radnici */
+/* Telefoni radnika u popupu Radnici
+   Telefoni su zasebna sekcija preko cele širine forme, da ne guraju polja Ime/Titula
+   i da checkbox "Aktivan" ne upada u prostor za telefone. */
+.staff-modal-form-v145 > label{
+  align-self:start;
+  align-content:start;
+}
 .staff-phone-field-v158{
+  grid-column:1 / -1;
   display:block;
-  font-size:14px;
   min-width:0;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  padding:12px;
+  background:#fbfcff;
 }
 .staff-phone-title-v158{
-  font-weight:800;
-  margin:0 0 6px;
+  font-weight:900;
+  margin:0 0 10px;
 }
 .staff-phones-box-v158{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px 10px;
+  align-items:start;
 }
 .staff-phone-row-v158{
   display:flex;
   align-items:center;
   gap:8px;
   width:100%;
+  min-width:0;
 }
 .staff-phone-row-v158 input{
   flex:1 1 auto;
@@ -1714,6 +1726,7 @@ body.manual-modal-body-open{
 .staff-phone-remove-v158{
   width:36px;
   height:36px;
+  flex:0 0 36px;
   border:1px solid #e5e7eb;
   border-radius:12px;
   background:#fff;
@@ -1728,7 +1741,8 @@ body.manual-modal-body-open{
   color:#111827;
 }
 .staff-add-phone-v158{
-  align-self:flex-start;
+  grid-column:1 / -1;
+  justify-self:start;
   width:fit-content;
   border:0;
   background:transparent;
@@ -1740,6 +1754,10 @@ body.manual-modal-body-open{
 .staff-add-phone-v158:hover{
   text-decoration:underline;
 }
+@media(max-width:900px){
+  .staff-phones-box-v158{grid-template-columns:1fr;}
+}
+
 
 
 
