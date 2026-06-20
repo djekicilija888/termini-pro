@@ -1087,8 +1087,8 @@ if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
     await loadHours();
   });
  }
+ installLocationHoursModal();
  document.addEventListener('DOMContentLoaded',()=>{setTimeout(installLocationHoursModal,120);setTimeout(installLocationHoursModal,800)});
- document.addEventListener('click',()=>setTimeout(installLocationHoursModal,80),true);
  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){const m=document.getElementById('locationHoursModal');if(m&&!m.classList.contains('hidden'))closeLocationHoursModal();}});
 })();
 
@@ -2272,8 +2272,9 @@ init();
    if((b.textContent||'').trim()==='Profil/poruke') b.textContent='Profil firme';
   });
  }
+ cleanOwner();
  document.addEventListener('DOMContentLoaded',()=>{setTimeout(cleanOwner,100);setTimeout(cleanOwner,800)});
- document.addEventListener('click',()=>setTimeout(cleanOwner,80),true);
+ document.addEventListener('click',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('.tabs'))setTimeout(cleanOwner,80)},true);
 })();
 
 
@@ -2372,14 +2373,11 @@ init();
     if(clone) clone.remove();
   }
 
+  installFixedWideHeader();
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(installFixedWideHeader, 250);
     setTimeout(installFixedWideHeader, 1000);
   });
-
-  document.addEventListener('click', () => {
-    setTimeout(()=>{ if(!document.getElementById('ownerFacebookHeader')) installFixedWideHeader(); }, 120);
-  }, true);
 })();
 
 
@@ -2402,11 +2400,11 @@ init();
     });
   }
 
+  removeDuplicateNonworking();
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(removeDuplicateNonworking, 200);
     setTimeout(removeDuplicateNonworking, 1000);
   });
-  document.addEventListener('click', () => setTimeout(removeDuplicateNonworking, 100), true);
 })();
 
 
@@ -2433,11 +2431,11 @@ init();
     });
   }
 
+  setupManualAppointmentToggle();
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(setupManualAppointmentToggle, 200);
     setTimeout(setupManualAppointmentToggle, 1000);
   });
-  document.addEventListener('click', () => setTimeout(setupManualAppointmentToggle, 80), true);
 })();
 
 
@@ -2450,8 +2448,8 @@ init();
       if((el.textContent||'').trim().toUpperCase()==='NOVO') el.remove();
     });
   }
+  removeNovoBadges();
   document.addEventListener('DOMContentLoaded',()=>{setTimeout(removeNovoBadges,100);setTimeout(removeNovoBadges,800)});
-  document.addEventListener('click',()=>setTimeout(removeNovoBadges,80),true);
 })();
 
 
@@ -2539,14 +2537,11 @@ init();
     if(ev.key === 'Escape' && isOpen()) closeModal();
   });
 
+  install();
   document.addEventListener('DOMContentLoaded', function(){
     setTimeout(install, 200);
     setTimeout(install, 1000);
   });
-
-  document.addEventListener('click', function(){
-    setTimeout(install, 80);
-  }, true);
 })();
 
 // profile location modal escape v115
