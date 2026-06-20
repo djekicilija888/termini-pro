@@ -1864,7 +1864,7 @@ async function printQrPdfList(locationArg=null){
 const pageW = 210 * ptPerMm;
 const pageH = 297 * ptPerMm;
 
-// Evropska standardna vizit karta: 85 x 55 mm
+// Standardne dimenzije vizit karte: 90 x 50 mm
 const cols = 2, rows = 5;
 const cardW = 90 * ptPerMm;
 const cardH = 50 * ptPerMm;
