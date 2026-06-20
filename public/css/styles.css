@@ -1656,6 +1656,16 @@ body.manual-modal-body-open{
 .staff-modal-form-v145 .worker-pin-wrap-v136{
   grid-column:1 / -1;
 }
+/* Checkbox "Aktivan" u popupu Radnici */
+.staff-modal-form-v145 .staff-active-field{
+  grid-column:3 / 4 !important;
+  justify-self:end !important;
+  transform:none !important;
+  margin-right:120px;
+}
+
+
+
 .staff-modal-form-v145 #staffLocationsBox,
 .staff-modal-form-v145 #staffLocationScheduleBox{
   border:1px solid #e5e7eb;
