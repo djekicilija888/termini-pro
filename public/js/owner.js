@@ -1858,22 +1858,41 @@ async function printQrPdfList(locationArg=null){
 
 
   async function makePdf(){
-    const pageW=595, pageH=842;
-    const cols=2, rows=5;
-    const marginX=28, marginY=28;
-    const gutterX=14, gutterY=10;
-    const cardW=(pageW-marginX*2-gutterX)/cols;
-    const cardH=(pageH-marginY*2-gutterY*(rows-1))/rows;
-    const qrSize=78;
+  const ptPerMm = 72 / 25.4;
+
+// A4 papir: 210 x 297 mm
+const pageW = 210 * ptPerMm;
+const pageH = 297 * ptPerMm;
+
+// Evropska standardna vizit karta: 85 x 55 mm
+const cols = 2, rows = 5;
+const cardW = 85 * ptPerMm;
+const cardH = 55 * ptPerMm;
+
+// Bez razmaka između kartica.
+// Kartice su spojene da mogu da se seku po linijama.
+const gutterX = 0;
+const gutterY = 0;
+
+// Centriraj spojenu mrežu kartica na A4
+const marginX = (pageW - cardW * cols) / 2;
+const marginY = (pageH - cardH * rows) / 2;
+
+// QR oko 24 mm
+const qrSize = 24 * ptPerMm;
     const qrImage=await qrToRgbImage(qrSource);
-   const nameFontSize=14.5;
-const nameMaxWidth=cardW*0.60-40;
-const nameLines=wrapTextToWidth(businessName,nameFontSize,true,nameMaxWidth,3);
-const locationLines=splitWords(locationText,36,3);
-const phoneFontSize=8;
-const phoneLineGap=9;
-const phoneLines=phoneList;
-const emailLines=splitWords(emailText,24,2);
+  const nameFontSize = 11.5;
+const phoneFontSize = 7.2;
+const phoneLineGap = 8.5;
+const locationFontSize = 7.5;
+const emailFontSize = 6.7;
+
+const leftTextMaxWidth = cardW * 0.55;
+
+const nameLines = wrapTextToWidth(businessName, nameFontSize, true, leftTextMaxWidth, 3);
+const locationLines = wrapTextToWidth(locationText, locationFontSize, false, leftTextMaxWidth, 3);
+const phoneLines = phoneList;
+const emailLines = wrapTextToWidth(emailText, emailFontSize, false, qrSize + 32, 2);
 
     const yPdf=(y)=>pageH-y;
     let content='';
@@ -1894,40 +1913,52 @@ const emailLines=splitWords(emailText,24,2);
       for(let c=0;c<cols;c++){
         const x=marginX+c*(cardW+gutterX);
         const y=marginY+r*(cardH+gutterY);
-        const dividerX=x+cardW*0.60;
-        const qrCenterX=x+cardW*0.80;
+const dividerX = x + cardW * 0.62;
+const qrCenterX = x + cardW * 0.81;
+const textX = x + 12;
 
-        setStroke(0.72,0.72,0.72);
-        rectStroke(x,y,cardW,cardH);
+setStroke(0.82,0.82,0.82);
+rectStroke(x,y,cardW,cardH);
 
-        setStroke(0.82,0.82,0.82);
-        line(dividerX,y+18,dividerX,y+cardH-18);
+setStroke(0.82,0.82,0.82);
+line(dividerX,y+14,dividerX,y+cardH-14);
 
-        setFill(0,0,0);
-        nameLines.forEach((ln,idx)=>{
-        text(x+15,y+24+idx*16,nameFontSize,true,ln);
-        });
+setFill(0,0,0);
 
-        const infoY=y+82;
-        phoneLines.forEach((ln,idx)=>{
-        text(x+15,infoY+idx*phoneLineGap,phoneFontSize,false,ln);
-        });
+// Naziv firme
+nameLines.forEach((ln,idx)=>{
+  text(textX, y + 19 + idx * 13, nameFontSize, true, ln);
+});
 
-        const locationStartY=infoY+phoneLines.length*phoneLineGap+15;
-        locationLines.forEach((ln,idx)=>{
-        text(x+15,locationStartY+idx*11,9.4,false,ln);
-        });
+// Telefoni
+const infoY = y + 72;
+phoneLines.forEach((ln,idx)=>{
+  text(textX, infoY + idx * phoneLineGap, phoneFontSize, false, ln);
+});
 
-        centeredText(qrCenterX,y+28,8,true,'ZAKAŽITE TERMIN');
-        centeredText(qrCenterX,y+39,8,true,'ONLINE');
+// Lokacija
+const locationStartY = infoY + phoneLines.length * phoneLineGap + 10;
+locationLines.forEach((ln,idx)=>{
+  text(textX, locationStartY + idx * 9.5, locationFontSize, false, ln);
+});
+      
 
-        const imgX=qrCenterX-qrSize/2;
-        const imgTop=y+48;
-        const imgY=pageH-imgTop-qrSize;
-        content += `q ${qrSize} 0 0 ${qrSize} ${imgX.toFixed(2)} ${imgY.toFixed(2)} cm /Im0 Do Q\n`;
+// Tekst iznad QR koda
+centeredText(qrCenterX, y + 23, 7, true, 'ZAKAŽITE TERMIN');
+centeredText(qrCenterX, y + 33, 7, true, 'ONLINE');
 
-        emailLines.forEach((ln,idx)=>centeredText(qrCenterX,y+135+idx*8,8.2,false,ln));
-      }
+// QR kod
+const imgX = qrCenterX - qrSize / 2;
+const imgTop = y + 43;
+const imgY = pageH - imgTop - qrSize;
+content += `q ${qrSize} 0 0 ${qrSize} ${imgX.toFixed(2)} ${imgY.toFixed(2)} cm /Im0 Do Q\n`;
+
+// Email ispod QR koda
+emailLines.forEach((ln,idx)=>{
+  centeredText(qrCenterX, y + 121 + idx * 7.5, emailFontSize, false, ln);
+});
+      
+  }
     }
 
     const encoder=new TextEncoder();

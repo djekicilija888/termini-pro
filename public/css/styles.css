@@ -930,8 +930,24 @@ body.manual-modal-body-open{
   min-height:98px;
 }
 .location-modal-check-v115{
+  display:flex !important;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
   align-content:center;
+  padding-top:24px;
 }
+
+
+.location-modal-check-v115 input[type="checkbox"]{
+  width:24px !important;
+  height:24px !important;
+  min-height:24px !important;
+  padding:0 !important;
+  margin:0 !important;
+  flex:0 0 auto;
+}
+
 .location-modal-actions-v115{
   grid-column:1 / -1;
   display:flex;
@@ -1640,6 +1656,16 @@ body.manual-modal-body-open{
 .staff-modal-form-v145 .worker-pin-wrap-v136{
   grid-column:1 / -1;
 }
+/* Checkbox "Aktivan" u popupu Radnici */
+.staff-modal-form-v145 .staff-active-field{
+  grid-column:3 / 4 !important;
+  justify-self:end !important;
+  transform:none !important;
+  margin-right:120px;
+}
+
+
+
 .staff-modal-form-v145 #staffLocationsBox,
 .staff-modal-form-v145 #staffLocationScheduleBox{
   border:1px solid #e5e7eb;
