@@ -12,7 +12,7 @@ window.esc=window.esc||esc;
 
 function publicPhoneList(value){
   return String(value||'')
-    .split(/[\n,;|/]+/)
+    .split(/[\n,;|]+/)
     .map(x=>x.trim())
     .filter(Boolean)
     .filter((x,i,a)=>a.indexOf(x)===i)

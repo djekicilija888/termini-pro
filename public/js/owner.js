@@ -745,6 +745,7 @@ staffForm.onsubmit=async e=>{
  staffSaveInProgress=true;
  const submitBtn=staffForm.querySelector('button[type="submit"]');
  const oldSubmitText=submitBtn?submitBtn.textContent:'';
+ const loadingDone = window.AppLoading ? window.AppLoading.begin('Čuvam radnika...', {immediate:true}) : null;
  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Čuvam...'}
  try{
   await ensureOwnerLocationsLoaded();
@@ -760,6 +761,7 @@ staffForm.onsubmit=async e=>{
   msg(err.message||'Radnik nije sačuvan.','err');
  }finally{
   staffSaveInProgress=false;
+  if(loadingDone)loadingDone();
   if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=oldSubmitText||'Sačuvaj radnika'}
  }
 };
@@ -1235,6 +1237,8 @@ async function loadSettings(){
  rememberProfileLocationSnapshot();
 }
 async function saveSettingsFormFast(){
+ const loadingDone = window.AppLoading ? window.AppLoading.begin('Čuvam podešavanja...', {immediate:true}) : null;
+ try{
  const mustSaveLocations=profileLocationNeedsSave();
  await api('/api/owner/settings',{method:'PUT',body:JSON.stringify({
   name:setName.value,type:setType.value,city:setCity.value,phone:syncBusinessPhones(),
@@ -1258,6 +1262,7 @@ async function saveSettingsFormFast(){
  msg('Podešavanja sačuvana.','ok');
  resetUnsavedGuard();
  return true;
+ }finally{if(loadingDone)loadingDone();}
 }
 settingsForm.onsubmit=async e=>{e.preventDefault();await saveSettingsFormFast();};async function loadLogs(){let rows=await api('/api/owner/notifications');logList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.channel} · ${x.status}</h3><p>${x.created_at} · ${x.recipient||''}</p><p class="muted">${(x.body||'').slice(0,220)}</p></article>`).join('')||'<p class="muted">Nema logova.</p>'}
 
@@ -1805,6 +1810,7 @@ async function saveProfileLocationFromModal(e){
  const btn=(typeof profileModalSaveBtn!=='undefined')?profileModalSaveBtn:null;
  const oldBtnText=btn?btn.textContent:'';
  profileLocationSaving=true;
+ const loadingDone = window.AppLoading ? window.AppLoading.begin('Čuvam lokaciju...', {immediate:true}) : null;
  if(btn){btn.disabled=true;btn.textContent='Čuvam...';}
  try{
   const loc=isNew?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[editIndex]||makeEmptyProfileLocation(editIndex+1));
@@ -1835,6 +1841,7 @@ async function saveProfileLocationFromModal(e){
   msg((err&&err.message)||'Greška pri čuvanju lokacije.','err');
  }finally{
   profileLocationSaving=false;
+  if(loadingDone)loadingDone();
   if(btn){btn.disabled=false;btn.textContent=oldBtnText||'Dodaj u listu';}
  }
 }
@@ -1876,7 +1883,7 @@ async function printQrPdfList(locationArg=null){
   const businessName=(b.name||'Vaša firma').trim();
   const rawPhoneText=String((loc&&loc.phone)||b.phone||'').trim();
   const phoneList=rawPhoneText
-    ? rawPhoneText.split(/[\n,;|/]+/).map(p=>p.trim()).filter(Boolean).slice(0,4)
+    ? rawPhoneText.split(/[\n,;|]+/).map(p=>p.trim()).filter(Boolean).slice(0,4)
     : ['Telefon nije unet'];
   const locCity=(loc&&loc.city)||b.city||'';
   const locAddress=(loc&&loc.address)||b.address||'';

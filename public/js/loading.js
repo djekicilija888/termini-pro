@@ -80,11 +80,6 @@
     hide(){ activeCount = 0; scheduleHide(); }
   };
 
-  if(window.fetch){
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = function(){
-      const done = begin('Učitavanje...', {immediate:false});
-      return originalFetch.apply(window, arguments).finally(done);
-    };
-  }
+  // Namerno NE presrećemo svaki fetch/API poziv.
+  // Spinner se poziva ručno samo za duže akcije: čuvanje većih formi i pravljenje PDF-a.
 })();
