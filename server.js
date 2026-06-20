@@ -91,7 +91,7 @@ async function tabletDeviceFromRequest(req){
  await run('UPDATE location_devices SET last_seen_at=?,updated_at=? WHERE id=?',[now(),now(),d.id]).catch(()=>{});
  return d;
 }
-const phone4=v=>String(v||'').split(/[\n,;|/]+/).map(x=>x.trim().replace(/[^0-9+()\-\s/]/g,'').replace(/\s+/g,' ')).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,4).join('\n');
+const phone4=v=>String(v||'').split(/[\n,;|]+/).map(x=>x.trim().replace(/[^0-9+()\-\s/]/g,'').replace(/\s+/g,' ')).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,4).join('\n');
 function slugify(t){const map={'š':'s','đ':'dj','č':'c','ć':'c','ž':'z','Š':'s','Đ':'dj','Č':'c','Ć':'c','Ž':'z'};return String(t||'firma').replace(/[šđčćžŠĐČĆŽ]/g,c=>map[c]||c).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'firma'}
 async function uniqueSlug(n){let b=slugify(n),s=b,i=2;while(await get('SELECT id FROM businesses WHERE slug=?',[s]))s=`${b}-${i++}`;return s}
 const abs=(req,p)=>`${req.protocol}://${req.get('host')}${p}`,bookUrl=(req,s)=>abs(req,`/b/${s}`),bookUrlLoc=(req,s,lid)=>abs(req,`/b/${s}${lid?`?loc=${lid}`:''}`),manageUrl=(req,t)=>abs(req,`/m/${t}`);
