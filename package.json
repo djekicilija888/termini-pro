@@ -20,5 +20,5 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "V157: Ubrzan admin panel i termini - manje DOM poslova i SQL upita"
+  "description": "V145: Radnici dodavanje i izmena kroz popup prozor"
 }

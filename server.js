@@ -166,7 +166,7 @@ async function init(){await run('PRAGMA foreign_keys=ON');
   order_id TEXT DEFAULT '',
   updated_at TEXT
  )`);
-await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_location_business ON business_locations(business_id,sort_order,id)');await run('CREATE INDEX IF NOT EXISTS idx_location_hours ON location_hours(business_id,location_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_blocked_periods_scope ON blocked_periods(business_id,location_id,date)');await run('CREATE INDEX IF NOT EXISTS idx_service_locations ON service_locations(business_id,service_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_locations ON staff_locations(business_id,staff_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_location_schedule ON staff_location_schedule(business_id,staff_id,day,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_location_schedule_lookup ON staff_location_schedule(business_id,staff_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_location_devices ON location_devices(business_id,location_id,active)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');await run('CREATE INDEX IF NOT EXISTS idx_appointments_slots ON appointments(business_id,date,status,staff_id,start_time,end_time)');await run('CREATE INDEX IF NOT EXISTS idx_appointments_owner_list ON appointments(business_id,date,start_time,status,location_id,staff_id)');
+await run('CREATE INDEX IF NOT EXISTS idx_biz_slug ON businesses(slug)');await run('CREATE INDEX IF NOT EXISTS idx_location_business ON business_locations(business_id,sort_order,id)');await run('CREATE INDEX IF NOT EXISTS idx_location_hours ON location_hours(business_id,location_id,day)');await run('CREATE INDEX IF NOT EXISTS idx_blocked_periods_scope ON blocked_periods(business_id,location_id,date)');await run('CREATE INDEX IF NOT EXISTS idx_service_locations ON service_locations(business_id,service_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_locations ON staff_locations(business_id,staff_id,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_staff_location_schedule ON staff_location_schedule(business_id,staff_id,day,location_id)');await run('CREATE INDEX IF NOT EXISTS idx_location_devices ON location_devices(business_id,location_id,active)');await run('CREATE INDEX IF NOT EXISTS idx_appt_token ON appointments(appt_token)');
  let se=email(process.env.SUPERADMIN_EMAIL||'admin@platform.local');if(!await get('SELECT id FROM users WHERE email=?',[se])){let h=await bcrypt.hash(process.env.SUPERADMIN_PASSWORD||'platform123',12);await run("INSERT INTO users(business_id,name,email,password_hash,role,created_at) VALUES(NULL,'Super Admin',?,?,'superadmin',?)",[se,h,now()])}}
 
 async function activeLocationIds(bid){
@@ -201,84 +201,28 @@ async function itemAllowedAtLocation(table,idCol,bid,itemId,locationId){
  let ok=await get(`SELECT 1 ok FROM ${table} WHERE business_id=? AND ${idCol}=? AND location_id=?`,[bid,Number(itemId),locationId]);
  return !!ok;
 }
-function sqlPlaceholders(values){return values.map(()=>'?').join(',')}
 async function attachLocationsToRows(rows,table,idCol,bid){
- rows=rows||[];
- if(!rows.length)return rows;
- const active=await activeLocationIds(bid);
- const ids=rows.map(r=>Number(r.id)).filter(Boolean);
- if(!ids.length){rows.forEach(r=>{r.location_ids=active});return rows}
- const rel=await all(`SELECT ${idCol} item_id,location_id FROM ${table} WHERE business_id=? AND ${idCol} IN (${sqlPlaceholders(ids)})`,[bid,...ids]);
- const byItem=new Map();
- for(const x of rel){
-  const itemId=Number(x.item_id),locId=Number(x.location_id);
-  if(!active.includes(locId))continue;
-  if(!byItem.has(itemId))byItem.set(itemId,[]);
-  byItem.get(itemId).push(locId);
+ for(let r of rows){
+  r.location_ids=await assignedLocationIds(table,idCol,bid,r.id);
  }
- rows.forEach(r=>{
-  const itemIds=byItem.get(Number(r.id))||[];
-  r.location_ids=itemIds.length?itemIds:active;
- });
  return rows;
 }
 async function filterRowsForLocation(rows,table,idCol,bid,locationId){
- rows=rows||[];
  locationId=Number(locationId||0);
- if(!locationId||!rows.length)return rows;
- const loc=await get('SELECT id FROM business_locations WHERE business_id=? AND id=? AND active=1',[bid,locationId]);
- if(!loc)return [];
- const ids=rows.map(r=>Number(r.id)).filter(Boolean);
- if(!ids.length)return rows;
- const rel=await all(`SELECT ${idCol} item_id,location_id FROM ${table} WHERE business_id=? AND ${idCol} IN (${sqlPlaceholders(ids)})`,[bid,...ids]);
- const byItem=new Map();
- for(const x of rel){
-  const itemId=Number(x.item_id),locId=Number(x.location_id);
-  if(!byItem.has(itemId))byItem.set(itemId,[]);
-  byItem.get(itemId).push(locId);
+ if(!locationId)return rows;
+ let out=[];
+ for(let r of rows){
+  if(await itemAllowedAtLocation(table,idCol,bid,r.id,locationId))out.push(r);
  }
- return rows.filter(r=>{
-  const assigned=byItem.get(Number(r.id));
-  return !assigned||assigned.length===0||assigned.includes(locationId);
- });
+ return out;
 }
 
 async function staffScheduleRows(bid,staffId){
  return await all('SELECT day,location_id,is_working,start_time,end_time FROM staff_location_schedule WHERE business_id=? AND staff_id=? ORDER BY day',[bid,Number(staffId)]);
 }
 async function attachStaffSchedules(rows,bid){
- rows=rows||[];
- if(!rows.length)return rows;
- const ids=rows.map(r=>Number(r.id)).filter(Boolean);
- if(!ids.length)return rows;
- const rel=await all(`SELECT staff_id,day,location_id,is_working,start_time,end_time FROM staff_location_schedule WHERE business_id=? AND staff_id IN (${sqlPlaceholders(ids)}) ORDER BY staff_id,day`,[bid,...ids]);
- const byStaff=new Map();
- for(const x of rel){
-  const sid=Number(x.staff_id);
-  if(!byStaff.has(sid))byStaff.set(sid,[]);
-  byStaff.get(sid).push({day:x.day,location_id:x.location_id,is_working:x.is_working,start_time:x.start_time,end_time:x.end_time});
- }
- rows.forEach(r=>{r.location_schedule=byStaff.get(Number(r.id))||[]});
+ for(let r of rows)r.location_schedule=await staffScheduleRows(bid,r.id);
  return rows;
-}
-async function staffSchedulesForDate(bid,staffRows,locationId,date){
- const out={};
- staffRows=staffRows||[];
- if(!locationId||!staffRows.length)return out;
- const ids=staffRows.map(r=>Number(r.id)).filter(Boolean);
- if(!ids.length)return out;
- const counts=await all(`SELECT staff_id,COUNT(*) total FROM staff_location_schedule WHERE business_id=? AND staff_id IN (${sqlPlaceholders(ids)}) GROUP BY staff_id`,[bid,...ids]);
- const hasSchedule=new Set(counts.filter(x=>Number(x.total||0)>0).map(x=>Number(x.staff_id)));
- const rows=await all(`SELECT * FROM staff_location_schedule WHERE business_id=? AND day=? AND staff_id IN (${sqlPlaceholders(ids)})`,[bid,dow(date),...ids]);
- const byStaff=new Map(rows.map(x=>[Number(x.staff_id),x]));
- for(const st of staffRows){
-  const sid=Number(st.id);
-  if(!hasSchedule.has(sid)){out[sid]=null;continue;}
-  const r=byStaff.get(sid);
-  if(!r||!r.is_working||Number(r.location_id||0)!==Number(locationId))out[sid]=false;
-  else out[sid]=r;
- }
- return out;
 }
 async function saveStaffLocationSchedule(bid,staffId,rows){
  await run('DELETE FROM staff_location_schedule WHERE business_id=? AND staff_id=?',[bid,Number(staffId)]);
@@ -405,7 +349,7 @@ async function slots(bid,date,service,staffId=null,opts={}){
  if(!staff.length)return[];
  let staffSchedules={};
  if(locationId){
-  staffSchedules=await staffSchedulesForDate(bid,staff,locationId,date);
+  for(let p of staff)staffSchedules[p.id]=await staffScheduleForDate(bid,p.id,locationId,date);
   staff=staff.filter(p=>staffSchedules[p.id]!==false);
  }
  if(!staff.length)return[];
@@ -413,16 +357,7 @@ async function slots(bid,date,service,staffId=null,opts={}){
  let dur=Number(service.duration),int=Number(s.interval||15),open=tm(h.open_time),close=tm(h.close_time),bs=h.break_start?tm(h.break_start):null,be=h.break_end?tm(h.break_end):null;
  let minDate=opts.ignoreMinNotice?new Date():new Date(Date.now()+Number(s.min_notice||0)*3600000);
  let out=[],busy={};
- const staffIds=staff.map(st=>Number(st.id)).filter(Boolean);
- staff.forEach(st=>{busy[st.id]=[]});
- if(staffIds.length){
-  const busyRows=await all(`SELECT staff_id,start_time,end_time FROM appointments WHERE business_id=? AND date=? AND status='booked' AND staff_id IN (${sqlPlaceholders(staffIds)})`,[bid,date,...staffIds]);
-  busyRows.forEach(x=>{
-   const sid=Number(x.staff_id);
-   if(!busy[sid])busy[sid]=[];
-   busy[sid].push({start_time:x.start_time,end_time:x.end_time});
-  });
- }
+ for(let st of staff)busy[st.id]=await all("SELECT start_time,end_time FROM appointments WHERE business_id=? AND date=? AND staff_id=? AND status='booked'",[bid,date,st.id]);
 
  for(let start=open;start+dur<=close;start+=int){
   let end=start+dur,stt=mt(start),ett=mt(end);

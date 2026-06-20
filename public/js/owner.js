@@ -1065,6 +1065,10 @@ if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
 };
 
 (function(){
+ function onceReady(fn){
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn,{once:true});
+  else fn();
+ }
  function installLocationHoursModal(){
   const modal=document.getElementById('locationHoursModal');
   const form=document.getElementById('locationHoursModalForm');
@@ -1087,8 +1091,7 @@ if(typeof saveHours!=='undefined')saveHours.onclick=async()=>{
     await loadHours();
   });
  }
- installLocationHoursModal();
- document.addEventListener('DOMContentLoaded',()=>{setTimeout(installLocationHoursModal,120);setTimeout(installLocationHoursModal,800)});
+ onceReady(installLocationHoursModal);
  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){const m=document.getElementById('locationHoursModal');if(m&&!m.classList.contains('hidden'))closeLocationHoursModal();}});
 })();
 
@@ -2249,6 +2252,7 @@ async function init(){
   if(!tok()){hide();return;}
   try{
    let me=await api('/api/auth/me');
+   window.__ownerAuthMe=me;
    if(me.user.role!=='owner')throw Error();
    const startupTab=getOwnerStartupTab();
    show();
@@ -2265,6 +2269,10 @@ init();
 
 /* Owner Nav Clean Final v72 */
 (function(){
+ function onceReady(fn){
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn,{once:true});
+  else fn();
+ }
  function cleanOwner(){
   const clone=document.getElementById('ownerStableNavClone');
   if(clone) clone.remove();
@@ -2272,9 +2280,7 @@ init();
    if((b.textContent||'').trim()==='Profil/poruke') b.textContent='Profil firme';
   });
  }
- cleanOwner();
- document.addEventListener('DOMContentLoaded',()=>{setTimeout(cleanOwner,100);setTimeout(cleanOwner,800)});
- document.addEventListener('click',ev=>{if(ev.target&&ev.target.closest&&ev.target.closest('.tabs'))setTimeout(cleanOwner,80)},true);
+ onceReady(cleanOwner);
 })();
 
 
@@ -2282,10 +2288,12 @@ init();
 /* Owner Facebook Style Header v74 */
 (function(){
   async function ownerApi(path){
+    if(path==='/api/auth/me'&&window.__ownerAuthMe)return window.__ownerAuthMe;
     const token = localStorage.getItem('terminiOwnerToken') || localStorage.getItem('token') || '';
     const res = await fetch(path, {headers:{Authorization:'Bearer '+token}});
     const data = await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(data.error || 'Greška');
+    if(path==='/api/auth/me')window.__ownerAuthMe=data;
     return data;
   }
 
@@ -2373,17 +2381,19 @@ init();
     if(clone) clone.remove();
   }
 
-  installFixedWideHeader();
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(installFixedWideHeader, 250);
-    setTimeout(installFixedWideHeader, 1000);
-  });
+  window.installOwnerFixedWideHeader=installFixedWideHeader;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded', installFixedWideHeader, {once:true});
+  else installFixedWideHeader();
 })();
 
 
 
 /* Owner Remove Duplicate Nonworking v76 */
 (function(){
+  function onceReady(fn){
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn,{once:true});
+    else fn();
+  }
   function removeDuplicateNonworking(){
     const forms = Array.from(document.querySelectorAll('#blockedForm'));
     forms.slice(1).forEach(form => {
@@ -2400,17 +2410,17 @@ init();
     });
   }
 
-  removeDuplicateNonworking();
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(removeDuplicateNonworking, 200);
-    setTimeout(removeDuplicateNonworking, 1000);
-  });
+  onceReady(removeDuplicateNonworking);
 })();
 
 
 
 /* Owner Manual Appointment Toggle v77 */
 (function(){
+  function onceReady(fn){
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn,{once:true});
+    else fn();
+  }
   function setupManualAppointmentToggle(){
     const btn = document.getElementById('toggleManualAppointment');
     const panel = document.getElementById('manualAppointmentPanel');
@@ -2431,25 +2441,24 @@ init();
     });
   }
 
-  setupManualAppointmentToggle();
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(setupManualAppointmentToggle, 200);
-    setTimeout(setupManualAppointmentToggle, 1000);
-  });
+  onceReady(setupManualAppointmentToggle);
 })();
 
 
 
 /* Owner Remove Novo Badge v78 */
 (function(){
+  function onceReady(fn){
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn,{once:true});
+    else fn();
+  }
   function removeNovoBadges(){
     document.querySelectorAll('.novo,.new-badge,.manual-new-badge,.owner-new-badge,.badge-novo,[data-badge="novo"]').forEach(el=>el.remove());
     document.querySelectorAll('span,b,small,em,strong').forEach(el=>{
       if((el.textContent||'').trim().toUpperCase()==='NOVO') el.remove();
     });
   }
-  removeNovoBadges();
-  document.addEventListener('DOMContentLoaded',()=>{setTimeout(removeNovoBadges,100);setTimeout(removeNovoBadges,800)});
+  onceReady(removeNovoBadges);
 })();
 
 
@@ -2537,11 +2546,8 @@ init();
     if(ev.key === 'Escape' && isOpen()) closeModal();
   });
 
-  install();
-  document.addEventListener('DOMContentLoaded', function(){
-    setTimeout(install, 200);
-    setTimeout(install, 1000);
-  });
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded', install, {once:true});
+  else install();
 })();
 
 // profile location modal escape v115
