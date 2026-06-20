@@ -1866,6 +1866,7 @@ if(typeof ownerLocationQrModal!=='undefined')ownerLocationQrModal.addEventListen
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){const m=document.getElementById('ownerLocationQrModal');if(m&&!m.classList.contains('hidden'))closeOwnerLocationQrModalFn();}});
 
 async function printQrPdfList(locationArg=null){
+ const __loadingDone = window.AppLoading ? window.AppLoading.begin('Pravim PDF...', {immediate:true}) : null;
  try{
   await loadBookingLink(false);
   const loc=(locationArg&&locationArg.id)?locationArg:null;
@@ -2165,13 +2166,14 @@ emailLines.forEach((ln,idx)=>{
     msg('Napravljen je PDF fajl sa QR vizit karticama.', 'ok');
   }
   setTimeout(()=>URL.revokeObjectURL(url),60000);
- }catch(e){msg(e.message,'err')}
+ }catch(e){msg(e.message,'err')}finally{if(__loadingDone)__loadingDone();}
 }
 
 if(typeof printQrPdfBtn!=='undefined')printQrPdfBtn.onclick=()=>printQrPdfList(ownerLocationsCache[0]||null);
 
 
 async function printQrStickerPdf(locationArg=null){
+ const __loadingDone = window.AppLoading ? window.AppLoading.begin('Pravim PDF...', {immediate:true}) : null;
  try{
   await loadBookingLink(false);
   const loc=(locationArg&&locationArg.id)?locationArg:null;
@@ -2209,7 +2211,7 @@ async function printQrStickerPdf(locationArg=null){
   const xrefPos=pos;let xref=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)xref+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';xref+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;parts.push(encoder.encode(xref));
   const total=parts.reduce((s,p)=>s+p.length,0),pdf=new Uint8Array(total);let off=0;for(const p of parts){pdf.set(p,off);off+=p.length}
   const blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='qr-nalepnice-'+safeFileName(title)+'.pdf';document.body.appendChild(a);a.click();a.remove();window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);msg('Napravljen je PDF sa QR nalepnicama.','ok');
- }catch(e){msg(e.message,'err')}
+ }catch(e){msg(e.message,'err')}finally{if(__loadingDone)__loadingDone();}
 }
 
 async function printA4DoorPoster(){

@@ -1866,3 +1866,54 @@ body.owner-booting #tabletAdminLock{
 @media(max-width:900px){
   .multi-phones-box-v159{grid-template-columns:1fr;}
 }
+
+/* =================================================
+   v160: Globalni kružić za učitavanje
+   Prikazuje se automatski kod sporijih fetch/API poziva.
+================================================= */
+.app-loading-overlay-v160{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(15,23,42,.32);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .18s ease, visibility .18s ease;
+}
+.app-loading-overlay-v160.is-visible{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.app-loading-box-v160{
+  min-width:150px;
+  padding:18px 20px;
+  border-radius:18px;
+  background:rgba(255,255,255,.96);
+  box-shadow:0 18px 50px rgba(15,23,42,.22);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  color:#111827;
+  font-weight:800;
+}
+.app-loading-spinner-v160{
+  width:38px;
+  height:38px;
+  border-radius:999px;
+  border:4px solid #e5e7eb;
+  border-top-color:#2563eb;
+  animation:app-loading-spin-v160 .75s linear infinite;
+}
+.app-loading-text-v160{
+  font-size:14px;
+  line-height:1.2;
+}
+@keyframes app-loading-spin-v160{
+  to{transform:rotate(360deg);}
+}
