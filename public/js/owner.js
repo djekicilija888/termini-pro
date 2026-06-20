@@ -639,8 +639,55 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   setTimeout(()=>resetUnsavedGuard(manualForm),80);
 };
 
+function splitStaffPhones(value){
+ return String(value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10);
+}
+function addStaffPhoneField(value=''){
+ const box=document.getElementById('staffPhonesBox');
+ if(!box)return null;
+ const addBtn=box.querySelector('.staff-add-phone-v158');
+ const row=document.createElement('div');
+ row.className='staff-phone-row-v158';
+ const input=document.createElement('input');
+ input.type='tel';
+ input.className='staff-phone-input-v158';
+ input.placeholder='Telefon radnika';
+ input.value=value||'';
+ const remove=document.createElement('button');
+ remove.type='button';
+ remove.className='staff-phone-remove-v158';
+ remove.setAttribute('aria-label','Ukloni telefon');
+ remove.title='Ukloni telefon';
+ remove.textContent='×';
+ remove.onclick=()=>{row.remove();markUnsavedScope(staffForm)};
+ row.appendChild(input);
+ row.appendChild(remove);
+ if(addBtn)box.insertBefore(row,addBtn);else box.appendChild(row);
+ return input;
+}
+function renderStaffPhones(value=''){
+ const box=document.getElementById('staffPhonesBox');
+ if(!box)return;
+ box.innerHTML='';
+ splitStaffPhones(value).forEach(v=>addStaffPhoneField(v));
+ const add=document.createElement('button');
+ add.type='button';
+ add.className='staff-add-phone-v158';
+ add.textContent='+ Dodaj telefon';
+ add.onclick=()=>{const input=addStaffPhoneField('');markUnsavedScope(staffForm);if(input)input.focus()};
+ box.appendChild(add);
+}
+function collectStaffPhones(){
+ const box=document.getElementById('staffPhonesBox');
+ if(!box)return '';
+ return [...box.querySelectorAll('.staff-phone-input-v158')].map(i=>i.value.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,10).join('\n');
+}
+function staffPhoneListText(value){
+ const phones=splitStaffPhones(value);
+ return phones.length?phones.join(' / '):'';
+}
 function resetSt(){
- staffId.value='';staffName.value='';staffTitle.value='';staffPhone.value='';staffEmail.value='';staffSort.value=0;staffActive.checked=true;
+ staffId.value='';staffName.value='';staffTitle.value='';renderStaffPhones('');staffEmail.value='';staffSort.value=0;staffActive.checked=true;
  if(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)staffWorkerAccess.checked=false;
  if(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)staffWorkerPin.value='';
  updateStaffWorkerPinVisibility();
@@ -658,7 +705,7 @@ function fillStaffForm(x){
  staffId.value=x.id;
  staffName.value=x.name||'';
  staffTitle.value=x.title||'';
- staffPhone.value=x.phone||'';
+ renderStaffPhones(x.phone||'');
  staffEmail.value=x.email||'';
  staffSort.value=x.sort_order||0;
  staffActive.checked=!!x.active;
@@ -701,7 +748,7 @@ staffForm.onsubmit=async e=>{
  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Čuvam...'}
  try{
   await ensureOwnerLocationsLoaded();
-  let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:staffPhone.value,email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,worker_access:(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)?staffWorkerAccess.checked:false,worker_pin:(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)?staffWorkerPin.value:'',location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
+  let id=staffId.value,p={name:staffName.value,title:staffTitle.value,phone:collectStaffPhones(),email:staffEmail.value,sort_order:+staffSort.value,active:staffActive.checked,worker_access:(typeof staffWorkerAccess!=='undefined'&&staffWorkerAccess)?staffWorkerAccess.checked:false,worker_pin:(typeof staffWorkerPin!=='undefined'&&staffWorkerPin)?staffWorkerPin.value:'',location_ids:collectLocationChecks('staffLocationsBox'),location_schedule:collectStaffLocationSchedule()};
   await api(id?'/api/owner/staff/'+id:'/api/owner/staff',{method:id?'PUT':'POST',body:JSON.stringify(p)});
   msg('Radnik sačuvan.','ok');
   markOwnerTabsStale('staff','appointments','bookinglink','dash');
@@ -723,7 +770,7 @@ async function loadStaff(){
   renderLocationChecks('staffLocationsBox',selectedActiveLocationIds());
   renderStaffLocationScheduleBox([],selectedActiveLocationIds());
  }
- staffList.innerHTML=rows.length?rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(x.phone||'')}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span><span>${x.worker_access?'Ima radnički pristup':'Bez pristupa telefonom'}</span></div><div class="actions"><button class="btn small ghost staff-edit-v136" data-id="${x.id}" type="button">Izmeni</button><button class="btn small staff-qr-v136" data-id="${x.id}" type="button" ${x.worker_access?'':'disabled'}>QR za radnika</button><button class="btn small ghost staff-delete-v157" data-id="${x.id}" type="button">Ukloni</button></div></article>`).join(''):'<p class="muted">Nema dodatih radnika. Klikni + Dodaj radnika.</p>';
+ staffList.innerHTML=rows.length?rows.map(x=>`<article class="item"><h3>${htmlEsc(x.name)}</h3><p>${htmlEsc(x.title||'')} ${htmlEsc(staffPhoneListText(x.phone))}</p><p class="muted">Lokacije: ${htmlEsc(itemLocationText(x))}</p><p class="muted">Raspored: ${htmlEsc(staffScheduleText(x))}</p><div class="badges"><span>${x.active?'Aktivan':'Ugašen'}</span><span>${x.worker_access?'Ima radnički pristup':'Bez pristupa telefonom'}</span></div><div class="actions"><button class="btn small ghost staff-edit-v136" data-id="${x.id}" type="button">Izmeni</button><button class="btn small staff-qr-v136" data-id="${x.id}" type="button" ${x.worker_access?'':'disabled'}>QR za radnika</button><button class="btn small ghost staff-delete-v157" data-id="${x.id}" type="button">Ukloni</button></div></article>`).join(''):'<p class="muted">Nema dodatih radnika. Klikni + Dodaj radnika.</p>';
  staffList.querySelectorAll('.staff-edit-v136').forEach(b=>b.onclick=()=>{let x=rows.find(r=>r.id==b.dataset.id);openStaffModal(x)});
  staffList.querySelectorAll('.staff-qr-v136').forEach(b=>b.onclick=()=>showWorkerQr(b.dataset.id));
  staffList.querySelectorAll('.staff-delete-v157').forEach(b=>b.onclick=()=>deleteStaff(b.dataset.id,rows.find(r=>r.id==b.dataset.id)));

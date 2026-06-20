@@ -1686,6 +1686,62 @@ body.manual-modal-body-open{
 }
 
 
+/* Telefoni radnika u popupu Radnici */
+.staff-phone-field-v158{
+  display:block;
+  font-size:14px;
+  min-width:0;
+}
+.staff-phone-title-v158{
+  font-weight:800;
+  margin:0 0 6px;
+}
+.staff-phones-box-v158{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.staff-phone-row-v158{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+}
+.staff-phone-row-v158 input{
+  flex:1 1 auto;
+  min-width:0;
+}
+.staff-phone-remove-v158{
+  width:36px;
+  height:36px;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  background:#fff;
+  color:#6b7280;
+  font-size:20px;
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+}
+.staff-phone-remove-v158:hover{
+  background:#f9fafb;
+  color:#111827;
+}
+.staff-add-phone-v158{
+  align-self:flex-start;
+  width:fit-content;
+  border:0;
+  background:transparent;
+  padding:4px 0;
+  color:#2563eb;
+  font-weight:900;
+  cursor:pointer;
+}
+.staff-add-phone-v158:hover{
+  text-decoration:underline;
+}
+
+
 
 .staff-modal-form-v145 #staffLocationsBox,
 .staff-modal-form-v145 #staffLocationScheduleBox{
