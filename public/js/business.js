@@ -37,9 +37,11 @@ function fieldWrap(el){
 function setStaffVisibility(count){
   const box = fieldWrap(staff);
   if(!box) return;
-  box.style.display = count <= 1 ? 'none' : '';
+  // Radnik treba da bude vidljiv i kada postoji samo jedan radnik.
+  // Mušterija tada jasno vidi kog radnika bira, umesto da se ime pojavi samo u listi vremena.
+  box.style.display = '';
   const visibleStaff = (typeof filteredStaff === 'function') ? filteredStaff() : (state.staff || []);
-  if(count <= 1 && visibleStaff.length === 1){
+  if(count === 1 && visibleStaff.length === 1){
     staff.value = String(visibleStaff[0].id);
   }
 }
