@@ -1,0 +1,9 @@
+v194 - Popravka pozadine iza fiksiranih donjih dugmadi na Androidu
+
+Uradjeno:
+- Dugmad Poništi / Sačuvaj radnika u modalu Radnici imaju potpuno neprovidnu belu pozadinu iza sebe.
+- Isti solidan donji footer dodat je i za modal lokacije, radno vreme lokacije i ručno dodavanje termina.
+- Stil je dodat u public i u android/app/src/main/assets/public, tako da Android assets već sadrže izmenu.
+- Cache verzija promenjena je na v194-solid-bottom-actions.
+
+Posle raspakivanja pokreni novi build/run u Android Studio.

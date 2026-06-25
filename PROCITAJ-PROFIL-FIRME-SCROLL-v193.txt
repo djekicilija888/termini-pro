@@ -1,0 +1,1 @@
+v193: Popravljen Android skrol u odeljku Profil firme. Dodati CSS/JS bottom padding i overflow fix, plus Android adjustResize za tastaturu. Izmene su upisane i u public i u android assets.

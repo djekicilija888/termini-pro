@@ -1,0 +1,7 @@
+Urađeno:
+- Profil firme više ne koristi isti scroll kao cela stranica.
+- Samo odeljak Profil firme sada dobija svoj poseban scroll container između gornjeg headera i donjeg menija.
+- Ovo ne dira odeljak Termini.
+- Ovo ne dira popup za ručno dodavanje termina.
+- Ovo ne dira Radnike.
+- Provereno je da JS fajlovi nemaju JavaScript syntax grešku.

@@ -921,10 +921,6 @@ function renderStaffPhones(value=''){
     ev.preventDefault();
     ev.stopPropagation();
   }
-  if(add.__phoneAddBusyV193)return;
-  add.__phoneAddBusyV193=true;
-  add.disabled=true;
-  add.classList.add('phone-add-disabled-v193');
   document.body.classList.add('phone-add-freeze-v192');
   const form=document.querySelector('#staffModal .staff-modal-form-v145');
   const oldTop=form?form.scrollTop:0;
@@ -953,23 +949,18 @@ function renderStaffPhones(value=''){
     setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),24);
     setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),72);
   }
-  setTimeout(()=>{
-    add.__phoneAddBusyV193=false;
-    add.disabled=false;
-    add.classList.remove('phone-add-disabled-v193');
-    document.body.classList.remove('phone-add-freeze-v192');
-  },850);
+  setTimeout(()=>document.body.classList.remove('phone-add-freeze-v192'),180);
 };
 add.addEventListener('pointerdown',ev=>{
   add.__phoneAddPointerHandledV192=true;
   runAddStaffPhoneV192(ev);
-  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},900);
+  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},350);
 });
 add.addEventListener('touchstart',ev=>{
   if(add.__phoneAddPointerHandledV192)return;
   add.__phoneAddPointerHandledV192=true;
   runAddStaffPhoneV192(ev);
-  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},900);
+  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},350);
 },{passive:false});
 add.onclick=(ev)=>{
   if(add.__phoneAddPointerHandledV192){
@@ -1797,10 +1788,6 @@ function renderMultiPhonesBox(boxId,hiddenId,max=10,value='',placeholder='Broj t
     ev.preventDefault();
     ev.stopPropagation();
   }
-  if(add.__phoneAddBusyV193)return;
-  add.__phoneAddBusyV193=true;
-  add.disabled=true;
-  add.classList.add('phone-add-disabled-v193');
   document.body.classList.add('phone-add-freeze-v192');
   const scroller=getMultiPhoneScrollContainerV181(document.activeElement);
   const oldTop=scroller?scroller.scrollTop:0;
@@ -1829,23 +1816,18 @@ function renderMultiPhonesBox(boxId,hiddenId,max=10,value='',placeholder='Broj t
     setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),24);
     setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),72);
   }
-  setTimeout(()=>{
-    add.__phoneAddBusyV193=false;
-    add.disabled=false;
-    add.classList.remove('phone-add-disabled-v193');
-    document.body.classList.remove('phone-add-freeze-v192');
-  },850);
+  setTimeout(()=>document.body.classList.remove('phone-add-freeze-v192'),180);
 };
 add.addEventListener('pointerdown',ev=>{
   add.__phoneAddPointerHandledV192=true;
   runAddMultiPhoneV192(ev);
-  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},900);
+  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},350);
 });
 add.addEventListener('touchstart',ev=>{
   if(add.__phoneAddPointerHandledV192)return;
   add.__phoneAddPointerHandledV192=true;
   runAddMultiPhoneV192(ev);
-  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},900);
+  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},350);
 },{passive:false});
 add.onclick=(ev)=>{
   if(add.__phoneAddPointerHandledV192){
@@ -3638,6 +3620,3 @@ document.addEventListener('keydown', function(ev){
 
 
 /* Add phone click no twitch v192 */
-
-
-/* Add phone fast click guard v193 */

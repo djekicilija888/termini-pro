@@ -1,0 +1,6 @@
+Urađeno:
+- Vraćeno je na verziju pre poslednjeg lošeg v196 fix-a, zato odeljak Termini više nije diran/kvare.
+- Profil firme scroll je popravljan direktno u postojećem FORCE SMALL stilu koji je pregazio prethodne CSS pokušaje.
+- Dodat je prazan prostor samo u Profil firme odeljku.
+- Nije menjana logika Termina, ručnog dodavanja termina, radnika, QR/PDF.
+- Provereno je da JS fajlovi nemaju JavaScript syntax grešku.

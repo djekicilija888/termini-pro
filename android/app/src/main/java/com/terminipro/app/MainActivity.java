@@ -18,6 +18,7 @@ import android.print.PrintDocumentInfo;
 import android.print.PrintManager;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.widget.Toast;
 
@@ -33,6 +34,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         try {
             if (this.bridge != null && this.bridge.getWebView() != null) {
                 this.bridge.getWebView().addJavascriptInterface(new TerminiAndroidFiles(this), "TerminiAndroidFiles");
