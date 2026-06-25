@@ -1,0 +1,4 @@
+Urađeno:
+- Ispravljena je Android build greška: cannot find symbol variable BuildConfig.
+- U MainActivity.java linija sa BuildConfig.APPLICATION_ID zamenjena je sa activity.getPackageName().
+- Ovo ne menja logiku dugmadi, samo popravlja build.

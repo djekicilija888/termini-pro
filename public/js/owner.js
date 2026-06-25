@@ -1835,6 +1835,59 @@ function ownerIsAndroidWebViewV186(){
   return !!(window.terminiIsNativeApp || (window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()) || (/Android/i.test(ua)&&/wv/i.test(ua)));
  }catch(_e){return false}
 }
+function ownerHasAndroidFilesBridgeV187(){
+ try{
+  return !!(window.TerminiAndroidFiles &&
+    typeof window.TerminiAndroidFiles.saveBase64File==='function' &&
+    typeof window.TerminiAndroidFiles.openBase64File==='function' &&
+    typeof window.TerminiAndroidFiles.printBase64File==='function');
+ }catch(_e){return false}
+}
+function ownerBlobToBase64V187(blob){
+ return new Promise((resolve,reject)=>{
+  try{
+   const reader=new FileReader();
+   reader.onload=()=>{
+    const value=String(reader.result||'');
+    const comma=value.indexOf(',');
+    resolve(comma>=0?value.slice(comma+1):value);
+   };
+   reader.onerror=()=>reject(new Error('Ne mogu da pripremim fajl.'));
+   reader.readAsDataURL(blob);
+  }catch(e){reject(e)}
+ });
+}
+async function ownerAndroidFileActionV187(action,blob,filename,title){
+ try{
+  if(!ownerHasAndroidFilesBridgeV187())return false;
+  const base64=await ownerBlobToBase64V187(blob);
+  const mime=blob.type || (String(filename||'').toLowerCase().endsWith('.pdf')?'application/pdf':'application/octet-stream');
+  let result='';
+
+  if(action==='download'){
+    result=window.TerminiAndroidFiles.saveBase64File(base64, filename||'termini-pro-fajl', mime);
+    msg('Fajl se čuva u Downloads / TerminiPro.', 'ok');
+    return true;
+  }
+
+  if(action==='open'){
+    result=window.TerminiAndroidFiles.openBase64File(base64, filename||'termini-pro-fajl', mime);
+    msg('Otvaram fajl preko telefona.', 'ok');
+    return true;
+  }
+
+  if(action==='print'){
+    result=window.TerminiAndroidFiles.printBase64File(base64, filename||'termini-pro-fajl', mime);
+    msg('Otvaram Android opcije za štampu.', 'ok');
+    return true;
+  }
+
+  return false;
+ }catch(e){
+  msg(e.message||'Android funkcija za fajl nije uspela.','err');
+  return true;
+ }
+}
 function ownerOpenBlobSafeV186(url,isPdf,title='Fajl'){
  try{
   if(isPdf && ownerIsAndroidWebViewV186()){
@@ -1883,7 +1936,7 @@ function showOwnerFileOptionsV185(blob, filename, title, options={}){
             ? `<div class="owner-pdf-fallback-v186">
                  <strong>PDF je spreman</strong>
                  <span>${htmlEsc(filename||'pdf-fajl.pdf')}</span>
-                 <p>Android WebView često ne prikazuje PDF unutar aplikacije, zato ovaj prostor više neće ostati prazan. Koristi dugmad ispod za otvaranje, preuzimanje ili štampu.</p>
+                 <p>Android ne prikazuje PDF ovde kao desktop browser. Dugmad ispod sada koriste Android funkcije telefona.</p>
                </div>`
             : isPdf
               ? `<iframe title="PDF pregled" src="${url}#toolbar=1&navpanes=0"></iframe>`
@@ -1905,11 +1958,13 @@ function showOwnerFileOptionsV185(blob, filename, title, options={}){
   modal.querySelector('.owner-file-options-close-v185').onclick=cleanup;
   modal.addEventListener('mousedown',ev=>{if(ev.target===modal)cleanup();});
 
-  modal.querySelector('.owner-file-open-v185').onclick=()=>{
+  modal.querySelector('.owner-file-open-v185').onclick=async()=>{
+    if(await ownerAndroidFileActionV187('open',blob,filename,title))return;
     ownerOpenBlobSafeV186(url,isPdf,title||filename||'Fajl');
   };
 
-  modal.querySelector('.owner-file-download-v185').onclick=()=>{
+  modal.querySelector('.owner-file-download-v185').onclick=async()=>{
+    if(await ownerAndroidFileActionV187('download',blob,filename,title))return;
     try{
       const a=document.createElement('a');
       a.href=url;
@@ -1923,7 +1978,8 @@ function showOwnerFileOptionsV185(blob, filename, title, options={}){
     }
   };
 
-  modal.querySelector('.owner-file-print-v185').onclick=()=>{
+  modal.querySelector('.owner-file-print-v185').onclick=async()=>{
+    if(await ownerAndroidFileActionV187('print',blob,filename,title))return;
     ownerPrintBlobUrlV185(url,isPdf,title||filename||'Fajl');
   };
 
@@ -1936,11 +1992,6 @@ function showOwnerFileOptionsV185(blob, filename, title, options={}){
 function ownerPrintBlobUrlV185(url,isPdf,title='Štampa'){
  try{
   if(isPdf){
-    if(ownerIsAndroidWebViewV186()){
-      ownerOpenBlobSafeV186(url,true,title);
-      msg('Na Androidu se PDF štampa iz PDF pregledača: otvori/preuzmi fajl, pa izaberi Print/Štampaj.', 'ok');
-      return;
-    }
     const frame=document.createElement('iframe');
     frame.className='owner-print-frame-v185';
     frame.src=url;
@@ -3460,3 +3511,6 @@ document.addEventListener('keydown', function(ev){
 
 
 /* QR PDF Android blank preview fix v186 */
+
+
+/* QR PDF native Android buttons fix v187 */

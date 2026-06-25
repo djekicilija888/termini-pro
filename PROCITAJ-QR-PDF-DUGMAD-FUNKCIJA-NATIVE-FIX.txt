@@ -1,0 +1,9 @@
+Urađeno:
+- Dugmad Otvori / Preuzmi / Štampaj više nisu samo web dugmad.
+- Dodata je Android native veza u MainActivity.java.
+- Preuzmi: čuva fajl u Downloads / TerminiPro.
+- Otvori: otvara PDF/SVG preko aplikacija na telefonu.
+- Štampaj: za PDF otvara Android Print dijalog.
+- Web/desktop i dalje koriste browser funkcije.
+- Pošto je menjan MainActivity.java, Android aplikaciju treba ponovo buildovati/pokrenuti u Android Studio.
+- Provereno je da owner.js nema JavaScript syntax grešku.
