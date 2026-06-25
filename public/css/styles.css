@@ -2544,3 +2544,45 @@ body.staff-phone-typing-v167 #staffModal .staff-modal-form-v145{
 #manualForm .manual-appointment-actions-v161 #manualCancel{
   text-transform:none !important;
 }
+
+
+/* Profil firme telefoni kao radnici v181 */
+.multi-phones-box-v159{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  align-items:start;
+}
+.multi-phone-row-v159{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  min-width:0;
+}
+.multi-phone-row-v159 input{
+  flex:1 1 auto;
+  min-width:0;
+}
+.multi-add-phone-v159{
+  grid-column:1 / -1;
+  justify-self:stretch;
+  width:100%;
+  border:1px dashed #cbd5e1;
+  background:#f8fafc;
+  padding:10px 12px;
+  color:#1d4ed8;
+  font-weight:900;
+  border-radius:14px;
+  cursor:pointer;
+  text-align:center;
+}
+.multi-add-phone-v159:hover{
+  background:#eff6ff;
+  border-color:#93c5fd;
+  text-decoration:none;
+}
+.multi-phone-remove-v159.hidden,
+.multi-add-phone-v159.hidden{
+  display:none !important;
+}

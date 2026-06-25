@@ -3540,3 +3540,32 @@ html body #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145
 html body #manualForm .manual-appointment-actions-v161 #manualCancel{
   text-transform:none !important;
 }
+
+
+/* Profil firme telefoni kao radnici v181 */
+body.cap-mobile-owner-ready .multi-phones-box-v159{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:12px !important;
+}
+body.cap-mobile-owner-ready .multi-phone-row-v159{
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+}
+body.cap-mobile-owner-ready .multi-add-phone-v159{
+  width:100% !important;
+  min-height:54px !important;
+  border:1px dashed #cbd5e1 !important;
+  background:#f8fafc !important;
+  padding:10px 12px !important;
+  color:#1d4ed8 !important;
+  font-weight:900 !important;
+  font-size:20px !important;
+  border-radius:16px !important;
+  text-align:center !important;
+}
+body.cap-mobile-owner-ready .multi-add-phone-v159.hidden,
+body.cap-mobile-owner-ready .multi-phone-remove-v159.hidden{
+  display:none !important;
+}

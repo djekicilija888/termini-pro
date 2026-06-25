@@ -1535,21 +1535,132 @@ function collectMultiPhonesBox(boxId,max=10){
   .slice(0,max)
   .join('\n');
 }
+function getMultiPhoneScrollContainerV181(input){
+ try{
+  return input?.closest('.location-modal-form-v115') || document.scrollingElement || document.documentElement || document.body;
+ }catch(_e){
+  return document.scrollingElement || document.documentElement || document.body;
+ }
+}
+function syncMultiPhonesUi(boxId,max=10){
+ const box=document.getElementById(boxId);
+ if(!box)return;
+ const rows=[...box.querySelectorAll('.multi-phone-row-v159')];
+ const addBtn=box.querySelector('.multi-add-phone-v159');
+ const anyFilled=rows.some(row=>{
+  const input=row.querySelector('.multi-phone-input-v159');
+  return input && input.value.trim();
+ });
+ if(addBtn)addBtn.classList.toggle('hidden',!anyFilled || rows.length>=max);
+ rows.forEach(row=>{
+  const input=row.querySelector('.multi-phone-input-v159');
+  const remove=row.querySelector('.multi-phone-remove-v159');
+  if(!input||!remove)return;
+  const shouldShow=rows.length>1 || !!input.value.trim();
+  remove.classList.toggle('hidden',!shouldShow);
+  remove.disabled=!shouldShow;
+ });
+}
 function syncMultiPhonesBox(boxId,hiddenId,max=10){
  const hidden=document.getElementById(hiddenId);
  if(hidden)hidden.value=collectMultiPhonesBox(boxId,max);
- refreshMultiPhonesAddButton(boxId,max);
+ syncMultiPhonesUi(boxId,max);
  return hidden?hidden.value:'';
 }
 function refreshMultiPhonesAddButton(boxId,max=10){
- const box=document.getElementById(boxId);
- if(!box)return;
- const add=box.querySelector('.multi-add-phone-v159');
- if(!add)return;
- const count=box.querySelectorAll('.multi-phone-input-v159').length;
- add.classList.toggle('hidden',count>=max);
+ syncMultiPhonesUi(boxId,max);
 }
-function addMultiPhoneField(boxId,hiddenId,max=10,value='',placeholder='Telefon',scopeEl=null){
+function clearMultiPhoneFixedCenterV181(){
+ try{
+  const scroller=document.querySelector('.location-modal-form-v115[data-multi-phone-lock-active-v181="1"]') || getMultiPhoneScrollContainerV181(document.activeElement);
+  if(scroller){
+   delete scroller.dataset.multiPhoneLockScrollTopV181;
+   delete scroller.dataset.multiPhoneLockActiveV181;
+  }
+ }catch(_e){}
+}
+function applyMultiPhoneLockedScrollV181(input){
+ try{
+  const scroller=getMultiPhoneScrollContainerV181(input || document.activeElement);
+  if(!scroller || scroller.dataset.multiPhoneLockActiveV181!=='1')return;
+  const top=Number(scroller.dataset.multiPhoneLockScrollTopV181||'');
+  if(Number.isFinite(top))scroller.scrollTop=top;
+ }catch(_e){}
+}
+function centerMultiPhoneInputOnScreenV181(input, force=false){
+ try{
+  if(!input)return;
+  const row=input.closest('.multi-phone-row-v159') || input;
+  const scroller=getMultiPhoneScrollContainerV181(input);
+  if(!row || !scroller)return;
+  const doCenter=()=>{
+    try{
+      const vv=window.visualViewport;
+      const viewportTop=vv?vv.offsetTop:0;
+      const viewportHeight=vv?vv.height:window.innerHeight;
+      const wantedCenter=viewportTop+(viewportHeight*0.50);
+      const rect=row.getBoundingClientRect();
+      const rowCenter=rect.top+(rect.height/2);
+      const delta=rowCenter-wantedCenter;
+      scroller.scrollTop += delta;
+      scroller.dataset.multiPhoneLockScrollTopV181=String(scroller.scrollTop);
+      scroller.dataset.multiPhoneLockActiveV181='1';
+    }catch(_e){
+      try{
+        row.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+        scroller.dataset.multiPhoneLockScrollTopV181=String(scroller.scrollTop);
+        scroller.dataset.multiPhoneLockActiveV181='1';
+      }catch(_e2){}
+    }
+  };
+  if(force || scroller.dataset.multiPhoneLockActiveV181!=='1'){
+    doCenter();
+    clearTimeout(window.__multiPhoneCenterTimerV181);
+    window.__multiPhoneCenterTimerV181=setTimeout(doCenter,80);
+    setTimeout(doCenter,220);
+  }else{
+    applyMultiPhoneLockedScrollV181(input);
+  }
+ }catch(_e){}
+}
+function keepMultiPhoneLockedAfterTypingV181(input){
+ try{
+  applyMultiPhoneLockedScrollV181(input);
+  requestAnimationFrame(()=>applyMultiPhoneLockedScrollV181(input));
+  clearTimeout(window.__multiPhoneLockRestoreTimerV181);
+  window.__multiPhoneLockRestoreTimerV181=setTimeout(()=>applyMultiPhoneLockedScrollV181(input),40);
+  setTimeout(()=>applyMultiPhoneLockedScrollV181(input),120);
+ }catch(_e){}
+}
+function scheduleMultiPhoneCenterAfterKeyboardV181(input){
+ try{
+  if(!input)return;
+  centerMultiPhoneInputOnScreenV181(input,true);
+  clearTimeout(window.__multiPhoneKeyboardCenterTimer1V181);
+  clearTimeout(window.__multiPhoneKeyboardCenterTimer2V181);
+  clearTimeout(window.__multiPhoneKeyboardCenterTimer3V181);
+  clearTimeout(window.__multiPhoneKeyboardCenterTimer4V181);
+  window.__multiPhoneKeyboardCenterTimer1V181=setTimeout(()=>centerMultiPhoneInputOnScreenV181(input,true),120);
+  window.__multiPhoneKeyboardCenterTimer2V181=setTimeout(()=>centerMultiPhoneInputOnScreenV181(input,true),300);
+  window.__multiPhoneKeyboardCenterTimer3V181=setTimeout(()=>centerMultiPhoneInputOnScreenV181(input,true),550);
+  window.__multiPhoneKeyboardCenterTimer4V181=setTimeout(()=>centerMultiPhoneInputOnScreenV181(input,true),850);
+ }catch(_e){}
+}
+(function installMultiPhoneViewportCenterV181(){
+ try{
+  if(window.__multiPhoneViewportCenterInstalledV181)return;
+  window.__multiPhoneViewportCenterInstalledV181=true;
+  const handler=()=>{
+    const active=document.activeElement;
+    if(active && active.classList && active.classList.contains('multi-phone-input-v159')){
+      scheduleMultiPhoneCenterAfterKeyboardV181(active);
+    }
+  };
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',handler);
+  window.addEventListener('resize',handler);
+ }catch(_e){}
+})();
+function addMultiPhoneField(boxId,hiddenId,max=10,value='',placeholder='Broj telefona',scopeEl=null){
  const box=document.getElementById(boxId);
  if(!box)return null;
  const existing=box.querySelectorAll('.multi-phone-input-v159').length;
@@ -1560,44 +1671,79 @@ function addMultiPhoneField(boxId,hiddenId,max=10,value='',placeholder='Telefon'
  const input=document.createElement('input');
  input.type='tel';
  input.className='multi-phone-input-v159';
- input.placeholder=placeholder;
+ input.placeholder=placeholder || 'Broj telefona';
  input.value=value||'';
+ input.addEventListener('focus',()=>scheduleMultiPhoneCenterAfterKeyboardV181(input));
+ input.addEventListener('click',()=>scheduleMultiPhoneCenterAfterKeyboardV181(input));
+ input.addEventListener('input',()=>{
+  const addBtnBefore=box.querySelector('.multi-add-phone-v159');
+  const wasHidden=!addBtnBefore || addBtnBefore.classList.contains('hidden');
+  syncMultiPhonesBox(boxId,hiddenId,max);
+  if(scopeEl)markUnsavedScope(scopeEl);
+  const addBtnAfter=box.querySelector('.multi-add-phone-v159');
+  const becameVisible=wasHidden && addBtnAfter && !addBtnAfter.classList.contains('hidden');
+  if(becameVisible){
+    centerMultiPhoneInputOnScreenV181(input,true);
+    keepMultiPhoneLockedAfterTypingV181(input);
+    requestAnimationFrame(()=>keepMultiPhoneLockedAfterTypingV181(input));
+    setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),30);
+    setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),90);
+  }else{
+    keepMultiPhoneLockedAfterTypingV181(input);
+  }
+ });
+ input.addEventListener('blur',()=>setTimeout(()=>clearMultiPhoneFixedCenterV181(),220));
  const remove=document.createElement('button');
  remove.type='button';
  remove.className='multi-phone-remove-v159';
  remove.setAttribute('aria-label','Ukloni telefon');
  remove.title='Ukloni telefon';
  remove.textContent='×';
- const sync=()=>{syncMultiPhonesBox(boxId,hiddenId,max);if(scopeEl)markUnsavedScope(scopeEl)};
- input.addEventListener('input',sync);
- remove.onclick=()=>{row.remove();sync();};
+ remove.onclick=()=>{
+  row.remove();
+  if(!box.querySelector('.multi-phone-row-v159'))addMultiPhoneField(boxId,hiddenId,max,'',placeholder,scopeEl);
+  syncMultiPhonesBox(boxId,hiddenId,max);
+  if(scopeEl)markUnsavedScope(scopeEl);
+ };
  row.appendChild(input);
  row.appendChild(remove);
  if(addBtn)box.insertBefore(row,addBtn);else box.appendChild(row);
  syncMultiPhonesBox(boxId,hiddenId,max);
  return input;
 }
-function renderMultiPhonesBox(boxId,hiddenId,max=10,value='',placeholder='Telefon',scopeEl=null){
+function renderMultiPhonesBox(boxId,hiddenId,max=10,value='',placeholder='Broj telefona',scopeEl=null){
  const box=document.getElementById(boxId);
  const hidden=document.getElementById(hiddenId);
  if(!box)return;
  box.innerHTML='';
  const phones=ownerPhonePartsLimited(value,max);
  if(hidden)hidden.value=phones.join('\n');
+ if(!phones.length)phones.push('');
  phones.forEach(v=>addMultiPhoneField(boxId,hiddenId,max,v,placeholder,scopeEl));
  const add=document.createElement('button');
  add.type='button';
- add.className='multi-add-phone-v159';
- add.textContent='+ Dodaj telefon';
- add.onclick=()=>{const input=addMultiPhoneField(boxId,hiddenId,max,'',placeholder,scopeEl);if(input){if(scopeEl)markUnsavedScope(scopeEl);input.focus();}};
+ add.className='multi-add-phone-v159 hidden';
+ add.textContent='Dodaj još jedan telefon';
+ add.onclick=(ev)=>{
+  if(ev)ev.preventDefault();
+  const input=addMultiPhoneField(boxId,hiddenId,max,'',placeholder,scopeEl);
+  syncMultiPhonesBox(boxId,hiddenId,max);
+  if(scopeEl)markUnsavedScope(scopeEl);
+  if(input){
+    try{ input.focus({preventScroll:true}); }catch(_e){ input.focus(); }
+    scheduleMultiPhoneCenterAfterKeyboardV181(input);
+    keepMultiPhoneLockedAfterTypingV181(input);
+    requestAnimationFrame(()=>keepMultiPhoneLockedAfterTypingV181(input));
+  }
+ };
  box.appendChild(add);
- refreshMultiPhonesAddButton(boxId,max);
+ syncMultiPhonesBox(boxId,hiddenId,max);
 }
 function renderBusinessPhones(value=''){
- renderMultiPhonesBox('businessPhonesBox','setPhone',10,value,'Telefon firme',typeof settingsForm!=='undefined'?settingsForm:null);
+ renderMultiPhonesBox('businessPhonesBox','setPhone',10,value,'Broj telefona',typeof settingsForm!=='undefined'?settingsForm:null);
 }
 function renderProfileModalPhones(value=''){
- renderMultiPhonesBox('profileModalPhonesBox','profileModalPhone',4,value,'Telefon lokacije',typeof profileLocationForm!=='undefined'?profileLocationForm:null);
+ renderMultiPhonesBox('profileModalPhonesBox','profileModalPhone',4,value,'Broj telefona',typeof profileLocationForm!=='undefined'?profileLocationForm:null);
 }
 function syncBusinessPhones(){return syncMultiPhonesBox('businessPhonesBox','setPhone',10)}
 function syncProfileModalPhones(){return syncMultiPhonesBox('profileModalPhonesBox','profileModalPhone',4)}
