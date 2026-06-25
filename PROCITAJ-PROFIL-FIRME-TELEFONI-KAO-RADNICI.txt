@@ -1,7 +1,0 @@
-Urađeno:
-- U odeljku Profil firme telefoni rade po istom principu kao u Dodaj radnika.
-- Prikazuje se prazno polje za broj telefona.
-- Dugme Dodaj još jedan telefon pojavljuje se tek kada u aktivnom polju postoji broj.
-- Uklanjanje reda i ponašanje su usklađeni sa radnicima.
-- Isto važi za telefone firme i telefone lokacije u popup-u za lokaciju.
-- Izmenjeno i za WEB i za ANDROID kopiju.

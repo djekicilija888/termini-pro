@@ -1,0 +1,4 @@
+Urađeno:
+- U odeljku Profil firme smanjeno je dugme "Dodaj još jedan telefon".
+- Smanjena je visina, padding, font i zaobljenje.
+- Izmenjeno je i za WEB i za ANDROID kopiju.

@@ -1829,6 +1829,151 @@ async function fetchOwnerQrDataUrl(locationId=''){
  let svg=await r.text();
  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
+function ownerIsAndroidWebViewV186(){
+ try{
+  const ua=navigator.userAgent||'';
+  return !!(window.terminiIsNativeApp || (window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()) || (/Android/i.test(ua)&&/wv/i.test(ua)));
+ }catch(_e){return false}
+}
+function ownerOpenBlobSafeV186(url,isPdf,title='Fajl'){
+ try{
+  if(isPdf && ownerIsAndroidWebViewV186()){
+    const w=window.open(url,'_system') || window.open(url,'_blank');
+    if(!w){
+      msg('Android ne može uvek da otvori PDF pregled u aplikaciji. Klikni Preuzmi, pa otvori fajl iz telefona.', 'ok');
+    }else{
+      msg('PDF je poslat na otvaranje.', 'ok');
+    }
+    return;
+  }
+  const w=window.open(url,'_blank');
+  if(!w){
+    try{location.href=url}catch(_e){}
+    msg('Ako se fajl ne otvori, klikni Preuzmi.', 'ok');
+  }
+ }catch(e){msg(e.message||'Ne mogu da otvorim fajl.','err')}
+}
+function showOwnerFileOptionsV185(blob, filename, title, options={}){
+ try{
+  const kind=options.kind || (String(filename||'').toLowerCase().endsWith('.pdf')?'pdf':'file');
+  const isPdf=kind==='pdf' || (blob && blob.type==='application/pdf');
+  const isAndroid=ownerIsAndroidWebViewV186();
+  const url=URL.createObjectURL(blob);
+
+  try{document.getElementById('ownerFileOptionsModalV185')?.remove()}catch(_e){}
+
+  const modal=document.createElement('div');
+  modal.id='ownerFileOptionsModalV185';
+  modal.className='owner-file-options-modal-v185';
+  modal.innerHTML=`
+    <div class="owner-file-options-box-v185">
+      <div class="owner-file-options-head-v185">
+        <div>
+          <p class="eyebrow">QR / PDF</p>
+          <h3>${htmlEsc(title||'Fajl je spreman')}</h3>
+        </div>
+        <button type="button" class="owner-file-options-close-v185" aria-label="Zatvori">×</button>
+      </div>
+      <p class="muted owner-file-options-note-v185">
+        Fajl je napravljen. Izaberi šta želiš da uradiš.
+      </p>
+      <div class="owner-file-options-preview-v185 ${isPdf&&isAndroid?'owner-file-options-preview-fallback-v186':''}">
+        ${
+          isPdf && isAndroid
+            ? `<div class="owner-pdf-fallback-v186">
+                 <strong>PDF je spreman</strong>
+                 <span>${htmlEsc(filename||'pdf-fajl.pdf')}</span>
+                 <p>Android WebView često ne prikazuje PDF unutar aplikacije, zato ovaj prostor više neće ostati prazan. Koristi dugmad ispod za otvaranje, preuzimanje ili štampu.</p>
+               </div>`
+            : isPdf
+              ? `<iframe title="PDF pregled" src="${url}#toolbar=1&navpanes=0"></iframe>`
+              : `<img alt="QR kod" src="${url}">`
+        }
+      </div>
+      <div class="owner-file-options-actions-v185">
+        <button type="button" class="btn ghost owner-file-open-v185">Otvori</button>
+        <button type="button" class="btn ghost owner-file-download-v185">Preuzmi</button>
+        <button type="button" class="btn owner-file-print-v185">Štampaj</button>
+      </div>
+    </div>`;
+
+  const cleanup=()=>{
+    try{modal.remove()}catch(_e){}
+    setTimeout(()=>{try{URL.revokeObjectURL(url)}catch(_e){}},60000);
+  };
+
+  modal.querySelector('.owner-file-options-close-v185').onclick=cleanup;
+  modal.addEventListener('mousedown',ev=>{if(ev.target===modal)cleanup();});
+
+  modal.querySelector('.owner-file-open-v185').onclick=()=>{
+    ownerOpenBlobSafeV186(url,isPdf,title||filename||'Fajl');
+  };
+
+  modal.querySelector('.owner-file-download-v185').onclick=()=>{
+    try{
+      const a=document.createElement('a');
+      a.href=url;
+      a.download=filename||'termini-fajl';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      msg('Fajl je poslat na preuzimanje.', 'ok');
+    }catch(_e){
+      ownerOpenBlobSafeV186(url,isPdf,title||filename||'Fajl');
+    }
+  };
+
+  modal.querySelector('.owner-file-print-v185').onclick=()=>{
+    ownerPrintBlobUrlV185(url,isPdf,title||filename||'Fajl');
+  };
+
+  document.body.appendChild(modal);
+  msg('Fajl je napravljen. Izaberi: Otvori, Preuzmi ili Štampaj.', 'ok');
+ }catch(e){
+  msg(e.message||'Ne mogu da prikažem opcije za fajl.','err');
+ }
+}
+function ownerPrintBlobUrlV185(url,isPdf,title='Štampa'){
+ try{
+  if(isPdf){
+    if(ownerIsAndroidWebViewV186()){
+      ownerOpenBlobSafeV186(url,true,title);
+      msg('Na Androidu se PDF štampa iz PDF pregledača: otvori/preuzmi fajl, pa izaberi Print/Štampaj.', 'ok');
+      return;
+    }
+    const frame=document.createElement('iframe');
+    frame.className='owner-print-frame-v185';
+    frame.src=url;
+    document.body.appendChild(frame);
+    frame.onload=()=>{
+      setTimeout(()=>{
+        try{
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+          msg('Otvoren je dijalog za štampu.', 'ok');
+        }catch(_e){
+          const w=window.open(url,'_blank');
+          if(!w)msg('Otvori PDF pa izaberi štampu iz pregledača.', 'ok');
+        }
+      },500);
+    };
+    setTimeout(()=>{try{frame.remove()}catch(_e){}},90000);
+    return;
+  }
+
+  const w=window.open('','_blank');
+  if(w){
+    w.document.open();
+    w.document.write(`<!doctype html><html><head><title>${htmlEsc(title)}</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fff}img{max-width:90vw;max-height:90vh}</style></head><body><img src="${url}" onload="setTimeout(function(){window.focus();window.print()},300)"></body></html>`);
+    w.document.close();
+    msg('Otvoren je QR za štampu.', 'ok');
+  }else{
+    msg('Pregledač nije dozvolio novi prozor. Klikni Otvori ili Preuzmi.', 'ok');
+  }
+ }catch(e){
+  msg(e.message||'Ne mogu da otvorim štampu.','err');
+ }
+}
 async function downloadOwnerQrCode(locationArg){
  try{
   await loadBookingLink(false);
@@ -1840,11 +1985,8 @@ async function downloadOwnerQrCode(locationArg){
   if(!r.ok)throw Error('Ne mogu da preuzmem QR kod.');
   let svg=await r.text();
   const blob=new Blob([svg],{type:'image/svg+xml'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='qr-kod-'+safeFileName(loc?loc.name:'glavni-link')+'.svg';
-  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),30000);
-  msg('QR kod je preuzet.','ok');
+  const filename='qr-kod-'+safeFileName(loc?loc.name:'glavni-link')+'.svg';
+  showOwnerFileOptionsV185(blob, filename, 'QR kod '+(loc?ownerLocationTitle(loc,0):'glavnog linka'), {kind:'image'});
  }catch(e){msg(e.message,'err')}
 }
 
@@ -2573,21 +2715,8 @@ emailLines.forEach((ln,idx)=>{
   }
 
   const blob=await makePdf();
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='qr-vizit-kartice-'+safeFileName(loc?loc.name:'glavni-link')+'.pdf';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  const w=window.open(url,'_blank');
-  if(!w){
-    msg('PDF je preuzet kao fajl qr-vizit-kartice.pdf. Otvori ga i štampaj.', 'ok');
-  }else{
-    msg('Napravljen je PDF fajl sa QR vizit karticama.', 'ok');
-  }
-  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  const filename='qr-vizit-kartice-'+safeFileName(loc?loc.name:'glavni-link')+'.pdf';
+  showOwnerFileOptionsV185(blob, filename, 'QR vizit karte', {kind:'pdf'});
  }catch(e){msg(e.message,'err')}finally{if(__loadingDone)__loadingDone();}
 }
 
@@ -2632,7 +2761,9 @@ async function printQrStickerPdf(locationArg=null){
   for(let i=0;i<objs.length;i++){offsets.push(pos);let head=encoder.encode(`${i+1} 0 obj\n`),tail=encoder.encode('\nendobj\n');parts.push(head,objs[i],tail);pos+=head.length+objs[i].length+tail.length}
   const xrefPos=pos;let xref=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)xref+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';xref+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;parts.push(encoder.encode(xref));
   const total=parts.reduce((s,p)=>s+p.length,0),pdf=new Uint8Array(total);let off=0;for(const p of parts){pdf.set(p,off);off+=p.length}
-  const blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='qr-nalepnice-'+safeFileName(title)+'.pdf';document.body.appendChild(a);a.click();a.remove();window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);msg('Napravljen je PDF sa QR nalepnicama.','ok');
+  const blob=new Blob([pdf],{type:'application/pdf'});
+  const filename='qr-nalepnice-'+safeFileName(title)+'.pdf';
+  showOwnerFileOptionsV185(blob, filename, 'QR nalepnice', {kind:'pdf'});
  }catch(e){msg(e.message,'err')}finally{if(__loadingDone)__loadingDone();}
 }
 
@@ -2847,17 +2978,7 @@ async function printA4DoorPoster(){
   };
 
   const blob=await makePdf();
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='poster-a4-termini.pdf';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  const w=window.open(url,'_blank');
-  if(!w)msg('A4 poster je preuzet kao PDF fajl.', 'ok');
-  else msg('Napravljen je A4 poster PDF.', 'ok');
-  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  showOwnerFileOptionsV185(blob, 'poster-a4-termini.pdf', 'A4 poster', {kind:'pdf'});
  }catch(e){msg(e.message,'err')}
 }
 if(typeof printA4PosterBtn!=='undefined')printA4PosterBtn.onclick=async()=>{await loadBookingLink();printA4DoorPoster()};
@@ -3333,3 +3454,9 @@ document.addEventListener('keydown', function(ev){
 
 
 /* Profile location primary move fix v183 */
+
+
+/* QR PDF options modal v185 */
+
+
+/* QR PDF Android blank preview fix v186 */

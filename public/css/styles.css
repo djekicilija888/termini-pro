@@ -2894,3 +2894,235 @@ body.auth-home-v184 .brand{
   .auth-login-wrap-v184 #loginForm .btn,
   .auth-login-wrap-v184 #loginForm button{height:42px;min-height:42px}
 }
+
+
+/* QR/PDF opcije i štampa modal v185 */
+.owner-file-options-modal-v185{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  display:grid;
+  place-items:center;
+  padding:22px;
+  background:rgba(15,23,42,.58);
+  backdrop-filter:blur(4px);
+}
+.owner-file-options-box-v185{
+  width:min(920px,100%);
+  max-height:min(92vh,920px);
+  display:grid;
+  grid-template-rows:auto auto minmax(180px,1fr) auto;
+  gap:12px;
+  overflow:hidden;
+  border-radius:24px;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  box-shadow:0 30px 90px rgba(15,23,42,.28);
+  padding:18px;
+}
+.owner-file-options-head-v185{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+}
+.owner-file-options-head-v185 .eyebrow{
+  margin:0 0 5px;
+  color:#2563eb;
+  font-size:12px;
+  letter-spacing:.14em;
+  font-weight:950;
+}
+.owner-file-options-head-v185 h3{
+  margin:0;
+  color:#0f172a;
+  font-size:24px;
+  line-height:1.08;
+  font-weight:950;
+}
+.owner-file-options-close-v185{
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:14px;
+  background:#0f172a;
+  color:#fff;
+  font-size:30px;
+  font-weight:950;
+  line-height:1;
+  cursor:pointer;
+}
+.owner-file-options-note-v185{
+  margin:0;
+  font-size:14px;
+  line-height:1.35;
+}
+.owner-file-options-preview-v185{
+  min-height:260px;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  overflow:hidden;
+  background:#f8fafc;
+  display:grid;
+  place-items:center;
+}
+.owner-file-options-preview-v185 iframe{
+  width:100%;
+  height:62vh;
+  min-height:360px;
+  border:0;
+  background:#fff;
+}
+.owner-file-options-preview-v185 img{
+  max-width:min(520px,88%);
+  max-height:56vh;
+  background:#fff;
+  padding:18px;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(15,23,42,.08);
+}
+.owner-file-options-actions-v185{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+.owner-file-options-actions-v185 .btn{
+  min-height:46px;
+  border-radius:14px;
+  font-weight:950;
+}
+.owner-print-frame-v185{
+  position:fixed;
+  right:0;
+  bottom:0;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+@media(max-width:760px){
+  .owner-file-options-modal-v185{
+    padding:10px;
+    align-items:end;
+  }
+  .owner-file-options-box-v185{
+    max-height:92vh;
+    border-radius:20px;
+    padding:12px;
+    gap:9px;
+  }
+  .owner-file-options-head-v185 h3{
+    font-size:19px;
+  }
+  .owner-file-options-close-v185{
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    font-size:28px;
+  }
+  .owner-file-options-note-v185{
+    font-size:12px;
+  }
+  .owner-file-options-preview-v185{
+    min-height:210px;
+    border-radius:14px;
+  }
+  .owner-file-options-preview-v185 iframe{
+    height:46vh;
+    min-height:230px;
+  }
+  .owner-file-options-preview-v185 img{
+    max-width:82%;
+    max-height:38vh;
+    padding:12px;
+  }
+  .owner-file-options-actions-v185{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .owner-file-options-actions-v185 .btn{
+    min-height:40px;
+    height:40px;
+    border-radius:12px;
+    font-size:14px;
+  }
+}
+
+
+/* QR/PDF Android bez praznog PDF pregleda v186 */
+.owner-file-options-preview-fallback-v186{
+  min-height:220px !important;
+  padding:14px !important;
+}
+.owner-pdf-fallback-v186{
+  width:100%;
+  min-height:200px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8px;
+  text-align:center;
+  border:1px dashed #cbd5e1;
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff,#f8fafc);
+  padding:18px;
+}
+.owner-pdf-fallback-v186 strong{
+  color:#0f172a;
+  font-size:22px;
+  font-weight:950;
+  line-height:1.05;
+}
+.owner-pdf-fallback-v186 span{
+  color:#2563eb;
+  font-size:13px;
+  font-weight:900;
+  word-break:break-word;
+}
+.owner-pdf-fallback-v186 p{
+  margin:0;
+  max-width:520px;
+  color:#667085;
+  font-size:13px;
+  line-height:1.4;
+  font-weight:700;
+}
+@media(max-width:760px){
+  .owner-file-options-modal-v185{
+    padding:8px !important;
+    align-items:center !important;
+  }
+  .owner-file-options-box-v185{
+    width:100% !important;
+    max-height:88vh !important;
+    grid-template-rows:auto auto minmax(120px,auto) auto !important;
+    overflow:auto !important;
+    -webkit-overflow-scrolling:touch !important;
+  }
+  .owner-file-options-preview-fallback-v186{
+    min-height:160px !important;
+    padding:10px !important;
+  }
+  .owner-pdf-fallback-v186{
+    min-height:140px !important;
+    padding:12px !important;
+    border-radius:14px !important;
+  }
+  .owner-pdf-fallback-v186 strong{
+    font-size:18px !important;
+  }
+  .owner-pdf-fallback-v186 p{
+    font-size:11px !important;
+    line-height:1.3 !important;
+  }
+  .owner-file-options-actions-v185{
+    position:sticky !important;
+    bottom:0 !important;
+    background:#fff !important;
+    padding-top:8px !important;
+  }
+  .owner-file-options-actions-v185 .btn{
+    min-height:38px !important;
+    height:38px !important;
+  }
+}

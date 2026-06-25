@@ -1,0 +1,11 @@
+Urađeno:
+- QR/PDF odeljak sada više ne zavisi samo od window.open i automatskog download-a.
+- Kada klikneš:
+  - Preuzmi samo QR
+  - Štampaj/preuzmi QR vizit karte
+  - Štampaj/preuzmi QR nalepnice
+  - Štampaj/preuzmi A4 poster
+  prikazuje se prozor sa opcijama: Otvori, Preuzmi, Štampaj.
+- Ovo radi isto i u Android kopiji i u web kopiji.
+- Dodato je i za QR sliku i za PDF fajlove.
+- Provereno je da owner.js nema JavaScript syntax grešku.

@@ -1,0 +1,7 @@
+Urađeno:
+- Na Androidu se više ne pokušava prikaz PDF-a u praznom iframe-u, jer Android WebView često ne prikazuje PDF u iframe-u.
+- Umesto praznog belog prostora sada se prikazuje jasno obaveštenje da je PDF spreman.
+- Dugmad Otvori / Preuzmi / Štampaj ostaju dostupna i bolje su postavljena.
+- Štampaj na Androidu sada vodi na otvaranje/preuzimanje PDF-a, jer se realna štampa PDF-a radi iz PDF pregledača/Google Drive/Files aplikacije.
+- Za web/desktop PDF pregled i dalje koristi iframe gde pregledač to podržava.
+- Provereno je da owner.js nema JavaScript syntax grešku.
