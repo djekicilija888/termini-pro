@@ -1,0 +1,8 @@
+VERZIJA: RADNICI-TELEFON-STABILAN-CENTAR
+
+Ispravka:
+- Ceo svetloplavi deo sa telefonom se centrira kada polje dobije fokus.
+- Dok se kucaju cifre, više se ne poziva ponovno centriranje.
+- Dugme "Dodaj još jedan telefon" više ne pomera polje kada se pojavi, jer njegov prostor postoji od početka.
+- Polje i dugme ostaju mirni dok se unosi broj.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

@@ -1,0 +1,9 @@
+VERZIJA: RADNICI-TELEFON-CENTAR-PRVA-CIFRA-FIX
+
+Ispravka:
+- Kada samo klikneš u prazno polje "Broj telefona", svetloplavi pravougaonik se NE širi.
+- Dugme "Dodaj još jedan telefon" ne zauzima prazan prostor dok nema unete cifre.
+- Kada ukucaš prvu cifru, dugme se pojavi, pravougaonik se proširi i ceo taj deo se ponovo centrira.
+- Posle toga se više ne pomera pri svakoj sledećoj cifri.
+- Centriranje je podešeno niže, bliže pravom centru vidljivog dela ekrana iznad tastature.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

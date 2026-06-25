@@ -730,37 +730,72 @@ function syncStaffPhoneUi(){
   remove.disabled=!shouldShow;
  });
 }
-function centerStaffPhoneInputOnScreenV167(input){
+function clearStaffPhoneFixedCenterV169(){
+ try{
+  document.body.classList.remove('staff-phone-fixed-center-v169');
+  document.body.classList.remove('staff-phone-typing-v167');
+  const form=document.querySelector('#staffModal .staff-modal-form-v145');
+  if(form){
+    delete form.dataset.staffPhoneLockScrollTopV174;
+    delete form.dataset.staffPhoneLockActiveV174;
+  }
+ }catch(_e){}
+}
+function applyStaffPhoneLockedScrollV174(){
+ try{
+  const form=document.querySelector('#staffModal .staff-modal-form-v145');
+  if(!form || form.dataset.staffPhoneLockActiveV174!=='1')return;
+  const top=Number(form.dataset.staffPhoneLockScrollTopV174||'');
+  if(Number.isFinite(top))form.scrollTop=top;
+ }catch(_e){}
+}
+function centerStaffPhoneInputOnScreenV167(input, force=false){
  try{
   if(!input)return;
-  document.body.classList.add('staff-phone-typing-v167');
-  const row=input.closest('.staff-phone-row-v158')||input;
-  const modal=document.querySelector('#staffModal.location-modal-v115:not(.hidden)');
+  const field=input.closest('.staff-phone-field-v158');
   const form=document.querySelector('#staffModal .staff-modal-form-v145');
-  const target=row;
+  if(!field || !form)return;
+
+  document.body.classList.add('staff-phone-typing-v167');
+
   const doCenter=()=>{
-   try{
-    const vv=window.visualViewport;
-    const viewportTop=vv?vv.offsetTop:0;
-    const viewportHeight=vv?vv.height:window.innerHeight;
-    const wantedCenter=viewportTop+(viewportHeight*0.42);
-    const rect=target.getBoundingClientRect();
-    const targetCenter=rect.top+(rect.height/2);
-    const delta=targetCenter-wantedCenter;
-    const scroller=form && form.scrollHeight>form.clientHeight ? form : document.scrollingElement;
-    if(scroller){
-      scroller.scrollTop += delta;
-    }else{
-      target.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});
+    try{
+      const vv=window.visualViewport;
+      const viewportTop=vv?vv.offsetTop:0;
+      const viewportHeight=vv?vv.height:window.innerHeight;
+      const wantedCenter=viewportTop+(viewportHeight*0.52);
+      const rect=field.getBoundingClientRect();
+      const fieldCenter=rect.top+(rect.height/2);
+      const delta=fieldCenter-wantedCenter;
+      form.scrollTop += delta;
+      form.dataset.staffPhoneLockScrollTopV174=String(form.scrollTop);
+      form.dataset.staffPhoneLockActiveV174='1';
+    }catch(_e){
+      try{
+        field.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+        form.dataset.staffPhoneLockScrollTopV174=String(form.scrollTop);
+        form.dataset.staffPhoneLockActiveV174='1';
+      }catch(_e2){}
     }
-   }catch(_e){
-    try{target.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});}catch(_e2){}
-   }
   };
-  doCenter();
-  setTimeout(doCenter,120);
-  setTimeout(doCenter,320);
-  setTimeout(doCenter,650);
+
+  if(force || form.dataset.staffPhoneLockActiveV174!=='1'){
+    doCenter();
+    clearTimeout(window.__staffPhoneCenterTimerV171);
+    window.__staffPhoneCenterTimerV171=setTimeout(doCenter,120);
+    setTimeout(doCenter,320);
+  }else{
+    applyStaffPhoneLockedScrollV174();
+  }
+ }catch(_e){}
+}
+function keepStaffPhoneLockedAfterTypingV174(){
+ try{
+  applyStaffPhoneLockedScrollV174();
+  requestAnimationFrame(applyStaffPhoneLockedScrollV174);
+  clearTimeout(window.__staffPhoneLockRestoreTimerV174);
+  window.__staffPhoneLockRestoreTimerV174=setTimeout(applyStaffPhoneLockedScrollV174,40);
+  setTimeout(applyStaffPhoneLockedScrollV174,120);
  }catch(_e){}
 }
 function addStaffPhoneField(value=''){
@@ -774,10 +809,28 @@ function addStaffPhoneField(value=''){
  input.className='staff-phone-input-v158';
  input.placeholder='Broj telefona';
  input.value=value||'';
- input.addEventListener('focus',()=>centerStaffPhoneInputOnScreenV167(input));
- input.addEventListener('click',()=>centerStaffPhoneInputOnScreenV167(input));
- input.addEventListener('input',()=>{syncStaffPhoneUi();markUnsavedScope(staffForm);centerStaffPhoneInputOnScreenV167(input)});
- input.addEventListener('blur',()=>setTimeout(()=>document.body.classList.remove('staff-phone-typing-v167'),250));
+ input.addEventListener('focus',()=>centerStaffPhoneInputOnScreenV167(input,true));
+ input.addEventListener('click',()=>centerStaffPhoneInputOnScreenV167(input,true));
+ input.addEventListener('input',()=>{
+  const addBtnBefore=document.getElementById('staffPhonesBox')?.querySelector('.staff-add-phone-v158');
+  const wasHidden=!addBtnBefore || addBtnBefore.classList.contains('hidden');
+  syncStaffPhoneUi();
+  markUnsavedScope(staffForm);
+  const addBtnAfter=document.getElementById('staffPhonesBox')?.querySelector('.staff-add-phone-v158');
+  const becameVisible=wasHidden && addBtnAfter && !addBtnAfter.classList.contains('hidden');
+  if(becameVisible){
+    // Prva cifra: dugme se pojavljuje i centriranje ide ODMAH, bez čekanja,
+    // da ne postoji vidljiv trzaj gore pa vraćanje u centar.
+    centerStaffPhoneInputOnScreenV167(input,true);
+    keepStaffPhoneLockedAfterTypingV174();
+    requestAnimationFrame(()=>keepStaffPhoneLockedAfterTypingV174());
+    setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),30);
+    setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),90);
+  }else{
+    keepStaffPhoneLockedAfterTypingV174();
+  }
+});
+ input.addEventListener('blur',()=>setTimeout(()=>clearStaffPhoneFixedCenterV169(),220));
  const remove=document.createElement('button');
  remove.type='button';
  remove.className='staff-phone-remove-v158';
@@ -811,7 +864,7 @@ function renderStaffPhones(value=''){
   const input=addStaffPhoneField('');
   syncStaffPhoneUi();
   markUnsavedScope(staffForm);
-  if(input){input.focus();centerStaffPhoneInputOnScreenV167(input);}
+  if(input){input.focus();centerStaffPhoneInputOnScreenV167(input,true);}
  };
  box.appendChild(add);
  syncStaffPhoneUi();
@@ -3012,3 +3065,18 @@ document.addEventListener('keydown', function(ev){
     if(cancel)cancel.textContent='Otkaži';
   });
 })();
+
+
+/* Staff phone typing no-jitter v168 */
+
+
+/* Staff phone stable while typing v172 */
+
+
+/* Staff phone first-digit center fix v173 */
+
+
+/* Staff phone locked center while typing v174 */
+
+
+/* Staff phone no first digit jump v175 */

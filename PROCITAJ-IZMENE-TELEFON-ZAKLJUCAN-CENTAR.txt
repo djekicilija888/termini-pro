@@ -1,0 +1,9 @@
+VERZIJA: RADNICI-TELEFON-CENTAR-ZAKLJUCAN-FIX
+
+Ispravka:
+- Kada se ukuca prva cifra i pojavi dugme "Dodaj još jedan telefon", ceo svetloplavi deo se centrira.
+- Posle centriranja se pamti tačna pozicija scroll-a.
+- Dok se kucaju druga, treća i sledeće cifre, Android/WebView više ne pomera taj deo gore.
+- Ne menja se izgled polja i dugmeta.
+- Ne postoji dodatno isticanje polja.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

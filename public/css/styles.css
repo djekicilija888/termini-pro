@@ -2381,3 +2381,25 @@ body.staff-phone-typing-v167 #staffModal .staff-modal-form-v145{
   line-height: 1.1;
   border-radius: 12px;
 }
+
+/* Staff phone centered normally, without highlight/fixed overlay v171 */
+#staffModal .staff-phone-field-v158{
+  scroll-margin-top:140px;
+  scroll-margin-bottom:280px;
+}
+body.staff-phone-typing-v167 #staffModal .staff-modal-form-v145{
+  scroll-padding-bottom:300px;
+}
+#staffModal .staff-phone-field-v158 .staff-add-phone-v158{
+  min-height:34px;
+  padding:7px 10px;
+  font-size:14px;
+  line-height:1.1;
+  border-radius:12px;
+}
+
+/* Staff phone first-digit center fix v173: hidden add button no longer reserves height. */
+
+/* Staff phone locked center while typing v174: no visual style change, only scroll lock in JS. */
+
+/* Staff phone no first digit jump v175: centering now runs immediately on first digit. */

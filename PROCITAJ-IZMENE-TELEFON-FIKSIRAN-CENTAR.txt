@@ -1,0 +1,8 @@
+VERZIJA: RADNICI-TELEFON-FIKSIRAN-CENTAR
+
+Urađeno:
+- Kada klikneš u polje "Broj telefona", red sa telefonom postaje fiksiran u vidljivom centru ekrana.
+- Dok kucaš, polje ostaje fiksirano i ne beži u donji deo.
+- "Dodaj još jedan telefon" ide zajedno ispod tog polja i ostaje smanjeno.
+- Kada izađeš iz polja, sve se vraća normalno u popup.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

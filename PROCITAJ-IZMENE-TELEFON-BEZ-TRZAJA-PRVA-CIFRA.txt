@@ -1,0 +1,8 @@
+VERZIJA: RADNICI-TELEFON-BEZ-TRZAJA-PRVA-CIFRA
+
+Ispravka:
+- Kada se ukuca prva cifra i pojavi dugme "Dodaj još jedan telefon", centriranje se radi odmah.
+- Uklonjen je vidljiv trzaj gore pa vraćanje u centar.
+- Posle prve cifre ostaje prethodno ponašanje: pozicija je zaključana i ne mrda dok se kuca.
+- Izgled nije menjan.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

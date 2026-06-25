@@ -1,0 +1,9 @@
+VERZIJA: RADNICI-TELEFON-CENTAR-BEZ-ISTAKNUTOG-POLJA
+
+Ispravka:
+- Ne ističe se više samo input polje.
+- Ne povećava se input i ne pravi se posebno veliko istaknuto polje.
+- Fiksira se ceo deo telefona: polje za broj + dugme "Dodaj još jedan telefon".
+- Taj deo ostaje u centru vidljivog ekrana dok se kuca.
+- Kada izađeš iz polja, vraća se normalno u popup.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

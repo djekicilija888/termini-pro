@@ -1,0 +1,9 @@
+VERZIJA: RADNICI-TELEFON-CENTRIRAN-BEZ-ISTAKNUTOG-FIX
+
+Ispravka:
+- Ne pravi se nikakav izdvojeni/fiksni overlay za input.
+- Ne ističe se i ne povećava samo polje.
+- Ceo svetloplavi deo za telefone ostaje normalnog izgleda.
+- Kada klikneš u prazno polje i kucaš broj, popup se samo pomeri tako da ceo svetloplavi deo bude u centru vidljivog dela ekrana.
+- Dugme "Dodaj još jedan telefon" ostaje zajedno sa poljem i ostaje smanjeno.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

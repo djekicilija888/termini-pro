@@ -1,0 +1,8 @@
+VERZIJA: RADNICI-TELEFON-BEZ-SKAKANJA
+
+Urađeno:
+- Polje za broj telefona se centrira kada dobije fokus.
+- Dok se kuca svaka cifra, više se ne poziva ponovno centriranje.
+- Time se uklanja trzanje/skakanje polja pri unosu svake cifre.
+- Dugme "Dodaj još jedan telefon" ostaje smanjeno.
+- Izmene su urađene i za web i za Android kopiju.
