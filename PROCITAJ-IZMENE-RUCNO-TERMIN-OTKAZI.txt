@@ -1,0 +1,9 @@
+VERZIJA: RUCNO-TERMIN-OTKAZI-WEB-FIX
+
+Uradjeno:
+- Dugme "Poništi" u popup-u "Ručno dodaj termin za mušteriju" promenjeno je u "Otkaži".
+- Dugme "Otkaži" je ubačeno/ostavljeno i u web/desktop verziji.
+- Posle klika na "Dodaj termin", posle uspešnog dodavanja popup se prisilno zatvara i skida blokadu ekrana.
+- Izmene su urađene i u public fajlovima i u Android kopiji:
+  public/...
+  android/app/src/main/assets/public/...

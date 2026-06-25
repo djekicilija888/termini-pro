@@ -1990,12 +1990,8 @@
   }
 
   body.cap-mobile-owner-ready #staffModal .staff-add-phone-v158{
-    width:100% !important;
-    min-height:40px !important;
-    font-size:15px !important;
-    line-height:1.15 !important;
-    padding:10px 12px !important;
-    border-radius:12px !important;
+    font-size:17px !important;
+    padding:6px 0 !important;
   }
 
   body.cap-mobile-owner-ready #staffModal .worker-access-check-v136{
@@ -2590,15 +2586,6 @@
    overflow-y: auto !important;
  }
 
-html body #staffModal.location-modal-v115:not(.hidden) #staffLocationsBox.hidden,
-html body #staffModal.location-modal-v115:not(.hidden) #staffLocationsBox:empty{
-  display:none !important;
-  padding:0 !important;
-  margin:0 !important;
-  border:0 !important;
-  min-height:0 !important;
-}
-
 html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox{
   max-height:none !important;
   height:auto !important;
@@ -2613,8 +2600,8 @@ html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox
   }
 
  html body #staffModal.location-modal-v115:not(.hidden) .staff-schedule-head-v125 p {
-   font-size: 7.8px !important;
-   line-height: 1.12 !important;
+   font-size: 9px !important;
+   line-height: 1.15 !important;
    margin: 0 0 4px 0 !important;
    font-weight: 600 !important;
  }
@@ -3338,22 +3325,4 @@ html body.cap-mobile-owner-ready #appointments #manualAppointmentPanel.manual-pa
 /* Manual appointment actions - Otkaži + Dodaj termin v166 */
 html body #manualForm .manual-appointment-actions-v161 #manualCancel{
   text-transform:none !important;
-}
-
-/* Staff phone focus while keyboard is open v167 */
-html body.cap-mobile-owner-ready #staffModal .staff-phone-row-v158{
-  scroll-margin-top: 130px !important;
-  scroll-margin-bottom: 300px !important;
-}
-html body.cap-mobile-owner-ready.staff-phone-typing-v167 #staffModal .staff-modal-form-v145{
-  scroll-padding-bottom: 300px !important;
-  padding-bottom: 18px !important;
-}
-html body.cap-mobile-owner-ready #staffModal .staff-add-phone-v158{
-  min-height: 34px !important;
-  height: auto !important;
-  padding: 7px 9px !important;
-  font-size: 13px !important;
-  line-height: 1.08 !important;
-  border-radius: 10px !important;
 }

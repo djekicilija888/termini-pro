@@ -1,0 +1,8 @@
+Verzija: RUCNO-TERMIN-DUGMAD-RASPORED-FIX
+
+Popravljen popup "Ručno dodaj termin za mušteriju":
+- smanjen naslov gore
+- popup je proširen koliko telefon dozvoljava
+- "Osveži slobodna vremena" je dugačko dugme u posebnom redu
+- "Poništi" i "Dodaj termin" su jedno pored drugog
+- izmene su upisane i u public i u android/app/src/main/assets/public kopiju.

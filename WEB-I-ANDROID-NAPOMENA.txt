@@ -1,0 +1,10 @@
+Ova verzija sadrzi isti fix i za WEB i za ANDROID.
+
+WEB fajlovi:
+- public/js/owner.js
+- public/css/styles.css
+
+ANDROID fajlovi:
+- android/app/src/main/assets/public/js/owner.js
+- android/app/src/main/assets/public/css/styles.css
+- android/app/src/main/assets/public/css/capacitor-mobile-owner.css

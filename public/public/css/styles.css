@@ -1742,32 +1742,17 @@ body.manual-modal-body-open{
 }
 .staff-add-phone-v158{
   grid-column:1 / -1;
-  justify-self:stretch;
-  width:100%;
-  border:1px dashed #cbd5e1;
-  background:#f8fafc;
-  padding:10px 12px;
-  color:#1d4ed8;
+  justify-self:start;
+  width:fit-content;
+  border:0;
+  background:transparent;
+  padding:4px 0;
+  color:#2563eb;
   font-weight:900;
-  border-radius:14px;
   cursor:pointer;
-  text-align:center;
 }
 .staff-add-phone-v158:hover{
-  background:#eff6ff;
-  border-color:#93c5fd;
-}
-.staff-phone-remove-v158.hidden,
-.staff-add-phone-v158.hidden{
-  display:none !important;
-}
-#staffLocationsBox.hidden,
-#staffLocationsBox:empty{
-  display:none !important;
-  padding:0 !important;
-  margin:0 !important;
-  border:0 !important;
-  min-height:0 !important;
+  text-decoration:underline;
 }
 @media(max-width:900px){
   .staff-phones-box-v158{grid-template-columns:1fr;}
@@ -2364,20 +2349,4 @@ html body textarea::placeholder{
 /* Manual appointment actions - Otkaži + Dodaj termin v166 */
 html body #manualForm .manual-appointment-actions-v161 #manualCancel{
   text-transform:none !important;
-}
-
-/* Staff phone focus while keyboard is open v167 */
-.staff-phone-row-v158{
-  scroll-margin-top: 140px;
-  scroll-margin-bottom: 260px;
-}
-body.staff-phone-typing-v167 #staffModal .staff-modal-form-v145{
-  scroll-padding-bottom: 280px;
-}
-.staff-add-phone-v158{
-  min-height: 38px;
-  padding: 8px 10px;
-  font-size: 15px;
-  line-height: 1.1;
-  border-radius: 12px;
 }

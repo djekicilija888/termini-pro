@@ -1,0 +1,7 @@
+VERZIJA: RADNICI-TELEFON-FOKUS-FIX
+
+Urađeno:
+- Dok se kuca broj telefona u popup-u Radnici, polje se automatski drži na sredini vidljivog ekrana iznad tastature.
+- Fokus ne beži dole dok se unosi broj.
+- Dugme "Dodaj još jedan telefon" je dodatno smanjeno.
+- Izmene su urađene i u public fajlovima i u Android kopiji.

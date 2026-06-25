@@ -1,0 +1,16 @@
+{
+  "appId": "com.terminipro.app",
+  "appName": "Termini Pro",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false
+    }
+  }
+}

@@ -83,7 +83,7 @@ function enterTabletLockedMode(deviceToken){
  setTabletModeCookie();
  sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);
  clearOwnerSession();
- location.replace(window.terminiAppPath ? window.terminiAppPath('/tablet') : '/tablet.html');
+ location.replace('/tablet');
 }
 function showTabletAdminLock(){
  const lock=$('#tabletAdminLock');
@@ -322,7 +322,7 @@ function ensureTabletOwnerBanner(){
  banner.innerHTML='<b>Admin je privremeno otključan na uređaju koji je povezan kao tablet.</b><p class="muted">Kad završiš podešavanje, zaključaj uređaj i vrati radnički ekran.</p><div class="actions"><button id="tabletRelockNow" class="btn small" type="button">Zaključaj i otvori radnički ekran</button></div>';
  app.insertBefore(banner, app.firstChild);
  const b=document.getElementById('tabletRelockNow');
- if(b)b.onclick=()=>{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);clearOwnerSession();location.replace(window.terminiAppPath ? window.terminiAppPath('/tablet') : '/tablet.html')};
+ if(b)b.onclick=()=>{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);clearOwnerSession();location.replace('/tablet')};
 }
 async function ownerNoRegistrationLogin(buttonEl,msgEl){
  const out=msgEl||document.getElementById('lm')||document.getElementById('tabletAdminUnlockMsg');
@@ -425,27 +425,6 @@ function closeOwnerManualAppointmentModal(opts={}){
       if(plus)plus.textContent='+';
     }
     if(typeof resetUnsavedGuard==='function')resetUnsavedGuard(document.getElementById('manualForm')||undefined);
-  }catch(_e){}
-}
-function forceCloseOwnerManualAppointmentModalV166(){
-  try{
-    const panel=document.getElementById('manualAppointmentPanel');
-    const btn=document.getElementById('toggleManualAppointment');
-    if(panel){
-      panel.classList.add('hidden');
-      panel.classList.remove('manual-modal-open');
-      panel.style.display='';
-      panel.style.pointerEvents='';
-      panel.setAttribute('aria-hidden','true');
-    }
-    document.body.classList.remove('manual-modal-body-open');
-    document.body.style.overflow='';
-    if(btn){
-      btn.setAttribute('aria-expanded','false');
-      btn.classList.remove('open');
-      const plus=btn.querySelector('.manual-plus');
-      if(plus)plus.textContent='+';
-    }
   }catch(_e){}
 }
 function markManualOptionsStale(){manualOptionsStale=true;manualOptionsLoadedAt=0;}
@@ -684,10 +663,9 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   msg('Termin je dodat.','ok');
   manualName.value='';manualPhone.value='';manualEmail.value='';manualNotes.value='';
   markOwnerTabsStale('appointments','dash');
-  try{ forceCloseOwnerManualAppointmentModalV166(); }catch(_e){ closeOwnerManualAppointmentModal({reset:false}); }
   await loadAppointments();
   ownerMarkTabLoaded('appointments');
-  try{ forceCloseOwnerManualAppointmentModalV166(); }catch(_e){ closeOwnerManualAppointmentModal({reset:false}); }
+  closeOwnerManualAppointmentModal({reset:false});
   setTimeout(()=>resetUnsavedGuard(manualForm),80);
 };
 
@@ -711,58 +689,6 @@ function splitOwnerPhoneRows(value,max=10){
 function splitStaffPhones(value){
  return splitOwnerPhoneRows(value,10);
 }
-function syncStaffPhoneUi(){
- const box=document.getElementById('staffPhonesBox');
- if(!box)return;
- const rows=[...box.querySelectorAll('.staff-phone-row-v158')];
- const addBtn=box.querySelector('.staff-add-phone-v158');
- const anyFilled=rows.some(row=>{
-  const input=row.querySelector('.staff-phone-input-v158');
-  return input&&input.value.trim();
- });
- if(addBtn)addBtn.classList.toggle('hidden',!anyFilled);
- rows.forEach(row=>{
-  const input=row.querySelector('.staff-phone-input-v158');
-  const remove=row.querySelector('.staff-phone-remove-v158');
-  if(!input||!remove)return;
-  const shouldShow=rows.length>1 || !!input.value.trim();
-  remove.classList.toggle('hidden',!shouldShow);
-  remove.disabled=!shouldShow;
- });
-}
-function centerStaffPhoneInputOnScreenV167(input){
- try{
-  if(!input)return;
-  document.body.classList.add('staff-phone-typing-v167');
-  const row=input.closest('.staff-phone-row-v158')||input;
-  const modal=document.querySelector('#staffModal.location-modal-v115:not(.hidden)');
-  const form=document.querySelector('#staffModal .staff-modal-form-v145');
-  const target=row;
-  const doCenter=()=>{
-   try{
-    const vv=window.visualViewport;
-    const viewportTop=vv?vv.offsetTop:0;
-    const viewportHeight=vv?vv.height:window.innerHeight;
-    const wantedCenter=viewportTop+(viewportHeight*0.42);
-    const rect=target.getBoundingClientRect();
-    const targetCenter=rect.top+(rect.height/2);
-    const delta=targetCenter-wantedCenter;
-    const scroller=form && form.scrollHeight>form.clientHeight ? form : document.scrollingElement;
-    if(scroller){
-      scroller.scrollTop += delta;
-    }else{
-      target.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});
-    }
-   }catch(_e){
-    try{target.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});}catch(_e2){}
-   }
-  };
-  doCenter();
-  setTimeout(doCenter,120);
-  setTimeout(doCenter,320);
-  setTimeout(doCenter,650);
- }catch(_e){}
-}
 function addStaffPhoneField(value=''){
  const box=document.getElementById('staffPhonesBox');
  if(!box)return null;
@@ -772,49 +698,31 @@ function addStaffPhoneField(value=''){
  const input=document.createElement('input');
  input.type='tel';
  input.className='staff-phone-input-v158';
- input.placeholder='Broj telefona';
+ input.placeholder='Telefon radnika';
  input.value=value||'';
- input.addEventListener('focus',()=>centerStaffPhoneInputOnScreenV167(input));
- input.addEventListener('click',()=>centerStaffPhoneInputOnScreenV167(input));
- input.addEventListener('input',()=>{syncStaffPhoneUi();markUnsavedScope(staffForm);centerStaffPhoneInputOnScreenV167(input)});
- input.addEventListener('blur',()=>setTimeout(()=>document.body.classList.remove('staff-phone-typing-v167'),250));
  const remove=document.createElement('button');
  remove.type='button';
  remove.className='staff-phone-remove-v158';
  remove.setAttribute('aria-label','Ukloni telefon');
  remove.title='Ukloni telefon';
  remove.textContent='×';
- remove.onclick=()=>{
-  row.remove();
-  if(!box.querySelector('.staff-phone-row-v158'))addStaffPhoneField('');
-  syncStaffPhoneUi();
-  markUnsavedScope(staffForm);
- };
+ remove.onclick=()=>{row.remove();markUnsavedScope(staffForm)};
  row.appendChild(input);
  row.appendChild(remove);
  if(addBtn)box.insertBefore(row,addBtn);else box.appendChild(row);
- syncStaffPhoneUi();
  return input;
 }
 function renderStaffPhones(value=''){
  const box=document.getElementById('staffPhonesBox');
  if(!box)return;
  box.innerHTML='';
- const rows=splitStaffPhones(value);
- if(!rows.length)rows.push('');
- rows.forEach(v=>addStaffPhoneField(v));
+ splitStaffPhones(value).forEach(v=>addStaffPhoneField(v));
  const add=document.createElement('button');
  add.type='button';
- add.className='staff-add-phone-v158 hidden';
- add.textContent='Dodaj još jedan telefon';
- add.onclick=()=>{
-  const input=addStaffPhoneField('');
-  syncStaffPhoneUi();
-  markUnsavedScope(staffForm);
-  if(input){input.focus();centerStaffPhoneInputOnScreenV167(input);}
- };
+ add.className='staff-add-phone-v158';
+ add.textContent='+ Dodaj telefon';
+ add.onclick=()=>{const input=addStaffPhoneField('');markUnsavedScope(staffForm);if(input)input.focus()};
  box.appendChild(add);
- syncStaffPhoneUi();
 }
 function collectStaffPhones(){
  const box=document.getElementById('staffPhonesBox');
@@ -860,7 +768,7 @@ function openStaffModal(x){
  fillStaffForm(x||null);
  if(typeof staffModal!=='undefined'&&staffModal)staffModal.classList.remove('hidden');
  setTimeout(()=>resetUnsavedGuard(staffForm),60);
- // setTimeout(()=>{try{staffName.focus()}catch(_e){}},80);
+ setTimeout(()=>{try{staffName.focus()}catch(_e){}},80);
 }
 async function closeStaffModal(force=false){
  if(!force){
@@ -884,7 +792,6 @@ staffForm.onsubmit=async e=>{
  staffSaveInProgress=true;
  const submitBtn=staffForm.querySelector('button[type="submit"]');
  const oldSubmitText=submitBtn?submitBtn.textContent:'';
- const loadingDone = window.AppLoading ? window.AppLoading.begin('Čuvam radnika...', {immediate:true}) : null;
  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Čuvam...'}
  try{
   await ensureOwnerLocationsLoaded();
@@ -900,7 +807,6 @@ staffForm.onsubmit=async e=>{
   msg(err.message||'Radnik nije sačuvan.','err');
  }finally{
   staffSaveInProgress=false;
-  if(loadingDone)loadingDone();
   if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=oldSubmitText||'Sačuvaj radnika'}
  }
 };
@@ -1376,8 +1282,6 @@ async function loadSettings(){
  rememberProfileLocationSnapshot();
 }
 async function saveSettingsFormFast(){
- const loadingDone = window.AppLoading ? window.AppLoading.begin('Čuvam podešavanja...', {immediate:true}) : null;
- try{
  const mustSaveLocations=profileLocationNeedsSave() || ownerHasWrittenLocation() || profileUsingFullLocations();
  await api('/api/owner/settings',{method:'PUT',body:JSON.stringify({
   name:setName.value,type:setType.value,city:setCity.value,phone:syncBusinessPhones(),
@@ -1401,7 +1305,6 @@ async function saveSettingsFormFast(){
  msg('Podešavanja sačuvana.','ok');
  resetUnsavedGuard();
  return true;
- }finally{if(loadingDone)loadingDone();}
 }
 settingsForm.onsubmit=async e=>{e.preventDefault();await saveSettingsFormFast();};async function loadLogs(){let rows=await api('/api/owner/notifications');logList.innerHTML=rows.map(x=>`<article class="item"><h3>${x.channel} · ${x.status}</h3><p>${x.created_at} · ${x.recipient||''}</p><p class="muted">${(x.body||'').slice(0,220)}</p></article>`).join('')||'<p class="muted">Nema logova.</p>'}
 
@@ -1610,7 +1513,7 @@ function renderProfileExtraLocations(){
     <div class="location-row-actions-v115">
       <button class="btn small ghost profile-loc-edit" type="button" data-idx="${idx}">Uredi</button>
       <button class="btn small profile-loc-tablet" type="button" data-idx="${idx}" ${ownerLocId(l)?'':'disabled'}>Poveži ovaj uređaj kao tablet za ovu lokaciju</button>
-      <a class="btn small ghost" href="/tablet.html" target="_blank">Otvori radnički ekran</a>
+      <a class="btn small ghost" href="/tablet" target="_blank">Otvori radnički ekran</a>
       <button class="btn small danger profile-loc-delete" type="button" data-idx="${idx}">Obriši</button>
     </div>
   </article>`}).join('');
@@ -1948,7 +1851,6 @@ async function saveProfileLocationFromModal(e){
  const btn=(typeof profileModalSaveBtn!=='undefined')?profileModalSaveBtn:null;
  const oldBtnText=btn?btn.textContent:'';
  profileLocationSaving=true;
- const loadingDone = window.AppLoading ? window.AppLoading.begin('Čuvam lokaciju...', {immediate:true}) : null;
  if(btn){btn.disabled=true;btn.textContent='Čuvam...';}
  try{
   const loc=isNew?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[editIndex]||makeEmptyProfileLocation(editIndex+1));
@@ -1979,7 +1881,6 @@ async function saveProfileLocationFromModal(e){
   msg((err&&err.message)||'Greška pri čuvanju lokacije.','err');
  }finally{
   profileLocationSaving=false;
-  if(loadingDone)loadingDone();
   if(btn){btn.disabled=false;btn.textContent=oldBtnText||'Dodaj u listu';}
  }
 }
@@ -2021,7 +1922,7 @@ async function printQrPdfList(locationArg=null){
   const businessName=(b.name||'Vaša firma').trim();
   const rawPhoneText=String((loc&&loc.phone)||b.phone||'').trim();
   const phoneList=rawPhoneText
-    ? ownerPhonePartsLimited(rawPhoneText,4)
+    ? rawPhoneText.split(/[\n,;|/]+/).map(p=>p.trim()).filter(Boolean).slice(0,4)
     : ['Telefon nije unet'];
   const locCity=(loc&&loc.city)||b.city||'';
   const locAddress=(loc&&loc.address)||b.address||'';
@@ -2691,7 +2592,7 @@ init();
         else{
           localStorage.removeItem('terminiOwnerToken');
           localStorage.removeItem('token');
-          location.href = (window.terminiAppPath ? window.terminiAppPath('/') : '/index.html');
+          location.href = '/';
         }
       });
 
@@ -3002,13 +2903,3 @@ document.addEventListener('keydown', function(ev){
   window.applyOwnerFieldPlaceholdersEverywhereV162=applyEverywhere;
 })();
 
-
-
-/* Manual appointment cancel label + close submit fix v166 */
-(function(){
-  function ready(fn){ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn,{once:true}); else fn(); }
-  ready(function(){
-    const cancel=document.getElementById('manualCancel');
-    if(cancel)cancel.textContent='Otkaži';
-  });
-})();
