@@ -1,0 +1,7 @@
+Urađeno:
+- Popravljen je scroll u odeljku Profil firme, sada može da se dođe skroz do dna.
+- Donja fiksirana dugmad i dalje imaju punu belu pozadinu.
+- Uklonjen je veliki zamućeni/široki beli sloj koji je zaklanjao dugme "Dodaj još jedan telefon".
+- Bela pozadina iza donjih dugmadi je sada niža i čistija.
+- Važi za Dodaj radnika i ostale popup odeljke.
+- Provereno je da owner.js nema JavaScript syntax grešku.

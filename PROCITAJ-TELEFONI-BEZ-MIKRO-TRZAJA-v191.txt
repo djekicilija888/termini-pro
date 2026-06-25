@@ -1,0 +1,7 @@
+Urađeno:
+- Dodat je blaži anti-trzaj za polja telefona.
+- Pre i posle promene teksta čuva se zaključana scroll pozicija.
+- Android/WebView auto-scroll se odmah vraća bez vidljivog skoka.
+- Dodato je overflow-anchor:none i scroll-behavior:auto za telefonska polja.
+- Važi i za Dodaj radnika i za Profil firme.
+- Provereno je da owner.js nema JavaScript syntax grešku.

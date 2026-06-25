@@ -3818,3 +3818,249 @@ body.cap-mobile-owner-ready .primary-location-hidden{
     height:38px !important;
   }
 }
+
+
+/* Performance cleanup v190 */
+.hidden{display:none !important;}
+@media(max-width:850px){
+  body.cap-mobile-owner-ready{
+    text-rendering:optimizeSpeed;
+  }
+  body.cap-mobile-owner-ready .tab.hidden,
+  body.cap-mobile-owner-ready .modal.hidden,
+  body.cap-mobile-owner-ready .location-modal-v115.hidden{
+    display:none !important;
+  }
+  body.cap-mobile-owner-ready .owner-file-options-modal-v185,
+  body.cap-mobile-owner-ready .location-modal-v115{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+  }
+  body.cap-mobile-owner-ready img{
+    max-width:100%;
+    height:auto;
+  }
+  body.cap-mobile-owner-ready .stack,
+  body.cap-mobile-owner-ready .scroll,
+  body.cap-mobile-owner-ready .location-modal-form-v115,
+  body.cap-mobile-owner-ready .manual-body-v161{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+  }
+}
+
+
+/* Phone micro twitch fix v191 */
+#staffModal .staff-modal-form-v145,
+#staffModal .staff-phone-field-v158,
+#staffModal .staff-phone-row-v158,
+.multi-phones-box-v159,
+.multi-phone-row-v159,
+.location-modal-form-v115{
+  overflow-anchor:none !important;
+  scroll-behavior:auto !important;
+}
+body.cap-mobile-owner-ready #staffModal .staff-modal-form-v145,
+body.cap-mobile-owner-ready #staffModal .staff-phone-field-v158,
+body.cap-mobile-owner-ready #staffModal .staff-phone-row-v158,
+body.cap-mobile-owner-ready .multi-phones-box-v159,
+body.cap-mobile-owner-ready .multi-phone-row-v159,
+body.cap-mobile-owner-ready .location-modal-form-v115{
+  overflow-anchor:none !important;
+  scroll-behavior:auto !important;
+}
+
+
+/* Add phone click no twitch v192 */
+body.phone-add-freeze-v192,
+body.phone-add-freeze-v192 *{
+  scroll-behavior:auto !important;
+}
+body.phone-add-freeze-v192 #staffModal,
+body.phone-add-freeze-v192 .location-modal-v115:not(.hidden){
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+body.phone-add-freeze-v192 .staff-add-phone-v158,
+body.phone-add-freeze-v192 .multi-add-phone-v159{
+  transition:none !important;
+}
+
+
+/* Add phone fast click guard v193 */
+.phone-add-disabled-v193{
+  pointer-events:none !important;
+  opacity:.72 !important;
+  transition:none !important;
+}
+body.phone-add-freeze-v192 .staff-add-phone-v158,
+body.phone-add-freeze-v192 .multi-add-phone-v159{
+  pointer-events:none !important;
+  transition:none !important;
+}
+
+
+/* Donja fiksirana dugmad - puna pozadina v194 */
+html body.cap-mobile-owner-ready .location-modal-v115:not(.hidden) .location-modal-actions-v115,
+html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .form-actions,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .location-hours-modal-actions-v118,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .form-actions,
+html body.cap-mobile-owner-ready .owner-file-options-actions-v185{
+  position:sticky !important;
+  bottom:0 !important;
+  z-index:500 !important;
+  isolation:isolate !important;
+  background:#ffffff !important;
+  background-image:linear-gradient(180deg,#ffffff 0%,#ffffff 100%) !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  border-top:1px solid #e5e7eb !important;
+  box-shadow:
+    0 -22px 28px rgba(255,255,255,1),
+    0 -1px 0 rgba(229,231,235,1) !important;
+  padding-top:12px !important;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)) !important;
+  margin-bottom:0 !important;
+  min-height:64px !important;
+  box-sizing:border-box !important;
+}
+html body.cap-mobile-owner-ready .location-modal-v115:not(.hidden) .location-modal-actions-v115::before,
+html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145::before,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161::before,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .form-actions::before,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .location-hours-modal-actions-v118::before,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .form-actions::before,
+html body.cap-mobile-owner-ready .owner-file-options-actions-v185::before{
+  content:"" !important;
+  position:absolute !important;
+  left:-18px !important;
+  right:-18px !important;
+  top:-18px !important;
+  bottom:calc(-14px - env(safe-area-inset-bottom,0px)) !important;
+  z-index:-1 !important;
+  display:block !important;
+  background:#ffffff !important;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.98),#ffffff 35%,#ffffff 100%) !important;
+  border-top:1px solid #e5e7eb !important;
+  box-shadow:0 -18px 26px rgba(255,255,255,1) !important;
+  pointer-events:none !important;
+}
+html body.cap-mobile-owner-ready .location-modal-v115:not(.hidden) .location-modal-actions-v115 .btn,
+html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145 .btn,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161 .btn,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .form-actions .btn,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .location-hours-modal-actions-v118 .btn,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .form-actions .btn,
+html body.cap-mobile-owner-ready .owner-file-options-actions-v185 .btn{
+  position:relative !important;
+  z-index:2 !important;
+}
+body.phone-add-freeze-v192 .location-modal-actions-v115,
+body.phone-add-freeze-v192 .staff-modal-actions-v145,
+body.phone-add-freeze-v192 .manual-appointment-actions-v161,
+body.phone-add-freeze-v192 .form-actions{
+  background:#ffffff !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  box-shadow:
+    0 -22px 28px rgba(255,255,255,1),
+    0 -1px 0 rgba(229,231,235,1) !important;
+}
+
+
+/* Profil scroll + donja dugmad bez zaklanjanja v195 */
+html body.cap-mobile-owner-ready #settings{
+  padding-bottom:calc(130px + env(safe-area-inset-bottom,0px)) !important;
+}
+html body.cap-mobile-owner-ready #settings #settingsForm{
+  padding-bottom:calc(120px + env(safe-area-inset-bottom,0px)) !important;
+}
+html body.cap-mobile-owner-ready #settings #settingsForm > button.btn{
+  margin-bottom:calc(42px + env(safe-area-inset-bottom,0px)) !important;
+}
+
+/* Donja dugmad: pozadina je puna bela, ali više ne baca veliki zamućeni sloj preko sadržaja iznad */
+html body.cap-mobile-owner-ready .location-modal-v115:not(.hidden) .location-modal-actions-v115,
+html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .form-actions,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .location-hours-modal-actions-v118,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .form-actions,
+html body.cap-mobile-owner-ready .owner-file-options-actions-v185{
+  background:#ffffff !important;
+  background-image:none !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  box-shadow:
+    0 -7px 0 #ffffff,
+    0 -1px 0 #e5e7eb !important;
+  border-top:1px solid #e5e7eb !important;
+  padding-top:8px !important;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important;
+  min-height:auto !important;
+}
+html body.cap-mobile-owner-ready .location-modal-v115:not(.hidden) .location-modal-actions-v115::before,
+html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145::before,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161::before,
+html body.cap-mobile-owner-ready #manualAppointmentPanel.manual-panel.manual-modal-open #manualForm .form-actions::before,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .location-hours-modal-actions-v118::before,
+html body.cap-mobile-owner-ready #locationHoursModal.manual-panel:not(.hidden) .form-actions::before,
+html body.cap-mobile-owner-ready .owner-file-options-actions-v185::before{
+  content:"" !important;
+  position:absolute !important;
+  left:-12px !important;
+  right:-12px !important;
+  top:-7px !important;
+  bottom:calc(-8px - env(safe-area-inset-bottom,0px)) !important;
+  z-index:-1 !important;
+  background:#ffffff !important;
+  background-image:none !important;
+  border-top:1px solid #e5e7eb !important;
+  box-shadow:none !important;
+  pointer-events:none !important;
+}
+
+/* Posebno za Dodaj radnika: beli sloj ne sme da prelazi preko dugmeta "Dodaj još jedan telefon" */
+html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145{
+  margin-top:6px !important;
+}
+html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145::before{
+  top:-6px !important;
+  left:-10px !important;
+  right:-10px !important;
+}
+html body.cap-mobile-owner-ready #staffModal .staff-modal-form-v145{
+  padding-bottom:calc(76px + env(safe-area-inset-bottom,0px)) !important;
+}
+body.phone-add-freeze-v192 .location-modal-actions-v115,
+body.phone-add-freeze-v192 .staff-modal-actions-v145,
+body.phone-add-freeze-v192 .manual-appointment-actions-v161,
+body.phone-add-freeze-v192 .form-actions{
+  background:#ffffff !important;
+  box-shadow:
+    0 -7px 0 #ffffff,
+    0 -1px 0 #e5e7eb !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+
+
+/* Profil firme scroll do dna v196 */
+@media(max-width:1400px){
+  html body.cap-mobile-owner-ready #settings:not(.hidden){
+    overflow:visible !important;
+    padding-bottom:calc(230px + env(safe-area-inset-bottom,0px)) !important;
+  }
+  html body.cap-mobile-owner-ready #settings:not(.hidden) #settingsForm{
+    overflow:visible !important;
+    padding-bottom:calc(230px + env(safe-area-inset-bottom,0px)) !important;
+  }
+  html body.cap-mobile-owner-ready #settings:not(.hidden) #settingsForm::after{
+    content:"" !important;
+    display:block !important;
+    height:calc(170px + env(safe-area-inset-bottom,0px)) !important;
+    min-height:calc(170px + env(safe-area-inset-bottom,0px)) !important;
+  }
+}

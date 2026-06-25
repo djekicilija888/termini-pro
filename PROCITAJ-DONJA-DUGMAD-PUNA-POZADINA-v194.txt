@@ -1,0 +1,7 @@
+Urađeno:
+- Iza donjih fiksiranih dugmadi dodat je potpuno beo sloj.
+- Pozadina iza dugmadi više nije providna.
+- Dodata je bela senka iznad dugmadi da sakrije sitno pomeranje sadržaja iza njih.
+- Važi za Dodaj radnika, ručno dodavanje termina, radno vreme lokacije, lokacijske popup prozore i QR/PDF opcije.
+- Dugmad ostaju ista, promenjena je samo pozadina iza njih.
+- Provereno je da owner.js nema JavaScript syntax grešku.

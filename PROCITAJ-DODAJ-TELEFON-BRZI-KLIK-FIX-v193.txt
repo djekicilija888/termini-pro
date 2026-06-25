@@ -1,0 +1,7 @@
+Urađeno:
+- Dugme "Dodaj još jedan telefon" se sada kratko zaključava posle klika.
+- Ako korisnik brzo klikne više puta, dodatni klikovi se ignorišu.
+- Time se sprečava trzaj koji nastaje kada Android WebView obradi više brzih dodira/click događaja.
+- Zaključavanje traje manje od jedne sekunde.
+- Važi i za "Dodaj radnika" i za "Profil firme".
+- Provereno je da owner.js nema JavaScript syntax grešku.

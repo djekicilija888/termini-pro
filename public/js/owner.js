@@ -802,11 +802,20 @@ function centerStaffPhoneInputOnScreenV167(input, force=false){
 }
 function keepStaffPhoneLockedAfterTypingV174(){
  try{
+  const form=document.querySelector('#staffModal .staff-modal-form-v145');
+  if(form){
+    form.style.scrollBehavior='auto';
+    form.style.overflowAnchor='none';
+  }
   applyStaffPhoneLockedScrollV174();
-  requestAnimationFrame(applyStaffPhoneLockedScrollV174);
+  requestAnimationFrame(()=>{
+    applyStaffPhoneLockedScrollV174();
+    requestAnimationFrame(applyStaffPhoneLockedScrollV174);
+  });
   clearTimeout(window.__staffPhoneLockRestoreTimerV174);
-  window.__staffPhoneLockRestoreTimerV174=setTimeout(applyStaffPhoneLockedScrollV174,40);
-  setTimeout(applyStaffPhoneLockedScrollV174,120);
+  window.__staffPhoneLockRestoreTimerV174=setTimeout(applyStaffPhoneLockedScrollV174,16);
+  setTimeout(applyStaffPhoneLockedScrollV174,48);
+  setTimeout(applyStaffPhoneLockedScrollV174,96);
  }catch(_e){}
 }
 
@@ -854,20 +863,25 @@ function addStaffPhoneField(value=''){
  input.addEventListener('focus',()=>scheduleStaffPhoneCenterAfterKeyboardV178(input));
  input.addEventListener('click',()=>scheduleStaffPhoneCenterAfterKeyboardV178(input));
  input.addEventListener('input',()=>{
+  const form=document.querySelector('#staffModal .staff-modal-form-v145');
+  const lockedTop=(form && form.dataset.staffPhoneLockActiveV174==='1') ? Number(form.dataset.staffPhoneLockScrollTopV174||form.scrollTop) : NaN;
+  if(form && Number.isFinite(lockedTop))form.scrollTop=lockedTop;
+
   const addBtnBefore=document.getElementById('staffPhonesBox')?.querySelector('.staff-add-phone-v158');
   const wasHidden=!addBtnBefore || addBtnBefore.classList.contains('hidden');
   syncStaffPhoneUi();
   markUnsavedScope(staffForm);
+
+  if(form && Number.isFinite(lockedTop))form.scrollTop=lockedTop;
+
   const addBtnAfter=document.getElementById('staffPhonesBox')?.querySelector('.staff-add-phone-v158');
   const becameVisible=wasHidden && addBtnAfter && !addBtnAfter.classList.contains('hidden');
   if(becameVisible){
-    // Prva cifra: dugme se pojavljuje i centriranje ide ODMAH, bez čekanja,
-    // da ne postoji vidljiv trzaj gore pa vraćanje u centar.
     centerStaffPhoneInputOnScreenV167(input,true);
     keepStaffPhoneLockedAfterTypingV174();
     requestAnimationFrame(()=>keepStaffPhoneLockedAfterTypingV174());
-    setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),30);
-    setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),90);
+    setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),24);
+    setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),72);
   }else{
     keepStaffPhoneLockedAfterTypingV174();
   }
@@ -902,30 +916,68 @@ function renderStaffPhones(value=''){
  add.type='button';
  add.className='staff-add-phone-v158 hidden';
  add.textContent='Dodaj još jedan telefon';
- add.onclick=(ev)=>{
-  if(ev)ev.preventDefault();
+ const runAddStaffPhoneV192=(ev)=>{
+  if(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  if(add.__phoneAddBusyV193)return;
+  add.__phoneAddBusyV193=true;
+  add.disabled=true;
+  add.classList.add('phone-add-disabled-v193');
+  document.body.classList.add('phone-add-freeze-v192');
   const form=document.querySelector('#staffModal .staff-modal-form-v145');
   const oldTop=form?form.scrollTop:0;
+  if(form){
+    form.style.scrollBehavior='auto';
+    form.style.overflowAnchor='none';
+    form.scrollTop=oldTop;
+  }
 
   const input=addStaffPhoneField('');
   syncStaffPhoneUi();
   markUnsavedScope(staffForm);
 
-  // Sprečava Android/WebView da pri fokusu prvo povuče ekran gore,
-  // pa tek onda da ga naš kod vrati u centar.
   if(form)form.scrollTop=oldTop;
   if(input){
     try{
       input.focus({preventScroll:true});
     }catch(_e){
+      if(form)form.scrollTop=oldTop;
       input.focus();
       if(form)form.scrollTop=oldTop;
     }
     centerStaffPhoneInputOnScreenV167(input,true);
     keepStaffPhoneLockedAfterTypingV174();
     requestAnimationFrame(()=>keepStaffPhoneLockedAfterTypingV174());
+    setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),24);
+    setTimeout(()=>keepStaffPhoneLockedAfterTypingV174(),72);
   }
- };
+  setTimeout(()=>{
+    add.__phoneAddBusyV193=false;
+    add.disabled=false;
+    add.classList.remove('phone-add-disabled-v193');
+    document.body.classList.remove('phone-add-freeze-v192');
+  },850);
+};
+add.addEventListener('pointerdown',ev=>{
+  add.__phoneAddPointerHandledV192=true;
+  runAddStaffPhoneV192(ev);
+  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},900);
+});
+add.addEventListener('touchstart',ev=>{
+  if(add.__phoneAddPointerHandledV192)return;
+  add.__phoneAddPointerHandledV192=true;
+  runAddStaffPhoneV192(ev);
+  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},900);
+},{passive:false});
+add.onclick=(ev)=>{
+  if(add.__phoneAddPointerHandledV192){
+    if(ev){ev.preventDefault();ev.stopPropagation();}
+    return;
+  }
+  runAddStaffPhoneV192(ev);
+};
  box.appendChild(add);
  syncStaffPhoneUi();
 }
@@ -1625,11 +1677,20 @@ function centerMultiPhoneInputOnScreenV181(input, force=false){
 }
 function keepMultiPhoneLockedAfterTypingV181(input){
  try{
+  const scroller=getMultiPhoneScrollContainerV181(input || document.activeElement);
+  if(scroller){
+    scroller.style.scrollBehavior='auto';
+    scroller.style.overflowAnchor='none';
+  }
   applyMultiPhoneLockedScrollV181(input);
-  requestAnimationFrame(()=>applyMultiPhoneLockedScrollV181(input));
+  requestAnimationFrame(()=>{
+    applyMultiPhoneLockedScrollV181(input);
+    requestAnimationFrame(()=>applyMultiPhoneLockedScrollV181(input));
+  });
   clearTimeout(window.__multiPhoneLockRestoreTimerV181);
-  window.__multiPhoneLockRestoreTimerV181=setTimeout(()=>applyMultiPhoneLockedScrollV181(input),40);
-  setTimeout(()=>applyMultiPhoneLockedScrollV181(input),120);
+  window.__multiPhoneLockRestoreTimerV181=setTimeout(()=>applyMultiPhoneLockedScrollV181(input),16);
+  setTimeout(()=>applyMultiPhoneLockedScrollV181(input),48);
+  setTimeout(()=>applyMultiPhoneLockedScrollV181(input),96);
  }catch(_e){}
 }
 function scheduleMultiPhoneCenterAfterKeyboardV181(input){
@@ -1676,18 +1737,25 @@ function addMultiPhoneField(boxId,hiddenId,max=10,value='',placeholder='Broj tel
  input.addEventListener('focus',()=>scheduleMultiPhoneCenterAfterKeyboardV181(input));
  input.addEventListener('click',()=>scheduleMultiPhoneCenterAfterKeyboardV181(input));
  input.addEventListener('input',()=>{
+  const scroller=getMultiPhoneScrollContainerV181(input);
+  const lockedTop=(scroller && scroller.dataset.multiPhoneLockActiveV181==='1') ? Number(scroller.dataset.multiPhoneLockScrollTopV181||scroller.scrollTop) : NaN;
+  if(scroller && Number.isFinite(lockedTop))scroller.scrollTop=lockedTop;
+
   const addBtnBefore=box.querySelector('.multi-add-phone-v159');
   const wasHidden=!addBtnBefore || addBtnBefore.classList.contains('hidden');
   syncMultiPhonesBox(boxId,hiddenId,max);
   if(scopeEl)markUnsavedScope(scopeEl);
+
+  if(scroller && Number.isFinite(lockedTop))scroller.scrollTop=lockedTop;
+
   const addBtnAfter=box.querySelector('.multi-add-phone-v159');
   const becameVisible=wasHidden && addBtnAfter && !addBtnAfter.classList.contains('hidden');
   if(becameVisible){
     centerMultiPhoneInputOnScreenV181(input,true);
     keepMultiPhoneLockedAfterTypingV181(input);
     requestAnimationFrame(()=>keepMultiPhoneLockedAfterTypingV181(input));
-    setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),30);
-    setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),90);
+    setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),24);
+    setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),72);
   }else{
     keepMultiPhoneLockedAfterTypingV181(input);
   }
@@ -1724,18 +1792,68 @@ function renderMultiPhonesBox(boxId,hiddenId,max=10,value='',placeholder='Broj t
  add.type='button';
  add.className='multi-add-phone-v159 hidden';
  add.textContent='Dodaj još jedan telefon';
- add.onclick=(ev)=>{
-  if(ev)ev.preventDefault();
+ const runAddMultiPhoneV192=(ev)=>{
+  if(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  if(add.__phoneAddBusyV193)return;
+  add.__phoneAddBusyV193=true;
+  add.disabled=true;
+  add.classList.add('phone-add-disabled-v193');
+  document.body.classList.add('phone-add-freeze-v192');
+  const scroller=getMultiPhoneScrollContainerV181(document.activeElement);
+  const oldTop=scroller?scroller.scrollTop:0;
+  if(scroller){
+    scroller.style.scrollBehavior='auto';
+    scroller.style.overflowAnchor='none';
+    scroller.scrollTop=oldTop;
+  }
+
   const input=addMultiPhoneField(boxId,hiddenId,max,'',placeholder,scopeEl);
   syncMultiPhonesBox(boxId,hiddenId,max);
   if(scopeEl)markUnsavedScope(scopeEl);
+
+  if(scroller)scroller.scrollTop=oldTop;
   if(input){
-    try{ input.focus({preventScroll:true}); }catch(_e){ input.focus(); }
+    try{
+      input.focus({preventScroll:true});
+    }catch(_e){
+      if(scroller)scroller.scrollTop=oldTop;
+      input.focus();
+      if(scroller)scroller.scrollTop=oldTop;
+    }
     scheduleMultiPhoneCenterAfterKeyboardV181(input);
     keepMultiPhoneLockedAfterTypingV181(input);
     requestAnimationFrame(()=>keepMultiPhoneLockedAfterTypingV181(input));
+    setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),24);
+    setTimeout(()=>keepMultiPhoneLockedAfterTypingV181(input),72);
   }
- };
+  setTimeout(()=>{
+    add.__phoneAddBusyV193=false;
+    add.disabled=false;
+    add.classList.remove('phone-add-disabled-v193');
+    document.body.classList.remove('phone-add-freeze-v192');
+  },850);
+};
+add.addEventListener('pointerdown',ev=>{
+  add.__phoneAddPointerHandledV192=true;
+  runAddMultiPhoneV192(ev);
+  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},900);
+});
+add.addEventListener('touchstart',ev=>{
+  if(add.__phoneAddPointerHandledV192)return;
+  add.__phoneAddPointerHandledV192=true;
+  runAddMultiPhoneV192(ev);
+  setTimeout(()=>{add.__phoneAddPointerHandledV192=false},900);
+},{passive:false});
+add.onclick=(ev)=>{
+  if(add.__phoneAddPointerHandledV192){
+    if(ev){ev.preventDefault();ev.stopPropagation();}
+    return;
+  }
+  runAddMultiPhoneV192(ev);
+};
  box.appendChild(add);
  syncMultiPhonesBox(boxId,hiddenId,max);
 }
@@ -3514,3 +3632,12 @@ document.addEventListener('keydown', function(ev){
 
 
 /* QR PDF native Android buttons fix v187 */
+
+
+/* Phone micro twitch fix v191 */
+
+
+/* Add phone click no twitch v192 */
+
+
+/* Add phone fast click guard v193 */

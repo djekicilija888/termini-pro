@@ -1,0 +1,7 @@
+Urađeno:
+- Popravljen je scroll u odeljku Profil firme.
+- Problem je bio što kasni FORCE SMALL JS stil ponovo pregazi CSS padding za Profil firme.
+- Zato je dodat finalni kasni stil u capacitor-mobile-owner.js koji se učitava posle tog force-small stila.
+- Dodao sam stvarni prazan spacer ispod forme, ne samo padding, da može sigurno da se skroluje do dna.
+- Donja dugmad i ostali popupi nisu menjani.
+- Provereno je da JS fajlovi nemaju JavaScript syntax grešku.

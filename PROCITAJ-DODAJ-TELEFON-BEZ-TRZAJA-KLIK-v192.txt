@@ -1,0 +1,7 @@
+Urađeno:
+- Trzaj pri kliku na dugme "Dodaj još jedan telefon" je dodatno smanjen.
+- Dodavanje se sada hvata na pointerdown/touchstart, pre nego što Android WebView pomeri pozadinu.
+- Sprečava se blur/focus skok između starog polja, dugmeta i novog polja.
+- Privremeno se gasi backdrop-filter/transition dok traje dodavanje, da pozadina ne izgleda kao da se ponovo učitava.
+- Važi i za Dodaj radnika i za Profil firme.
+- Provereno je da owner.js nema JavaScript syntax grešku.
