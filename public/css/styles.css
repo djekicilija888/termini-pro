@@ -1917,3 +1917,100 @@ body.owner-booting #tabletAdminLock{
 @keyframes app-loading-spin-v160{
   to{transform:rotate(360deg);}
 }
+
+
+/* Owner Manual Appointment Actions v161 - desktop/web */
+.manual-panel.manual-modal-open #manualForm{
+  padding-bottom:20px !important;
+}
+.manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161,
+.manual-panel.manual-modal-open #manualForm .form-actions{
+  grid-column:1 / -1 !important;
+  position:sticky !important;
+  bottom:14px !important;
+  z-index:30 !important;
+  display:grid !important;
+  grid-template-columns:minmax(120px,.72fr) minmax(190px,1fr) minmax(190px,1fr) !important;
+  gap:10px !important;
+  align-items:center !important;
+  background:#ffffff !important;
+  padding:10px 0 0 0 !important;
+  margin-top:4px !important;
+  border-top:1px solid #e5e7eb !important;
+  box-shadow:0 -10px 18px rgba(255,255,255,.95) !important;
+}
+.manual-panel.manual-modal-open #manualCancel,
+.manual-panel.manual-modal-open #manualSlotRefresh{
+  min-height:34px !important;
+  height:34px !important;
+  padding:5px 10px !important;
+  border-radius:10px !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+}
+.manual-panel.manual-modal-open #manualSlotRefresh{
+  font-size:12px !important;
+}
+.manual-panel.manual-modal-open #manualSubmit,
+.manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161 button[type="submit"]{
+  min-height:38px !important;
+  height:38px !important;
+  padding:6px 12px !important;
+  border-radius:10px !important;
+  font-size:14px !important;
+  font-weight:900 !important;
+}
+@media(max-width:620px){
+  .manual-panel.manual-modal-open #manualForm{
+    max-height:calc(100vh - 116px) !important;
+    padding-bottom:18px !important;
+  }
+  .manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161,
+  .manual-panel.manual-modal-open #manualForm .form-actions{
+    grid-template-columns:.78fr 1.22fr !important;
+    gap:7px !important;
+    bottom:12px !important;
+    padding-top:8px !important;
+  }
+  .manual-panel.manual-modal-open #manualSubmit,
+  .manual-panel.manual-modal-open #manualForm .manual-appointment-actions-v161 button[type="submit"]{
+    grid-column:1 / -1 !important;
+    min-height:36px !important;
+    height:36px !important;
+    font-size:13px !important;
+  }
+  .manual-panel.manual-modal-open #manualCancel,
+  .manual-panel.manual-modal-open #manualSlotRefresh{
+    min-height:31px !important;
+    height:31px !important;
+    padding:4px 6px !important;
+    font-size:11px !important;
+  }
+}
+
+/* Field placeholders everywhere v162
+   Tekst labela je prebačen u placeholder polja. Checkbox/radio tekst ostaje vidljiv. */
+html body label.tp-placeholder-label-v162{
+  gap:0 !important;
+}
+html body label.tp-placeholder-label-v162 > input,
+html body label.tp-placeholder-label-v162 > select,
+html body label.tp-placeholder-label-v162 > textarea{
+  margin-top:0 !important;
+}
+html body .tp-hidden-field-title-v162{
+  display:none !important;
+}
+html body #manualForm label.tp-placeholder-label-v162,
+html body #staffForm label.tp-placeholder-label-v162,
+html body #serviceForm label.tp-placeholder-label-v162,
+html body #settingsForm label.tp-placeholder-label-v162,
+html body .location-modal-form-v115 label.tp-placeholder-label-v162{
+  margin:0 !important;
+}
+html body input::placeholder,
+html body textarea::placeholder{
+  color:#6b7280 !important;
+  opacity:1 !important;
+}
+

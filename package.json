@@ -3,9 +3,16 @@
   "version": "9.1.4",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
+    "cap:run": "npx cap run android",
+    "cap:build": "npx cap build android",
+    "android": "npm run cap:sync && npm run cap:open"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/core": "^8.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -20,5 +27,8 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "V145: Radnici dodavanje i izmena kroz popup prozor"
+  "description": "Termini Pro web + Capacitor Android aplikacija",
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
 }

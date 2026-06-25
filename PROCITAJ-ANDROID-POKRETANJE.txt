@@ -1,0 +1,14 @@
+KOMPLETNO SREDJEN ANDROID CSS
+
+Ovaj projekat je spreman za standardni Capacitor rad:
+
+1) npm install
+2) npm install @capacitor/android
+3) npx cap add android
+4) npx cap sync android
+5) npx cap open android
+
+Android stilovi su trajno u:
+public/css/capacitor-mobile-owner.css
+
+Ne menjaj rucno android/app/src/main/assets/public/css/capacitor-mobile-owner.css, jer se taj fajl pregazi posle npx cap sync android.

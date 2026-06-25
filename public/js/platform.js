@@ -39,7 +39,7 @@ async function validateStoredTabletMode(){
 function showTabletModeLanding(){
   const panel=document.querySelector('.panel-grid');
   if(!panel)return false;
-  panel.innerHTML=`<div class="card"><p class="eyebrow">Radnički ekran</p><h2>Ovaj uređaj je povezan sa lokacijom</h2><p class="muted">Za ovaj računar/tablet je uključen radnički ekran. Glavni panel se otključava samo admin nalogom.</p><div class="actions"><a class="btn" href="/tablet">Otvori radnički ekran</a></div><p class="muted small-note">Admin se prijavljuje preko dugmeta „Admin prijava” na radničkom ekranu.</p><p id="tabletLandingMsg" class="msg"></p></div>`;
+  panel.innerHTML=`<div class="card"><p class="eyebrow">Radnički ekran</p><h2>Ovaj uređaj je povezan sa lokacijom</h2><p class="muted">Za ovaj računar/tablet je uključen radnički ekran. Glavni panel se otključava samo admin nalogom.</p><div class="actions"><a class="btn" href="/tablet.html">Otvori radnički ekran</a></div><p class="muted small-note">Admin se prijavljuje preko dugmeta „Admin prijava” na radničkom ekranu.</p><p id="tabletLandingMsg" class="msg"></p></div>`;
   const hero=document.querySelector('.hero-copy');
   if(hero)hero.querySelector('.card.soft-card')?.remove();
   attachTabletNoRegistrationButton();
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (isTabletModeLocked()) {
     const validTablet = await validateStoredTabletMode();
     if (validTablet && isTabletModeLocked()) {
-      location.replace('/tablet');
+      location.replace(window.terminiAppPath ? window.terminiAppPath('/tablet') : '/tablet.html');
       return;
     }
   }

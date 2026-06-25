@@ -1,0 +1,13 @@
+Sredjen je odeljak "Termini" za Android.
+
+Menjano je samo:
+public/css/capacitor-mobile-owner.css
+android/app/src/main/assets/public/css/capacitor-mobile-owner.css
+
+Nisu dirani Radnici, Profil firme, owner.js ni logika programa.
+
+Pokretanje:
+1) otvori ovaj folder u VS Code
+2) npx cap sync android
+3) npx cap open android
+4) u Android Studio klikni Run

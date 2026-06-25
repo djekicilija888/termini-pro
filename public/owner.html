@@ -1,303 +1,349 @@
-<!doctype html><html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Panel firme</title><style id="ownerBootCritical">body.owner-booting #login,body.owner-booting #app,body.owner-booting #tabletAdminLock{visibility:hidden!important;opacity:0!important}body.owner-booting{overflow:hidden}</style><link rel="stylesheet" href="/css/styles.css?v=v155-brze-kartice-bez-nepotrebnog-ucitavanja"></head><body class="owner-booting"><main id="tabletAdminLock" class="narrow stack hidden"><section class="card" style="margin-top:40px"><p class="eyebrow">Radnički ekran</p><h1>Ovaj uređaj je u tablet režimu</h1><p class="muted">Ovaj računar/tablet je povezan sa jednom lokacijom. Radnici mogu da otvore radnički ekran, a za ulazak u glavni panel potreban je admin nalog.</p><div class="actions"><a class="btn" href="/tablet">Otvori radnički ekran</a></div><form id="tabletAdminUnlockForm"><label>Email admina<input id="tabletAdminEmail" type="email"></label><label>Lozinka admina<input id="tabletAdminPassword" type="password"></label><button class="btn ghost" type="submit">Uđi u glavni panel</button></form><button id="tabletAdminNoRegBtn" class="btn ghost" type="button" style="margin-top:10px">Uđi bez registracije</button><p id="tabletAdminUnlockMsg" class="msg"></p></section></main><main id="login" class="narrow stack"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label>Email<input id="em" type="email"></label><label>Lozinka<input id="pw" type="password"></label><button class="btn">Prijavi se</button></form><button id="ownerNoRegBtn" class="btn ghost" type="button" style="margin-top:10px">Uđi bez registracije</button><p id="lm" class="msg"></p></section></main><main id="app" class="shell stack hidden"><header class="top"><div class="nav"><a class="brand" href="/"><span class="mark">T</span><span>Panel firme</span></a><button id="logout" class="btn small ghost">Odjava</button></div></header><div class="tabs"><button data-tab="dash" class="active">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p id="om" class="msg"></p><section id="dash" class="tab card">
-  <p class="eyebrow">Pregled</p>
-  <h2 id="bn">Osnovna strana</h2>
-  <div id="cards" class="grid3 dashboard-stats"></div>
-  <h2>Najbliži termini</h2>
-  <div class="table"><table><tbody id="upcoming"></tbody></table></div>
+<!DOCTYPE html>
+<html lang="sr"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" name="viewport"/><title>Panel firme</title><style id="ownerBootCritical">body.owner-booting #login,body.owner-booting #app,body.owner-booting #tabletAdminLock{visibility:hidden!important;opacity:0!important}body.owner-booting{overflow:hidden}</style><link href="/css/styles.css?v=v155-brze-kartice-bez-nepotrebnog-ucitavanja" rel="stylesheet"/><link href="/css/capacitor-mobile-owner.css?v=kompletno-android-final-v1" rel="stylesheet"/><style id="cap-force-small-inline">
+
+/* =========================================================
+   FORCE COMPACT ANDROID - v99
+   Ako se ovo učita, izgled MORA biti sitan. Namerno je poslednje.
+========================================================= */
+@media (max-width: 1400px){
+  html, body{font-size:10px !important;-webkit-text-size-adjust:100% !important;text-size-adjust:100% !important;}
+  body.cap-mobile-owner-ready{padding-top:calc(48px + env(safe-area-inset-top,0px)) !important;padding-bottom:calc(39px + env(safe-area-inset-bottom,0px)) !important;background:#f4f6fb !important;}
+  body.cap-mobile-owner-ready #app.shell{padding:0 5px calc(43px + env(safe-area-inset-bottom,0px)) !important;margin:0 !important;max-width:100% !important;width:100% !important;gap:0 !important;overflow-x:hidden !important;}
+  body.cap-mobile-owner-ready #app,body.cap-mobile-owner-ready #app *{box-sizing:border-box !important;max-width:100% !important;}
+  .cap-mobile-owner-header{min-height:calc(48px + env(safe-area-inset-top,0px)) !important;padding:calc(3px + env(safe-area-inset-top,0px)) 8px 4px !important;gap:1px !important;}
+  .cap-mobile-owner-title{font-size:13px !important;line-height:1 !important;letter-spacing:-.02em !important;margin:0 !important;}
+  .cap-mobile-owner-subtitle{font-size:8px !important;line-height:1.02 !important;margin:0 !important;font-weight:750 !important;}
+  .cap-mobile-bottom-nav{height:calc(37px + env(safe-area-inset-bottom,0px)) !important;padding:3px 4px calc(3px + env(safe-area-inset-bottom,0px)) !important;gap:3px !important;}
+  .cap-mobile-bottom-nav button{height:31px !important;min-height:31px !important;border-radius:7px !important;font-size:7.8px !important;line-height:1 !important;padding:0 !important;font-weight:850 !important;box-shadow:0 1px 2px rgba(17,24,39,.10) !important;}
+  body.cap-mobile-owner-ready #app > .tab,body.cap-mobile-owner-ready #app > section.tab.card,body.cap-mobile-owner-ready #app > .cap-mobile-screen{padding:0 !important;margin:0 !important;border:0 !important;box-shadow:none !important;background:transparent !important;}
+  body.cap-mobile-owner-ready .stack{gap:4px !important;padding:4px 0 !important;}
+  body.cap-mobile-owner-ready .card,body.cap-mobile-owner-ready .item,body.cap-mobile-owner-ready .soft-card,body.cap-mobile-owner-ready .box,body.cap-mobile-owner-ready .notice{padding:6px !important;border-radius:7px !important;box-shadow:none !important;}
+  body.cap-mobile-owner-ready h1{font-size:14px !important;line-height:1 !important;margin:0 0 3px !important;}
+  body.cap-mobile-owner-ready h2{font-size:13px !important;line-height:1.02 !important;margin:0 0 3px !important;}
+  body.cap-mobile-owner-ready h3{font-size:12px !important;line-height:1.03 !important;margin:0 0 3px !important;}
+  body.cap-mobile-owner-ready h4{font-size:11px !important;line-height:1.04 !important;margin:0 0 2px !important;}
+  body.cap-mobile-owner-ready p,body.cap-mobile-owner-ready .muted,body.cap-mobile-owner-ready p.muted,body.cap-mobile-owner-ready label,body.cap-mobile-owner-ready span,body.cap-mobile-owner-ready strong,body.cap-mobile-owner-ready b,body.cap-mobile-owner-ready td,body.cap-mobile-owner-ready th{font-size:9.2px !important;line-height:1.08 !important;}
+  body.cap-mobile-owner-ready form,body.cap-mobile-owner-ready .formgrid{gap:5px !important;margin-top:4px !important;}
+  body.cap-mobile-owner-ready input,body.cap-mobile-owner-ready select,body.cap-mobile-owner-ready textarea{min-height:28px !important;height:auto !important;border-radius:6px !important;font-size:9.8px !important;line-height:1.05 !important;padding:4px 6px !important;font-weight:750 !important;}
+  body.cap-mobile-owner-ready textarea{min-height:42px !important;}
+  body.cap-mobile-owner-ready .btn,body.cap-mobile-owner-ready button.btn,body.cap-mobile-owner-ready a.btn,body.cap-mobile-owner-ready button,body.cap-mobile-owner-ready a.btn.small,body.cap-mobile-owner-ready .btn.small{min-height:28px !important;border-radius:6px !important;font-size:9.4px !important;line-height:1.02 !important;padding:3px 5px !important;white-space:normal !important;overflow:hidden !important;text-overflow:ellipsis !important;}
+  .cap-mobile-more-list{gap:4px !important;padding:4px 0 !important;}
+  .cap-mobile-more-button{min-height:30px !important;border-radius:7px !important;font-size:10px !important;padding:2px 4px !important;}
+  body.cap-mobile-owner-ready #settingsForm{padding:4px 0 !important;gap:5px !important;}
+  body.cap-mobile-owner-ready #settingsForm .card.soft-card{padding:7px !important;}
+  body.cap-mobile-owner-ready #settingsForm .card.soft-card h3{margin:0 0 5px !important;font-size:12px !important;}
+  body.cap-mobile-owner-ready #settingsForm .formgrid{gap:5px !important;}
+  body.cap-mobile-owner-ready .multi-phone-title-v159{font-size:11px !important;margin:0 0 3px !important;}
+  body.cap-mobile-owner-ready .multi-phones-box-v159,body.cap-mobile-owner-ready .multi-phone-row-v159{gap:3px !important;}
+  body.cap-mobile-owner-ready .multi-phone-remove-v159{width:26px !important;height:26px !important;flex-basis:26px !important;border-radius:6px !important;font-size:12px !important;}
+  body.cap-mobile-owner-ready #addStaffBtn{min-height:30px !important;border-radius:7px !important;font-size:10px !important;}
+  body.cap-mobile-owner-ready #staffList{gap:4px !important;padding:0 0 4px !important;}
+  body.cap-mobile-owner-ready #staffList .item{padding:7px !important;}
+  body.cap-mobile-owner-ready #staffList .item h3{font-size:12px !important;margin:0 0 2px !important;}
+  body.cap-mobile-owner-ready #staffList .item p:not(.muted),body.cap-mobile-owner-ready #staffList .badges span{font-size:9.2px !important;line-height:1.05 !important;margin:0 0 1px !important;}
+  body.cap-mobile-owner-ready #staffList .actions{margin-top:3px !important;border-radius:6px !important;}
+  body.cap-mobile-owner-ready #staffList .actions .btn{min-height:26px !important;font-size:9.2px !important;}
+  body.cap-mobile-owner-ready #bookinglink{padding-top:2px !important;overflow-x:hidden !important;}
+  body.cap-mobile-owner-ready #bookinglink .link-qr-layout{display:grid !important;grid-template-columns:1fr !important;gap:4px !important;margin:0 0 4px !important;}
+  body.cap-mobile-owner-ready #bookinglink .booking-link-card,body.cap-mobile-owner-ready #bookinglink .qr-card,body.cap-mobile-owner-ready #bookinglink .card.soft-card{padding:6px !important;border-radius:7px !important;gap:4px !important;}
+  body.cap-mobile-owner-ready #bookinglink .booking-link-card strong,body.cap-mobile-owner-ready #bookinglink .qr-card strong{font-size:10px !important;line-height:1.03 !important;}
+  body.cap-mobile-owner-ready #bookinglink .link-actions,body.cap-mobile-owner-ready #bookinglink .location-qr-actions-inline-v124{display:grid !important;grid-template-columns:1fr !important;gap:2px !important;margin-top:2px !important;}
+  body.cap-mobile-owner-ready #bookingUrlInput{min-height:25px !important;font-size:8.8px !important;padding:3px 5px !important;}
+  body.cap-mobile-owner-ready .qr-preview-box{padding:3px !important;min-height:0 !important;}
+  body.cap-mobile-owner-ready .qr-preview-box img,body.cap-mobile-owner-ready img.qr,body.cap-mobile-owner-ready .qr{width:68px !important;height:68px !important;padding:2px !important;border-radius:6px !important;}
+  body.cap-mobile-owner-ready #ownerLocationsList,body.cap-mobile-owner-ready .location-qr-list-v123{gap:3px !important;padding-top:2px !important;}
+  body.cap-mobile-owner-ready .location-qr-row-v123,body.cap-mobile-owner-ready .location-qr-row-v124{display:grid !important;grid-template-columns:1fr !important;gap:3px !important;padding:5px !important;border-radius:7px !important;width:100% !important;overflow:hidden !important;}
+  body.cap-mobile-owner-ready .location-qr-main-v123 h3{font-size:11px !important;line-height:1 !important;margin:0 0 1px !important;}
+  body.cap-mobile-owner-ready .location-badge-v115{font-size:6.8px !important;padding:1px 3px !important;margin-left:2px !important;}
+  body.cap-mobile-owner-ready .location-qr-main-v123 p,body.cap-mobile-owner-ready .location-qr-link-v123 p{font-size:8.5px !important;line-height:1.04 !important;margin:0 !important;overflow-wrap:anywhere !important;word-break:break-word !important;}
+  body.cap-mobile-owner-ready .location-qr-link-v123 b{display:block !important;font-size:9.5px !important;line-height:1.02 !important;margin:0 0 1px !important;}
+  body.cap-mobile-owner-ready .location-qr-actions-inline-v124 .btn,body.cap-mobile-owner-ready .location-qr-actions-inline-v124 a.btn,body.cap-mobile-owner-ready #bookinglink .link-actions .btn,body.cap-mobile-owner-ready #bookinglink .link-actions a.btn{width:100% !important;min-height:26px !important;border-radius:6px !important;font-size:8.8px !important;line-height:1.01 !important;padding:3px 4px !important;}
+  .cap-device-stack{gap:4px !important;padding:4px 0 !important;}
+  .cap-device-card{padding:7px !important;border-radius:7px !important;}
+  .cap-device-card h2,.cap-device-card h3{font-size:11px !important;margin:0 0 3px !important;}
+  .cap-device-card p,.cap-device-empty{font-size:9px !important;line-height:1.08 !important;}
+  .cap-device-form{gap:5px !important;margin-top:5px !important;}
+  .cap-device-primary{min-height:30px !important;border-radius:7px !important;font-size:9.5px !important;padding:3px 5px !important;}
+}
+
+</style></head><body class="owner-booting"><main class="narrow stack hidden" id="tabletAdminLock"><section class="card" style="margin-top:40px"><p class="eyebrow">Radnički ekran</p><h1>Ovaj uređaj je u tablet režimu</h1><p class="muted">Ovaj računar/tablet je povezan sa jednom lokacijom. Radnici mogu da otvore radnički ekran, a za ulazak u glavni panel potreban je admin nalog.</p><div class="actions"><a class="btn" href="/tablet.html">Otvori radnički ekran</a></div><form id="tabletAdminUnlockForm"><label class="tp-placeholder-label-v162" data-field-label-text="Email admina"><input aria-label="Email admina" id="tabletAdminEmail" placeholder="Email admina" type="email"/></label><label class="tp-placeholder-label-v162" data-field-label-text="Lozinka admina"><input aria-label="Lozinka admina" id="tabletAdminPassword" placeholder="Lozinka admina" type="password"/></label><button class="btn ghost" type="submit">Uđi u glavni panel</button></form><button class="btn ghost" id="tabletAdminNoRegBtn" style="margin-top:10px" type="button">Uđi bez registracije</button><p class="msg" id="tabletAdminUnlockMsg"></p></section></main><main class="narrow stack" id="login"><section class="card" style="margin-top:40px"><p class="eyebrow">Panel firme</p><h1>Prijava</h1><form id="loginForm"><label class="tp-placeholder-label-v162" data-field-label-text="Email"><input aria-label="Email" id="em" placeholder="Email" type="email"/></label><label class="tp-placeholder-label-v162" data-field-label-text="Lozinka"><input aria-label="Lozinka" id="pw" placeholder="Lozinka" type="password"/></label><button class="btn">Prijavi se</button></form><button class="btn ghost" id="ownerNoRegBtn" style="margin-top:10px" type="button">Uđi bez registracije</button><p class="msg" id="lm"></p></section></main><main class="shell stack hidden" id="app"><header class="top"><div class="nav"><a class="brand" href="/index.html"><span class="mark">T</span><span>Panel firme</span></a><button class="btn small ghost" id="logout">Odjava</button></div></header><div class="tabs"><button class="active" data-tab="dash">Dashboard</button><button data-tab="appointments">Termini</button><button data-tab="bookinglink">Link / QR kod</button><button data-tab="staff">Radnici</button><button data-tab="services">Usluge</button><button data-tab="hours">Radno vreme</button><button data-tab="settings">Profil firme</button><button data-tab="logs">Log poruka</button></div><p class="msg" id="om"></p><section class="tab card" id="dash">
+<p class="eyebrow">Pregled</p>
+<h2 id="bn">Osnovna strana</h2>
+<div class="grid3 dashboard-stats" id="cards"></div>
+<h2>Najbliži termini</h2>
+<div class="table"><table><tbody id="upcoming"></tbody></table></div>
 </section>
-
-
-<section id="bookinglink" class="tab card hidden">
-  <p class="eyebrow">Link / QR kod</p>
-  <h2>Linkovi i QR kodovi za lokacije</h2>
-  <p class="muted">Za svaku lokaciju može poseban link, QR kod, QR vizit kartice i QR nalepnice. A4 poster je jedan, univerzalan za štampu.</p>
-
-  <div class="link-qr-layout">
-    <div class="booking-link-card">
-      <div>
-        <strong id="bookingLinkBusinessName">Firma</strong>
-        <p class="muted">Glavni javni link za mušterije</p>
-      </div>
-      <input id="bookingUrlInput" readonly>
-      <div class="link-actions">
-        <button id="copyLinkBtn" class="btn small" type="button">Kopiraj glavni link</button>
-        <a id="openPublicLink" class="btn small ghost" target="_blank">Otvori javnu stranicu</a>
-        <button id="printA4PosterBtn" class="btn small ghost" type="button">Štampaj/preuzmi A4 poster</button>
-      </div>
-    </div>
-
-    <div class="qr-card">
-      <p class="eyebrow">Univerzalni QR</p>
-      <div class="qr-preview-box">
-        <img id="ownerQrPreview" alt="QR kod za zakazivanje">
-      </div>
-      <p class="muted">Ovaj QR vodi na glavnu stranicu. Ako ima više lokacija, mušterija bira lokaciju na sajtu.</p>
-    </div>
-  </div>
-
-  <div class="card soft-card">
-    <h3>Lokacije</h3>
-    <p class="muted">Lokacije se automatski povlače iz odeljka Profil firme. Ovde se samo kopira link i štampaju QR materijali za svaku lokaciju.</p>
-    <div id="ownerLocationsList" class="stack"></div>
-  </div>
-
-</section>
-
-
-<section id="appointments" class="tab card hidden">
-  <p class="eyebrow">Termini</p>
-  <h2>Termini</h2>
-
-  <div class="card soft-card manual-appointment-card">
-    <button id="toggleManualAppointment" class="manual-toggle" type="button" aria-expanded="false">
-      <span class="manual-plus">+</span>
-      <span>Ručno dodaj termin za mušteriju</span>
-    </button>
-    <div id="manualAppointmentPanel" class="manual-panel hidden" role="dialog" aria-modal="true">
-      <div class="manual-modal-head"><div><h3>Ručno dodaj termin za mušteriju</h3><p class="muted">Ovde vlasnik može sam da ubaci mušteriju na spisak termina.</p></div><button id="closeManualAppointment" class="manual-close" type="button" aria-label="Zatvori">×</button></div>
-      <form id="manualForm" class="formgrid">
-      <label>Ime mušterije<input id="manualName" placeholder="Ime i prezime"></label>
-      <label>Telefon<input id="manualPhone" placeholder="Telefon"></label>
-      <label>Email, nije obavezno<input id="manualEmail" type="email" placeholder="email@example.com"></label>
-      <label id="manualLocationWrap">Lokacija<select id="manualLocation"></select></label>
-      <label>Usluga<select id="manualService"></select></label>
-      <label>Radnik<select id="manualStaff"><option value="">Bilo koji slobodan radnik</option></select></label>
-      <label>Datum<input id="manualDate" type="date"></label>
-      <label>Slobodno vreme<select id="manualTime"></select></label>
-      <label>Napomena<textarea id="manualNotes" placeholder="Napomena, nije obavezno"></textarea></label>
-      <div class="form-actions">
-        <button id="manualSlotRefresh" type="button" class="btn small ghost">Osveži slobodna vremena</button>
-        <button class="btn small" type="submit">Dodaj termin</button>
-      </div>
-      </form>
-    </div>
-  </div>
-
-  <div class="card soft-card">
-    <h3>Lista termina</h3>
-    <div class="formgrid">
-      <input id="from" type="date">
-      <input id="to" type="date">
-      <select id="appointmentLocationFilter"><option value="">Sve lokacije</option></select>
-      <select id="status">
-        <option value="">Svi</option>
-        <option value="booked">Zakazani</option>
-        <option value="completed">Završeni</option>
-        <option value="cancelled">Otkazani</option>
-        <option value="no_show">Nije došao</option>
-      </select>
-      <button id="loadA" class="btn small">Učitaj</button>
-    </div>
-    <div class="table"><table><tbody id="appointmentsBody"></tbody></table></div>
-  </div>
-</section><section id="staff" class="tab card hidden">
-  <div class="section-title-row-v145">
-    <div>
-      <h2>Radnici</h2>
-      <p class="muted">Ovde podešavaš podatke radnika, lokacije na kojima može da radi i raspored rada po danima. Ovaj raspored određuje gde se radnik prikazuje mušteriji i koji termini ulaze u radnički prikaz lokacije.</p>
-    </div>
-    <button id="addStaffBtn" class="btn small ghost" type="button">+ Dodaj radnika</button>
-  </div>
-  <div id="staffList" class="stack"></div>
-
-  <div id="staffModal" class="location-modal-v115 hidden" role="dialog" aria-modal="true">
-    <div class="location-modal-box-v115 staff-modal-box-v145">
-      <div class="location-modal-head-v115">
-        <div>
-          <h3 id="staffModalTitle">Dodaj radnika</h3>
-          <p class="muted">Podesi podatke radnika, lokacije, radnički pristup i raspored rada.</p>
-        </div>
-        <button id="staffModalClose" class="manual-close" type="button" aria-label="Zatvori">×</button>
-      </div>
-      <form id="staffForm" class="location-modal-form-v115 staff-modal-form-v145">
-        <input id="staffId" type="hidden">
-        <label>Ime<input id="staffName"></label>
-        <label>Titula<input id="staffTitle"></label>
-        <label>Email<input id="staffEmail"></label>
-        <label>Redosled<input id="staffSort" type="number" value="0"></label>
-        <label class="inline-check location-modal-check-v115 staff-active-field">
-          <input id="staffActive" type="checkbox" checked>
-          <span>Aktivan</span>
-        </label>
-        <div class="staff-phone-field-v158">
-          <div class="staff-phone-title-v158">Telefoni</div>
-          <div id="staffPhonesBox" class="staff-phones-box-v158"></div>
-        </div>
-        <label class="worker-access-check-v136 staff-worker-access-v145"><input id="staffWorkerAccess" type="checkbox"> Dozvoli radnički pristup preko telefona</label>
-        <label id="staffWorkerPinWrap" class="worker-pin-wrap-v136 hidden">PIN radnika<input id="staffWorkerPin" type="password" inputmode="numeric" maxlength="12" placeholder="npr. 1234"></label>
-        <div id="staffLocationsBox" class="location-checks-v122"></div>
-        <div id="staffLocationScheduleBox" class="staff-location-schedule-v125"></div>
-        <div class="location-modal-actions-v115 staff-modal-actions-v145">
-          <button id="resetStaff" type="button" class="btn small ghost">Poništi</button>
-          <button class="btn small" type="submit">Sačuvaj radnika</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</section>
-<section id="services" class="tab card hidden"><h2>Usluge</h2><form id="serviceForm" class="formgrid"><input id="serviceId" type="hidden"><label>Naziv<input id="serviceName"></label><label>Trajanje<input id="serviceDuration" type="number" value="30"></label><label>Cena<input id="servicePrice" type="number" value="1000"></label><label>Redosled<input id="serviceSort" type="number" value="0"></label><label>Opis<textarea id="serviceDesc"></textarea></label><label><input id="serviceActive" type="checkbox" checked> Aktivna</label><div id="serviceLocationsBox" class="location-checks-v122"></div><button class="btn small">Sačuvaj</button><button id="resetService" type="button" class="btn small ghost">Poništi</button></form><div id="serviceList" class="stack"></div></section><section id="hours" class="tab card hidden">
-  <p class="eyebrow">Radno vreme</p>
-  <h2>Radno vreme</h2>
-  <p class="muted">Ovde podešavaš kada firma radi. Pauze i neradni dani automatski blokiraju zakazivanje.</p>
-
-  <div id="locationHoursCard" class="card soft-card hidden">
-    <h3>Radno vreme po lokacijama</h3>
-    <p id="locationHoursHelp" class="muted">Ako imaš dodate lokacije, ovde se vidi radno vreme za svaku lokaciju. Klikni Izmeni pored lokacije da promeniš radno vreme.</p>
-    <div id="locationHoursList" class="stack"></div>
-  </div>
-
-  <div id="locationHoursModal" class="manual-panel location-hours-modal-v118 hidden" role="dialog" aria-modal="true">
-    <div class="manual-modal-head">
-      <div>
-        <h3 id="locationHoursModalTitle">Radno vreme lokacije</h3>
-        <p id="locationHoursModalHint" class="muted">Podesi dane, vreme rada i pauze za izabranu lokaciju.</p>
-      </div>
-      <button id="closeLocationHoursModal" class="manual-close" type="button" aria-label="Zatvori">×</button>
-    </div>
-    <form id="locationHoursModalForm" class="formgrid">
-      <div id="locationHoursModalRows" class="location-hours-days-v118"></div>
-
-      <div id="locationBlockedSection" class="location-blocked-section-v119 hidden">
-        <h3>Neradni dani i zauzeti periodi za ovu lokaciju</h3>
-        <p class="muted">Ako ostaviš vreme prazno, blokira se ceo dan samo na ovoj lokaciji. Ako uneseš vreme od/do, blokira se samo taj period.</p>
-        <div class="formgrid location-blocked-form-v119">
-          <label>Datum<input id="locationBlockedDate" type="date"></label>
-          <label>Od<input id="locationBlockedStart" type="time"></label>
-          <label>Do<input id="locationBlockedEnd" type="time"></label>
-          <label>Razlog<input id="locationBlockedReason" placeholder="Odmor, pauza, privatna obaveza..."></label>
-          <button id="addLocationBlocked" class="btn small" type="button">Dodaj neradno</button>
-        </div>
-        <div id="locationBlockedList" class="stack"></div>
-      </div>
-
-      <div class="form-actions location-hours-modal-actions-v118">
-        <button id="cancelLocationHoursModal" type="button" class="btn small ghost">Otkaži</button>
-        <button class="btn small" type="submit">Sačuvaj radno vreme</button>
-      </div>
-    </form>
-  </div>
-
-  <div id="hoursEditorCard" class="card soft-card">
-    <h3 id="hoursEditorTitle">Redovno radno vreme i pauze</h3>
-    <p id="hoursEditorHint" class="muted">Za svaki dan možeš uneti vreme rada i pauzu, npr. 12:00–13:00.</p>
-    <div id="hoursForm" class="stack"></div>
-    <button id="saveHours" class="btn small">Sačuvaj radno vreme</button>
-  </div>
-
-  <div id="blockedCard" class="card soft-card">
-    <h3>Neradni dani i zauzeti periodi</h3>
-    <p class="muted">Ako ostaviš vreme prazno, blokira se ceo dan. Ako uneseš vreme od/do, blokira se samo taj period.</p>
-    <form id="blockedForm" class="formgrid">
-      <label>Datum<input id="blockedDate" type="date"></label>
-      <label>Od<input id="blockedStart" type="time"></label>
-      <label>Do<input id="blockedEnd" type="time"></label>
-      <label>Razlog<input id="blockedReason" placeholder="Odmor, pauza, privatna obaveza..."></label>
-      <button class="btn small" type="submit">Dodaj neradno</button>
-    </form>
-    <div id="blockedList" class="stack"></div>
-  </div>
-</section><section id="settings" class="tab card hidden">
-  <p class="eyebrow">Profil firme</p>
-  <h2>Podešavanje profila firme</h2>
-  <p class="muted">Podaci koje mušterije vide na javnoj stranici.</p>
-
-  <form id="settingsForm" class="stack">
-    <div class="card soft-card">
-      <h3>Podaci firme</h3>
-      <div class="formgrid">
-        <label>Naziv firme<input id="setName"></label>
-        <label>Delatnost<input id="setType"></label>
-        <label id="primaryCityField">Grad<input id="setCity"></label>
-        <div id="primaryPhoneField" class="multi-phone-field-v159 profile-phone-field-v159">
-          <div class="multi-phone-title-v159">Telefoni firme, najviše 10 brojeva</div>
-          <input id="setPhone" type="hidden">
-          <div id="businessPhonesBox" class="multi-phones-box-v159"></div>
-        </div>
-        <label>Instagram/Facebook link<input id="setInstagram"></label>
-        <label id="primaryAddressField">Adresa<input id="setAddress"></label>
-        <label>Website<input id="setWebsite"></label>
-        <label>Opis firme<textarea id="setDesc"></textarea></label>
-      </div>
-    </div>
-
-    <div id="profileExtraLocationsWrap" class="card soft-card hidden">
-      <div class="location-title-row">
-        <div>
-          <h3>Lokacije</h3>
-          <p class="muted">Dodate lokacije se prikazuju samo kao redovi. Dodavanje i uređivanje ide kroz prozor.</p>
-        </div>
-        <button id="profileAddLocationBtn" class="btn small ghost" type="button">+ Dodaj još jednu lokaciju</button>
-      </div>
-      <div id="profileLocationsList" class="profile-locations-list-v115"></div>
-    </div>
-
-    <div id="profileLocationModal" class="location-modal-v115 hidden" role="dialog" aria-modal="true">
-      <div class="location-modal-box-v115">
-        <div class="location-modal-head-v115">
-          <div>
-            <h3 id="profileLocationModalTitle">Dodaj lokaciju</h3>
-            <p class="muted">Unesi samo podatke lokacije: grad, adresu i telefone.</p>
-          </div>
-          <button id="closeProfileLocationModal" class="manual-close" type="button" aria-label="Zatvori">×</button>
-        </div>
-        <div id="profileLocationForm" class="location-modal-form-v115">
-          <label>Grad<input id="profileModalCity"></label>
-          <label>Adresa<input id="profileModalAddress"></label>
-          <div class="multi-phone-field-v159 location-phone-field-v159">
-            <div class="multi-phone-title-v159">Telefoni lokacije, najviše 4 broja</div>
-            <input id="profileModalPhone" type="hidden">
-            <div id="profileModalPhonesBox" class="multi-phones-box-v159"></div>
-          </div>
-          <label class="inline-check location-modal-check-v115"><input id="profileModalActive" type="checkbox" checked> Aktivna lokacija</label>
-          <div class="location-modal-actions-v115">
-            <button id="cancelProfileLocationModal" type="button" class="btn small ghost">Otkaži</button>
-            <button id="profileModalSaveBtn" class="btn small" type="button">Dodaj u listu</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card soft-card">
-      <h3>Automatske poruke za mušterije</h3>
-      <label>Poruka posle zakazivanja<textarea id="setMsgBooking" rows="3"></textarea></label>
-      <label>Poruka kod otkazivanja<textarea id="setMsgCancel" rows="3"></textarea></label>
-      <label>Napomena za mušterije<textarea id="setCustomerNote" rows="3"></textarea></label>
-    </div>
-
-    <div class="card soft-card">
-      <h3>Podešavanja termina</h3>
-      <div class="formgrid">
-        <label>Interval<input id="setInterval" type="number"></label>
-        <label>Min najava sati<input id="setMin" type="number"></label>
-        <label>Max dana<input id="setMax" type="number"></label>
-        <label><input id="nCust" type="checkbox"> Email mušteriji</label>
-        <label><input id="nOwner" type="checkbox"> Email vlasniku</label>
-        <label><input id="nSms" type="checkbox"> SMS log</label>
-        <label><input id="nViber" type="checkbox"> Viber log</label>
-      </div>
-    </div>
-
-    <button class="btn small">Sačuvaj</button>
-  </form>
-</section><section id="logs" class="tab card hidden"><h2>Log obaveštenja</h2><div id="logList" class="stack"></div></section></main>
-<div id="workerQrModal" class="location-modal-v115 hidden" role="dialog" aria-modal="true">
-  <div class="location-modal-box-v115 worker-qr-modal-box-v136">
-    <div class="location-modal-head-v115">
-      <div>
-        <h3 id="workerQrTitle">QR za radnika</h3>
-        <p class="muted">Radnik skenira QR svojim telefonom, a zatim unosi svoj PIN. QR ne otvara admin panel.</p>
-      </div>
-      <button id="workerQrClose" class="manual-close" type="button" aria-label="Zatvori">×</button>
-    </div>
-    <div class="worker-qr-body-v136">
-      <img id="workerQrImg" alt="QR kod za radnički pristup">
-      <label>Link za radnika<input id="workerQrUrl" readonly></label>
-      <div class="actions">
-        <button id="workerQrCopy" class="btn small" type="button">Kopiraj link</button>
-        <a id="workerQrOpen" class="btn small ghost" target="_blank" rel="noopener">Otvori</a>
-      </div>
-      <p id="workerQrMsg" class="msg"></p>
-    </div>
-  </div>
+<section class="tab card hidden" id="bookinglink">
+<p class="eyebrow">Link / QR kod</p>
+<h2>Linkovi i QR kodovi za lokacije</h2>
+<p class="muted">Za svaku lokaciju može poseban link, QR kod, QR vizit kartice i QR nalepnice. A4 poster je jedan, univerzalan za štampu.</p>
+<div class="link-qr-layout">
+<div class="booking-link-card">
+<div>
+<strong id="bookingLinkBusinessName">Firma</strong>
+<p class="muted">Glavni javni link za mušterije</p>
 </div>
-<script src="/js/loading.js?v=v160-global-loading"></script><script src="/js/owner.js?v=v157-radnici-popup-dupli-uklanjanje"></script></body></html>
+<input id="bookingUrlInput" readonly=""/>
+<div class="link-actions">
+<button class="btn small" id="copyLinkBtn" type="button">Kopiraj glavni link</button>
+<a class="btn small ghost" id="openPublicLink" target="_blank">Otvori javnu stranicu</a>
+<button class="btn small ghost" id="printA4PosterBtn" type="button">Štampaj/preuzmi A4 poster</button>
+</div>
+</div>
+<div class="qr-card">
+<p class="eyebrow">Univerzalni QR</p>
+<div class="qr-preview-box">
+<img alt="QR kod za zakazivanje" id="ownerQrPreview"/>
+</div>
+<p class="muted">Ovaj QR vodi na glavnu stranicu. Ako ima više lokacija, mušterija bira lokaciju na sajtu.</p>
+</div>
+</div>
+<div class="card soft-card">
+<h3>Lokacije</h3>
+<p class="muted">Lokacije se automatski povlače iz odeljka Profil firme. Ovde se samo kopira link i štampaju QR materijali za svaku lokaciju.</p>
+<div class="stack" id="ownerLocationsList"></div>
+</div>
+</section>
+<section class="tab card hidden" id="appointments">
+<p class="eyebrow">Termini</p>
+<h2>Termini</h2>
+<div class="card soft-card manual-appointment-card">
+<button aria-expanded="false" class="manual-toggle" id="toggleManualAppointment" type="button">
+<span class="manual-plus">+</span>
+<span>Ručno dodaj termin za mušteriju</span>
+</button>
+<div aria-modal="true" class="manual-panel hidden" id="manualAppointmentPanel" role="dialog">
+<div class="manual-modal-head"><div><h3>Ručno dodaj termin za mušteriju</h3><p class="muted">Ovde vlasnik može sam da ubaci mušteriju na spisak termina.</p></div><button aria-label="Zatvori" class="manual-close" id="closeManualAppointment" type="button">×</button></div>
+<form class="formgrid" id="manualForm">
+<label class="tp-placeholder-label-v162" data-field-label-text="Ime mušterije"><input aria-label="Ime mušterije" id="manualName" placeholder="Ime mušterije"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Telefon"><input aria-label="Telefon" id="manualPhone" placeholder="Telefon"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Email, nije obavezno"><input aria-label="Email, nije obavezno" id="manualEmail" placeholder="Email, nije obavezno" type="email"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Lokacija" id="manualLocationWrap"><select aria-label="Lokacija" data-placeholder="Lokacija" id="manualLocation"></select></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Usluga"><select aria-label="Usluga" data-placeholder="Usluga" id="manualService"></select></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Radnik"><select aria-label="Radnik" data-placeholder="Radnik" id="manualStaff"><option value="">Bilo koji slobodan radnik</option></select></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Datum"><input aria-label="Datum" id="manualDate" placeholder="Datum" type="date"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Slobodno vreme"><select aria-label="Slobodno vreme" data-placeholder="Slobodno vreme" id="manualTime"></select></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Napomena"><textarea aria-label="Napomena" id="manualNotes" placeholder="Napomena"></textarea></label>
+<div class="form-actions manual-appointment-actions-v161">
+<button class="btn small ghost" id="manualCancel" type="button">Poništi</button>
+<button class="btn small ghost" id="manualSlotRefresh" type="button">Osveži slobodna vremena</button>
+<button class="btn small" id="manualSubmit" type="submit">Dodaj termin</button>
+</div>
+</form>
+</div>
+</div>
+<div class="card soft-card">
+<h3>Lista termina</h3>
+<div class="formgrid">
+<input id="from" type="date"/>
+<input id="to" type="date"/>
+<select id="appointmentLocationFilter"><option value="">Sve lokacije</option></select>
+<select id="status">
+<option value="">Svi</option>
+<option value="booked">Zakazani</option>
+<option value="completed">Završeni</option>
+<option value="cancelled">Otkazani</option>
+<option value="no_show">Nije došao</option>
+</select>
+<button class="btn small" id="loadA">Učitaj</button>
+</div>
+<div class="table"><table><tbody id="appointmentsBody"></tbody></table></div>
+</div>
+</section><section class="tab card hidden" id="staff">
+<div class="section-title-row-v145">
+<div>
+<h2>Radnici</h2>
+<p class="muted">Ovde podešavaš podatke radnika, lokacije na kojima može da radi i raspored rada po danima. Ovaj raspored određuje gde se radnik prikazuje mušteriji i koji termini ulaze u radnički prikaz lokacije.</p>
+</div>
+<button class="btn small ghost" id="addStaffBtn" type="button">+ Dodaj radnika</button>
+</div>
+<div class="stack" id="staffList"></div>
+<div aria-modal="true" class="location-modal-v115 hidden" id="staffModal" role="dialog">
+<div class="location-modal-box-v115 staff-modal-box-v145">
+<div class="location-modal-head-v115">
+<div>
+<h3 id="staffModalTitle">Dodaj radnika</h3>
+<p class="muted">Podesi podatke radnika, lokacije, radnički pristup i raspored rada.</p>
+</div>
+<button aria-label="Zatvori" class="manual-close" id="staffModalClose" type="button">×</button>
+</div>
+<form class="location-modal-form-v115 staff-modal-form-v145" id="staffForm">
+<input id="staffId" type="hidden"/>
+<label class="tp-placeholder-label-v162" data-field-label-text="Ime"><input aria-label="Ime" id="staffName" placeholder="Ime"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Titula"><input aria-label="Titula" id="staffTitle" placeholder="Titula"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Email"><input aria-label="Email" id="staffEmail" placeholder="Email"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Redosled"><input aria-label="Redosled" id="staffSort" placeholder="Redosled" type="number" value="0"/></label>
+<label class="inline-check location-modal-check-v115 staff-active-field">
+<input checked="" id="staffActive" type="checkbox"/>
+<span>Aktivan</span>
+</label>
+<div class="staff-phone-field-v158">
+<div class="staff-phone-title-v158">Telefoni</div>
+<div class="staff-phones-box-v158" id="staffPhonesBox"></div>
+</div>
+<label class="worker-access-check-v136 staff-worker-access-v145"><input id="staffWorkerAccess" type="checkbox"/> Dozvoli radnički pristup preko telefona</label>
+<label class="worker-pin-wrap-v136 hidden tp-placeholder-label-v162" data-field-label-text="PIN radnika" id="staffWorkerPinWrap"><input aria-label="PIN radnika" id="staffWorkerPin" inputmode="numeric" maxlength="12" placeholder="PIN radnika" type="password"/></label>
+<div class="location-checks-v122" id="staffLocationsBox"></div>
+<div class="staff-location-schedule-v125" id="staffLocationScheduleBox"></div>
+<div class="location-modal-actions-v115 staff-modal-actions-v145">
+<button class="btn small ghost" id="resetStaff" type="button">Poništi</button>
+<button class="btn small" type="submit">Sačuvaj radnika</button>
+</div>
+</form>
+</div>
+</div>
+</section>
+<section class="tab card hidden" id="services"><h2>Usluge</h2><form class="formgrid" id="serviceForm"><input id="serviceId" type="hidden"/><label class="tp-placeholder-label-v162" data-field-label-text="Naziv"><input aria-label="Naziv" id="serviceName" placeholder="Naziv"/></label><label class="tp-placeholder-label-v162" data-field-label-text="Trajanje"><input aria-label="Trajanje" id="serviceDuration" placeholder="Trajanje" type="number" value="30"/></label><label class="tp-placeholder-label-v162" data-field-label-text="Cena"><input aria-label="Cena" id="servicePrice" placeholder="Cena" type="number" value="1000"/></label><label class="tp-placeholder-label-v162" data-field-label-text="Redosled"><input aria-label="Redosled" id="serviceSort" placeholder="Redosled" type="number" value="0"/></label><label class="tp-placeholder-label-v162" data-field-label-text="Opis"><textarea aria-label="Opis" id="serviceDesc" placeholder="Opis"></textarea></label><label><input checked="" id="serviceActive" type="checkbox"/> Aktivna</label><div class="location-checks-v122" id="serviceLocationsBox"></div><button class="btn small">Sačuvaj</button><button class="btn small ghost" id="resetService" type="button">Poništi</button></form><div class="stack" id="serviceList"></div></section><section class="tab card hidden" id="hours">
+<p class="eyebrow">Radno vreme</p>
+<h2>Radno vreme</h2>
+<p class="muted">Ovde podešavaš kada firma radi. Pauze i neradni dani automatski blokiraju zakazivanje.</p>
+<div class="card soft-card hidden" id="locationHoursCard">
+<h3>Radno vreme po lokacijama</h3>
+<p class="muted" id="locationHoursHelp">Ako imaš dodate lokacije, ovde se vidi radno vreme za svaku lokaciju. Klikni Izmeni pored lokacije da promeniš radno vreme.</p>
+<div class="stack" id="locationHoursList"></div>
+</div>
+<div aria-modal="true" class="manual-panel location-hours-modal-v118 hidden" id="locationHoursModal" role="dialog">
+<div class="manual-modal-head">
+<div>
+<h3 id="locationHoursModalTitle">Radno vreme lokacije</h3>
+<p class="muted" id="locationHoursModalHint">Podesi dane, vreme rada i pauze za izabranu lokaciju.</p>
+</div>
+<button aria-label="Zatvori" class="manual-close" id="closeLocationHoursModal" type="button">×</button>
+</div>
+<form class="formgrid" id="locationHoursModalForm">
+<div class="location-hours-days-v118" id="locationHoursModalRows"></div>
+<div class="location-blocked-section-v119 hidden" id="locationBlockedSection">
+<h3>Neradni dani i zauzeti periodi za ovu lokaciju</h3>
+<p class="muted">Ako ostaviš vreme prazno, blokira se ceo dan samo na ovoj lokaciji. Ako uneseš vreme od/do, blokira se samo taj period.</p>
+<div class="formgrid location-blocked-form-v119">
+<label class="tp-placeholder-label-v162" data-field-label-text="Datum"><input aria-label="Datum" id="locationBlockedDate" placeholder="Datum" type="date"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Od"><input aria-label="Od" id="locationBlockedStart" placeholder="Od" type="time"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Do"><input aria-label="Do" id="locationBlockedEnd" placeholder="Do" type="time"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Razlog"><input aria-label="Razlog" id="locationBlockedReason" placeholder="Razlog"/></label>
+<button class="btn small" id="addLocationBlocked" type="button">Dodaj neradno</button>
+</div>
+<div class="stack" id="locationBlockedList"></div>
+</div>
+<div class="form-actions location-hours-modal-actions-v118">
+<button class="btn small ghost" id="cancelLocationHoursModal" type="button">Otkaži</button>
+<button class="btn small" type="submit">Sačuvaj radno vreme</button>
+</div>
+</form>
+</div>
+<div class="card soft-card" id="hoursEditorCard">
+<h3 id="hoursEditorTitle">Redovno radno vreme i pauze</h3>
+<p class="muted" id="hoursEditorHint">Za svaki dan možeš uneti vreme rada i pauzu, npr. 12:00–13:00.</p>
+<div class="stack" id="hoursForm"></div>
+<button class="btn small" id="saveHours">Sačuvaj radno vreme</button>
+</div>
+<div class="card soft-card" id="blockedCard">
+<h3>Neradni dani i zauzeti periodi</h3>
+<p class="muted">Ako ostaviš vreme prazno, blokira se ceo dan. Ako uneseš vreme od/do, blokira se samo taj period.</p>
+<form class="formgrid" id="blockedForm">
+<label class="tp-placeholder-label-v162" data-field-label-text="Datum"><input aria-label="Datum" id="blockedDate" placeholder="Datum" type="date"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Od"><input aria-label="Od" id="blockedStart" placeholder="Od" type="time"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Do"><input aria-label="Do" id="blockedEnd" placeholder="Do" type="time"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Razlog"><input aria-label="Razlog" id="blockedReason" placeholder="Razlog"/></label>
+<button class="btn small" type="submit">Dodaj neradno</button>
+</form>
+<div class="stack" id="blockedList"></div>
+</div>
+</section><section class="tab card hidden" id="settings">
+<p class="eyebrow">Profil firme</p>
+<h2>Podešavanje profila firme</h2>
+<p class="muted">Podaci koje mušterije vide na javnoj stranici.</p>
+<form class="stack" id="settingsForm">
+<div class="card soft-card">
+<h3>Podaci firme</h3>
+<div class="formgrid">
+<label class="tp-placeholder-label-v162" data-field-label-text="Naziv firme"><input aria-label="Naziv firme" id="setName" placeholder="Naziv firme"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Delatnost"><input aria-label="Delatnost" id="setType" placeholder="Delatnost"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Grad" id="primaryCityField"><input aria-label="Grad" id="setCity" placeholder="Grad"/></label>
+<div class="multi-phone-field-v159 profile-phone-field-v159" id="primaryPhoneField">
+<div class="multi-phone-title-v159">Telefoni firme, najviše 10 brojeva</div>
+<input id="setPhone" type="hidden"/>
+<div class="multi-phones-box-v159" id="businessPhonesBox"></div>
+</div>
+<label class="tp-placeholder-label-v162" data-field-label-text="Instagram/Facebook link"><input aria-label="Instagram/Facebook link" id="setInstagram" placeholder="Instagram/Facebook link"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Adresa" id="primaryAddressField"><input aria-label="Adresa" id="setAddress" placeholder="Adresa"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Website"><input aria-label="Website" id="setWebsite" placeholder="Website"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Opis firme"><textarea aria-label="Opis firme" id="setDesc" placeholder="Opis firme"></textarea></label>
+</div>
+</div>
+<div class="card soft-card hidden" id="profileExtraLocationsWrap">
+<div class="location-title-row">
+<div>
+<h3>Lokacije</h3>
+<p class="muted">Dodate lokacije se prikazuju samo kao redovi. Dodavanje i uređivanje ide kroz prozor.</p>
+</div>
+<button class="btn small ghost" id="profileAddLocationBtn" type="button">+ Dodaj još jednu lokaciju</button>
+</div>
+<div class="profile-locations-list-v115" id="profileLocationsList"></div>
+</div>
+<div aria-modal="true" class="location-modal-v115 hidden" id="profileLocationModal" role="dialog">
+<div class="location-modal-box-v115">
+<div class="location-modal-head-v115">
+<div>
+<h3 id="profileLocationModalTitle">Dodaj lokaciju</h3>
+<p class="muted">Unesi samo podatke lokacije: grad, adresu i telefone.</p>
+</div>
+<button aria-label="Zatvori" class="manual-close" id="closeProfileLocationModal" type="button">×</button>
+</div>
+<div class="location-modal-form-v115" id="profileLocationForm">
+<label class="tp-placeholder-label-v162" data-field-label-text="Grad"><input aria-label="Grad" id="profileModalCity" placeholder="Grad"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Adresa"><input aria-label="Adresa" id="profileModalAddress" placeholder="Adresa"/></label>
+<div class="multi-phone-field-v159 location-phone-field-v159">
+<div class="multi-phone-title-v159">Telefoni lokacije, najviše 4 broja</div>
+<input id="profileModalPhone" type="hidden"/>
+<div class="multi-phones-box-v159" id="profileModalPhonesBox"></div>
+</div>
+<label class="inline-check location-modal-check-v115"><input checked="" id="profileModalActive" type="checkbox"/> Aktivna lokacija</label>
+<div class="location-modal-actions-v115">
+<button class="btn small ghost" id="cancelProfileLocationModal" type="button">Otkaži</button>
+<button class="btn small" id="profileModalSaveBtn" type="button">Dodaj u listu</button>
+</div>
+</div>
+</div>
+</div>
+<div class="card soft-card">
+<h3>Automatske poruke za mušterije</h3>
+<label class="tp-placeholder-label-v162" data-field-label-text="Poruka posle zakazivanja"><textarea aria-label="Poruka posle zakazivanja" id="setMsgBooking" placeholder="Poruka posle zakazivanja" rows="3"></textarea></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Poruka kod otkazivanja"><textarea aria-label="Poruka kod otkazivanja" id="setMsgCancel" placeholder="Poruka kod otkazivanja" rows="3"></textarea></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Napomena za mušterije"><textarea aria-label="Napomena za mušterije" id="setCustomerNote" placeholder="Napomena za mušterije" rows="3"></textarea></label>
+</div>
+<div class="card soft-card">
+<h3>Podešavanja termina</h3>
+<div class="formgrid">
+<label class="tp-placeholder-label-v162" data-field-label-text="Interval"><input aria-label="Interval" id="setInterval" placeholder="Interval" type="number"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Min najava sati"><input aria-label="Min najava sati" id="setMin" placeholder="Min najava sati" type="number"/></label>
+<label class="tp-placeholder-label-v162" data-field-label-text="Max dana"><input aria-label="Max dana" id="setMax" placeholder="Max dana" type="number"/></label>
+<label><input id="nCust" type="checkbox"/> Email mušteriji</label>
+<label><input id="nOwner" type="checkbox"/> Email vlasniku</label>
+<label><input id="nSms" type="checkbox"/> SMS log</label>
+<label><input id="nViber" type="checkbox"/> Viber log</label>
+</div>
+</div>
+<button class="btn small">Sačuvaj</button>
+</form>
+</section><section class="tab card hidden" id="logs"><h2>Log obaveštenja</h2><div class="stack" id="logList"></div></section></main>
+<div aria-modal="true" class="location-modal-v115 hidden" id="workerQrModal" role="dialog">
+<div class="location-modal-box-v115 worker-qr-modal-box-v136">
+<div class="location-modal-head-v115">
+<div>
+<h3 id="workerQrTitle">QR za radnika</h3>
+<p class="muted">Radnik skenira QR svojim telefonom, a zatim unosi svoj PIN. QR ne otvara admin panel.</p>
+</div>
+<button aria-label="Zatvori" class="manual-close" id="workerQrClose" type="button">×</button>
+</div>
+<div class="worker-qr-body-v136">
+<img alt="QR kod za radnički pristup" id="workerQrImg"/>
+<label class="tp-placeholder-label-v162" data-field-label-text="Link za radnika"><input aria-label="Link za radnika" id="workerQrUrl" placeholder="Link za radnika" readonly=""/></label>
+<div class="actions">
+<button class="btn small" id="workerQrCopy" type="button">Kopiraj link</button>
+<a class="btn small ghost" id="workerQrOpen" rel="noopener" target="_blank">Otvori</a>
+</div>
+<p class="msg" id="workerQrMsg"></p>
+</div>
+</div>
+</div>
+<script src="/js/capacitor-runtime.js?v=cap-android-v1"></script><script src="/js/loading.js?v=v160-global-loading"></script><script src="/js/owner.js?v=v157-radnici-popup-dupli-uklanjanje"></script><script src="/js/capacitor-mobile-owner.js?v=cap-mobile-android-v99-force-small"></script></body></html>

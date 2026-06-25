@@ -83,7 +83,7 @@ function enterTabletLockedMode(deviceToken){
  setTabletModeCookie();
  sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);
  clearOwnerSession();
- location.replace('/tablet');
+ location.replace(window.terminiAppPath ? window.terminiAppPath('/tablet') : '/tablet.html');
 }
 function showTabletAdminLock(){
  const lock=$('#tabletAdminLock');
@@ -322,7 +322,7 @@ function ensureTabletOwnerBanner(){
  banner.innerHTML='<b>Admin je privremeno otključan na uređaju koji je povezan kao tablet.</b><p class="muted">Kad završiš podešavanje, zaključaj uređaj i vrati radnički ekran.</p><div class="actions"><button id="tabletRelockNow" class="btn small" type="button">Zaključaj i otvori radnički ekran</button></div>';
  app.insertBefore(banner, app.firstChild);
  const b=document.getElementById('tabletRelockNow');
- if(b)b.onclick=()=>{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);clearOwnerSession();location.replace('/tablet')};
+ if(b)b.onclick=()=>{sessionStorage.removeItem(TABLET_ADMIN_UNLOCK_KEY);clearOwnerSession();location.replace(window.terminiAppPath ? window.terminiAppPath('/tablet') : '/tablet.html')};
 }
 async function ownerNoRegistrationLogin(buttonEl,msgEl){
  const out=msgEl||document.getElementById('lm')||document.getElementById('tabletAdminUnlockMsg');
@@ -399,6 +399,34 @@ let ownerServiceCache=[], ownerStaffCache=[];
 let manualOptionsLoadedAt=0, manualOptionsStale=true;
 const MANUAL_OPTIONS_TTL=180000;
 function manualPanelIsOpen(){try{const p=document.getElementById('manualAppointmentPanel');return !!(p&&!p.classList.contains('hidden'))}catch(_e){return false}}
+function closeOwnerManualAppointmentModal(opts={}){
+  try{
+    const panel=document.getElementById('manualAppointmentPanel');
+    const btn=document.getElementById('toggleManualAppointment');
+    if(opts.reset){
+      const name=document.getElementById('manualName');
+      const phone=document.getElementById('manualPhone');
+      const email=document.getElementById('manualEmail');
+      const notes=document.getElementById('manualNotes');
+      if(name)name.value='';
+      if(phone)phone.value='';
+      if(email)email.value='';
+      if(notes)notes.value='';
+    }
+    if(panel){
+      panel.classList.add('hidden');
+      panel.classList.remove('manual-modal-open');
+    }
+    document.body.classList.remove('manual-modal-body-open');
+    if(btn){
+      btn.setAttribute('aria-expanded','false');
+      btn.classList.remove('open');
+      const plus=btn.querySelector('.manual-plus');
+      if(plus)plus.textContent='+';
+    }
+    if(typeof resetUnsavedGuard==='function')resetUnsavedGuard(document.getElementById('manualForm')||undefined);
+  }catch(_e){}
+}
 function markManualOptionsStale(){manualOptionsStale=true;manualOptionsLoadedAt=0;}
 
 function locIdsOf(x){return (x&&Array.isArray(x.location_ids)?x.location_ids:[]).map(String)}
@@ -612,6 +640,8 @@ if(typeof manualDate!=='undefined') manualDate.onchange=()=>loadManualOptions().
 if(typeof appointmentLocationFilter!=='undefined') appointmentLocationFilter.onchange=loadAppointments;
 if(typeof loadA!=='undefined') loadA.onclick=loadAppointments;
 if(typeof manualSlotRefresh!=='undefined') manualSlotRefresh.onclick=updateManualSlots;
+const manualCancelBtn=document.getElementById('manualCancel');
+if(manualCancelBtn) manualCancelBtn.onclick=()=>closeOwnerManualAppointmentModal({reset:true});
 if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   e.preventDefault();
   let selected = manualTime.options[manualTime.selectedIndex];
@@ -632,10 +662,10 @@ if(typeof manualForm!=='undefined') manualForm.onsubmit=async e=>{
   });
   msg('Termin je dodat.','ok');
   manualName.value='';manualPhone.value='';manualEmail.value='';manualNotes.value='';
-  await updateManualSlots();
   markOwnerTabsStale('appointments','dash');
   await loadAppointments();
   ownerMarkTabLoaded('appointments');
+  closeOwnerManualAppointmentModal({reset:false});
   setTimeout(()=>resetUnsavedGuard(manualForm),80);
 };
 
@@ -738,7 +768,7 @@ function openStaffModal(x){
  fillStaffForm(x||null);
  if(typeof staffModal!=='undefined'&&staffModal)staffModal.classList.remove('hidden');
  setTimeout(()=>resetUnsavedGuard(staffForm),60);
- setTimeout(()=>{try{staffName.focus()}catch(_e){}},80);
+ // setTimeout(()=>{try{staffName.focus()}catch(_e){}},80);
 }
 async function closeStaffModal(force=false){
  if(!force){
@@ -1488,7 +1518,7 @@ function renderProfileExtraLocations(){
     <div class="location-row-actions-v115">
       <button class="btn small ghost profile-loc-edit" type="button" data-idx="${idx}">Uredi</button>
       <button class="btn small profile-loc-tablet" type="button" data-idx="${idx}" ${ownerLocId(l)?'':'disabled'}>Poveži ovaj uređaj kao tablet za ovu lokaciju</button>
-      <a class="btn small ghost" href="/tablet" target="_blank">Otvori radnički ekran</a>
+      <a class="btn small ghost" href="/tablet.html" target="_blank">Otvori radnički ekran</a>
       <button class="btn small danger profile-loc-delete" type="button" data-idx="${idx}">Obriši</button>
     </div>
   </article>`}).join('');
@@ -2569,7 +2599,7 @@ init();
         else{
           localStorage.removeItem('terminiOwnerToken');
           localStorage.removeItem('token');
-          location.href = '/';
+          location.href = (window.terminiAppPath ? window.terminiAppPath('/') : '/index.html');
         }
       });
 
@@ -2705,10 +2735,7 @@ init();
     const plus = btn.querySelector('.manual-plus');
     if(plus) plus.textContent = '−';
 
-    setTimeout(() => {
-      const first = document.getElementById('manualName');
-      if(first) first.focus({preventScroll:true});
-    }, 120);
+    // Bez automatskog fokusa: na telefonu tastatura više ne iskače odmah.
 
     if(typeof loadManualOptions === 'function'){
       try{ loadManualOptions(); }catch(e){}
@@ -2777,3 +2804,109 @@ document.addEventListener('keydown', function(ev){
   closeProfileLocationModalFn();
  }
 });
+
+/* Owner field placeholders everywhere v162
+   Labels beside/above fields are moved into placeholders, while checkbox labels stay visible. */
+(function installOwnerFieldPlaceholdersEverywhereV162(){
+  if(window.__ownerFieldPlaceholdersEverywhereV162)return;
+  window.__ownerFieldPlaceholdersEverywhereV162=true;
+
+  const SKIP_INPUT_TYPES=new Set(['checkbox','radio','hidden','submit','button','reset','file']);
+
+  function cleanText(value){
+    return String(value||'').replace(/\s+/g,' ').replace(/[:：]+$/,'').trim();
+  }
+
+  function visibleControls(label){
+    return Array.from(label.querySelectorAll('input,select,textarea')).filter(ctrl=>{
+      if(!ctrl || !ctrl.tagName)return false;
+      if(ctrl.tagName.toLowerCase()==='input'){
+        const type=String(ctrl.getAttribute('type')||'text').toLowerCase();
+        if(SKIP_INPUT_TYPES.has(type))return false;
+      }
+      return true;
+    });
+  }
+
+  function hasCheckboxOrRadio(label){
+    return !!label.querySelector('input[type="checkbox"],input[type="radio"]');
+  }
+
+  function getLabelText(label){
+    const clone=label.cloneNode(true);
+    clone.querySelectorAll('input,select,textarea,button,script,style').forEach(el=>el.remove());
+    return cleanText(clone.textContent);
+  }
+
+  function removeDirectLabelText(label){
+    Array.from(label.childNodes).forEach(node=>{
+      if(node.nodeType===Node.TEXT_NODE){
+        node.textContent='';
+      }
+    });
+  }
+
+  function applyToSelect(select,text){
+    if(!text)return;
+    if(!select.getAttribute('aria-label'))select.setAttribute('aria-label',text);
+    select.dataset.placeholder=text;
+    const first=select.options && select.options.length ? select.options[0] : null;
+    if(first && !String(first.value||'').trim() && !cleanText(first.textContent)){
+      first.textContent=text;
+    }
+  }
+
+  function applyToLabel(label){
+    if(!label || label.dataset.placeholderizedV162==='1')return;
+    if(hasCheckboxOrRadio(label))return;
+    const controls=visibleControls(label);
+    if(!controls.length)return;
+    const text=label.dataset.fieldLabelText || getLabelText(label);
+    if(!text)return;
+
+    label.dataset.fieldLabelText=text;
+    label.classList.add('tp-placeholder-label-v162');
+
+    controls.forEach(ctrl=>{
+      const tag=ctrl.tagName.toLowerCase();
+      if(tag==='input' || tag==='textarea'){
+        ctrl.setAttribute('placeholder',text);
+        if(!ctrl.getAttribute('aria-label'))ctrl.setAttribute('aria-label',text);
+      }else if(tag==='select'){
+        applyToSelect(ctrl,text);
+      }
+    });
+
+    removeDirectLabelText(label);
+    label.dataset.placeholderizedV162='1';
+  }
+
+  function applyEverywhere(root=document){
+    try{
+      (root.querySelectorAll ? root : document).querySelectorAll('label').forEach(applyToLabel);
+      (root.querySelectorAll ? root : document).querySelectorAll('.staff-phone-title-v158,.multi-phone-title-v159').forEach(el=>{
+        el.classList.add('tp-hidden-field-title-v162');
+      });
+      document.querySelectorAll('select[data-placeholder]').forEach(sel=>{
+        const text=sel.dataset.placeholder;
+        if(text)applyToSelect(sel,text);
+      });
+    }catch(_e){}
+  }
+
+  function scheduleApply(){
+    clearTimeout(window.__ownerPlaceholderTimerV162);
+    window.__ownerPlaceholderTimerV162=setTimeout(()=>applyEverywhere(document),30);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>applyEverywhere(document),{once:true});
+  }else{
+    applyEverywhere(document);
+  }
+
+  const obs=new MutationObserver(scheduleApply);
+  obs.observe(document.documentElement,{childList:true,subtree:true});
+  window.applyOwnerFieldPlaceholdersEverywhereV162=applyEverywhere;
+})();
+

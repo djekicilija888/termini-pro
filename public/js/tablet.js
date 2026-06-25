@@ -148,7 +148,7 @@ function showLocked(txt){
 }
 function goBackToLogin(){
   clearTabletModeMemory();
-  location.replace('/');
+  location.replace(window.terminiAppPath ? window.terminiAppPath('/') : '/index.html');
 }
 function showMain(){
   tabletEls.locked?.classList.add('hidden');
