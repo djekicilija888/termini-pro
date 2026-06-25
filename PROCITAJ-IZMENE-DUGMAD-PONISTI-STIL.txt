@@ -1,0 +1,8 @@
+VERZIJA: DUGMAD-PONISTI-STIL-FIX
+
+Urađeno:
+- U popup-u "Ručno dodaj termin za mušteriju" dugme je vraćeno na "Poništi".
+- U popup-u "Dodaj radnika" dugme je vraćeno na "Poništi".
+- Donja dva dugmeta u popup-u "Dodaj radnika" sada su u istom stilu kao donja dugmad u popup-u za ručno dodavanje termina.
+- Levo dugme je belo/ghost, desno dugme je tamno.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

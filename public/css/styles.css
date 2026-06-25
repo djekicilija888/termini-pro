@@ -2403,3 +2403,144 @@ body.staff-phone-typing-v167 #staffModal .staff-modal-form-v145{
 /* Staff phone locked center while typing v174: no visual style change, only scroll lock in JS. */
 
 /* Staff phone no first digit jump v175: centering now runs immediately on first digit. */
+
+/* Staff active phone row centered v176 */
+#staffModal .staff-phone-row-v158{
+  scroll-margin-top:140px;
+  scroll-margin-bottom:300px;
+}
+
+/* Staff first empty phone click fix v178: keyboard-aware recenter after first focus. */
+
+
+/* v179 - raspored rada radnika kao referentna slika */
+.staff-location-schedule-v125{
+  gap:16px;
+  border-radius:22px;
+  padding:18px;
+  background:#fff;
+  border:1px solid #e5e7eb;
+}
+.staff-schedule-head-v125{
+  display:grid;
+  gap:8px;
+}
+.staff-schedule-head-v125 h3{
+  margin:0;
+  font-size:18px;
+  line-height:1.1;
+  font-weight:800;
+  color:#0f172a;
+}
+.staff-schedule-head-v125 p{
+  margin:0;
+  font-size:14px;
+  line-height:1.45;
+  color:#6b7280;
+}
+.staff-schedule-day-v125{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  padding:18px;
+  border-radius:22px;
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  align-items:stretch;
+}
+.staff-schedule-day-title-v179{
+  font-size:18px;
+  line-height:1.1;
+  font-weight:800;
+  color:#111827;
+}
+.staff-schedule-location-wrap-v179{
+  display:grid;
+  gap:8px;
+  margin:0 !important;
+}
+.staff-schedule-field-label-v179{
+  font-size:15px;
+  line-height:1.2;
+  font-weight:800;
+  color:#111827;
+}
+.staff-schedule-location-wrap-v179 select,
+.staff-schedule-time-row-v179 input{
+  width:100%;
+  box-sizing:border-box;
+  min-height:54px;
+  border-radius:16px;
+  border:1px solid #dbe2ea;
+  background:#fff;
+  padding:10px 14px;
+  font-size:17px;
+  font-weight:700;
+  color:#111827;
+}
+.staff-schedule-time-row-v179{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0;
+}
+.staff-schedule-time-row-v179 input:first-child{
+  border-top-right-radius:0;
+  border-bottom-right-radius:0;
+}
+.staff-schedule-time-row-v179 input:last-child{
+  border-top-left-radius:0;
+  border-bottom-left-radius:0;
+  margin-left:-1px;
+}
+@media(max-width:760px){
+  .staff-location-schedule-v125{padding:14px}
+  .staff-schedule-day-v125{padding:16px}
+  .staff-schedule-head-v125 h3{font-size:17px}
+  .staff-schedule-head-v125 p{font-size:13px}
+  .staff-schedule-day-title-v179{font-size:17px}
+  .staff-schedule-field-label-v179{font-size:14px}
+  .staff-schedule-location-wrap-v179 select,
+  .staff-schedule-time-row-v179 input{min-height:50px;font-size:16px}
+}
+
+
+/* Staff modal bottom buttons like manual appointment v180 */
+#staffModal .staff-modal-actions-v145{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:12px !important;
+  align-items:stretch !important;
+  width:100% !important;
+  background:#fff !important;
+  border-top:1px solid #e5e7eb !important;
+  padding:12px 0 0 0 !important;
+  margin-top:10px !important;
+}
+#staffModal .staff-modal-actions-v145 .btn{
+  width:100% !important;
+  min-height:48px !important;
+  height:48px !important;
+  border-radius:14px !important;
+  padding:8px 12px !important;
+  font-size:16px !important;
+  line-height:1.05 !important;
+  font-weight:900 !important;
+  text-transform:none !important;
+  letter-spacing:0 !important;
+}
+#staffModal .staff-modal-actions-v145 .btn.ghost,
+#staffModal .staff-modal-actions-v145 #resetStaff{
+  background:#ffffff !important;
+  color:#111827 !important;
+  border:1px solid #e5e7eb !important;
+  box-shadow:none !important;
+}
+#staffModal .staff-modal-actions-v145 button[type="submit"]{
+  background:#0f172a !important;
+  color:#ffffff !important;
+  border:1px solid #0f172a !important;
+  box-shadow:none !important;
+}
+#manualForm .manual-appointment-actions-v161 #manualCancel{
+  text-transform:none !important;
+}

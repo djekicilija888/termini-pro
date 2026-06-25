@@ -1,0 +1,8 @@
+VERZIJA: RADNICI-PRVI-KLIK-PRAZNO-POLJE-FIX
+
+Ispravka:
+- Kada prvi put klikneš u prazno polje "Broj telefona", polje više ne ostaje skroz gore van vidljivog dela.
+- Centriranje se sada ponavlja nakon otvaranja tastature, jer Android WebView pomera ekran tek posle fokusa.
+- Ponašanje posle unosa prve cifre i dalje ostaje stabilno kao u prethodnoj dobroj verziji.
+- Izgled nije menjan.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

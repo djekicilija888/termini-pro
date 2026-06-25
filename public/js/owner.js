@@ -501,6 +501,14 @@ function normalizedStaffSchedule(schedule,allowedIds){
   return {day:d,location_id:first,is_working:!!first,start_time:'09:00',end_time:'17:00'};
  });
 }
+function locationScheduleOptionTextV179(loc){
+ if(!loc)return 'Adresa nije uneta';
+ const address=(loc.address||'').trim();
+ const name=(loc.name||'').trim();
+ const city=(loc.city||'').trim();
+ return address||name||city||'Adresa nije uneta';
+}
+
 function renderStaffLocationScheduleBox(schedule=null,allowedIds=null){
  const box=document.getElementById('staffLocationScheduleBox');
  if(!box)return;
@@ -513,12 +521,14 @@ function renderStaffLocationScheduleBox(schedule=null,allowedIds=null){
  if(!allowedLocs.length){box.innerHTML='<p class="muted">Izaberi bar jednu lokaciju za radnika.</p>';box.classList.remove('hidden');return;}
  box.classList.remove('hidden');
  const rows=normalizedStaffSchedule(schedule,ids);
- box.innerHTML=`<div class="staff-schedule-head-v125"><h3>Raspored radnika po lokacijama</h3><p class="muted">Ovde odredi kog dana je radnik na kojoj lokaciji. Mušterija će videti radnika samo na lokaciji gde je tog dana podešen.</p></div>`+
+ box.innerHTML=`<div class="staff-schedule-head-v125"><h3>Raspored rada radnika</h3><p class="muted">Odredi kog dana je radnik na kojoj lokaciji. Mušterija vidi radnika samo na lokaciji gde je tog dana podešen.</p></div>`+
   rows.map(r=>`<div class="staff-schedule-day-v125" data-day="${r.day}">
-    <b>${day[r.day]}</b>
-    <label>Lokacija<select class="staff-schedule-location-v125"><option value="">Ne radi</option>${allowedLocs.map(l=>`<option value="${htmlEsc(l.id)}" ${String(r.location_id)===String(l.id)?'selected':''}>${htmlEsc(l.name||l.city||'Lokacija')}</option>`).join('')}</select></label>
-    <label>Od<input class="staff-schedule-start-v125" type="time" value="${htmlEsc(r.start_time||'09:00')}"></label>
-    <label>Do<input class="staff-schedule-end-v125" type="time" value="${htmlEsc(r.end_time||'17:00')}"></label>
+    <div class="staff-schedule-day-title-v179">${day[r.day]}</div>
+    <label class="staff-schedule-location-wrap-v179"><span class="staff-schedule-field-label-v179">Lokacija</span><select class="staff-schedule-location-v125" aria-label="Lokacija ${day[r.day]}"><option value="">Ne radi</option>${allowedLocs.map(l=>`<option value="${htmlEsc(l.id)}" ${String(r.location_id)===String(l.id)?'selected':''}>${htmlEsc(locationScheduleOptionTextV179(l))}</option>`).join('')}</select></label>
+    <div class="staff-schedule-time-row-v179">
+      <input aria-label="Početak rada ${day[r.day]}" class="staff-schedule-start-v125" type="time" value="${htmlEsc(r.start_time||'09:00')}">
+      <input aria-label="Kraj rada ${day[r.day]}" class="staff-schedule-end-v125" type="time" value="${htmlEsc(r.end_time||'17:00')}">
+    </div>
   </div>`).join('');
 }
 function collectStaffLocationSchedule(){
@@ -738,6 +748,7 @@ function clearStaffPhoneFixedCenterV169(){
   if(form){
     delete form.dataset.staffPhoneLockScrollTopV174;
     delete form.dataset.staffPhoneLockActiveV174;
+    delete form.dataset.staffPhoneLockInputIdV176;
   }
  }catch(_e){}
 }
@@ -752,9 +763,9 @@ function applyStaffPhoneLockedScrollV174(){
 function centerStaffPhoneInputOnScreenV167(input, force=false){
  try{
   if(!input)return;
-  const field=input.closest('.staff-phone-field-v158');
+  const row=input.closest('.staff-phone-row-v158') || input;
   const form=document.querySelector('#staffModal .staff-modal-form-v145');
-  if(!field || !form)return;
+  if(!row || !form)return;
 
   document.body.classList.add('staff-phone-typing-v167');
 
@@ -763,16 +774,16 @@ function centerStaffPhoneInputOnScreenV167(input, force=false){
       const vv=window.visualViewport;
       const viewportTop=vv?vv.offsetTop:0;
       const viewportHeight=vv?vv.height:window.innerHeight;
-      const wantedCenter=viewportTop+(viewportHeight*0.52);
-      const rect=field.getBoundingClientRect();
-      const fieldCenter=rect.top+(rect.height/2);
-      const delta=fieldCenter-wantedCenter;
+      const wantedCenter=viewportTop+(viewportHeight*0.50);
+      const rect=row.getBoundingClientRect();
+      const rowCenter=rect.top+(rect.height/2);
+      const delta=rowCenter-wantedCenter;
       form.scrollTop += delta;
       form.dataset.staffPhoneLockScrollTopV174=String(form.scrollTop);
       form.dataset.staffPhoneLockActiveV174='1';
     }catch(_e){
       try{
-        field.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+        row.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
         form.dataset.staffPhoneLockScrollTopV174=String(form.scrollTop);
         form.dataset.staffPhoneLockActiveV174='1';
       }catch(_e2){}
@@ -782,8 +793,8 @@ function centerStaffPhoneInputOnScreenV167(input, force=false){
   if(force || form.dataset.staffPhoneLockActiveV174!=='1'){
     doCenter();
     clearTimeout(window.__staffPhoneCenterTimerV171);
-    window.__staffPhoneCenterTimerV171=setTimeout(doCenter,120);
-    setTimeout(doCenter,320);
+    window.__staffPhoneCenterTimerV171=setTimeout(doCenter,80);
+    setTimeout(doCenter,220);
   }else{
     applyStaffPhoneLockedScrollV174();
   }
@@ -798,6 +809,37 @@ function keepStaffPhoneLockedAfterTypingV174(){
   setTimeout(applyStaffPhoneLockedScrollV174,120);
  }catch(_e){}
 }
+
+function scheduleStaffPhoneCenterAfterKeyboardV178(input){
+ try{
+  if(!input)return;
+  // Prvi klik u prazno polje: Android prvo otvara tastaturu i ume da povuče polje gore.
+  // Zato centriramo odmah, pa ponovo nakon otvaranja tastature.
+  centerStaffPhoneInputOnScreenV167(input,true);
+  clearTimeout(window.__staffPhoneKeyboardCenterTimer1V178);
+  clearTimeout(window.__staffPhoneKeyboardCenterTimer2V178);
+  clearTimeout(window.__staffPhoneKeyboardCenterTimer3V178);
+  clearTimeout(window.__staffPhoneKeyboardCenterTimer4V178);
+  window.__staffPhoneKeyboardCenterTimer1V178=setTimeout(()=>centerStaffPhoneInputOnScreenV167(input,true),120);
+  window.__staffPhoneKeyboardCenterTimer2V178=setTimeout(()=>centerStaffPhoneInputOnScreenV167(input,true),300);
+  window.__staffPhoneKeyboardCenterTimer3V178=setTimeout(()=>centerStaffPhoneInputOnScreenV167(input,true),550);
+  window.__staffPhoneKeyboardCenterTimer4V178=setTimeout(()=>centerStaffPhoneInputOnScreenV167(input,true),850);
+ }catch(_e){}
+}
+(function installStaffPhoneViewportCenterV178(){
+ try{
+  if(window.__staffPhoneViewportCenterInstalledV178)return;
+  window.__staffPhoneViewportCenterInstalledV178=true;
+  const handler=()=>{
+    const active=document.activeElement;
+    if(active && active.classList && active.classList.contains('staff-phone-input-v158')){
+      scheduleStaffPhoneCenterAfterKeyboardV178(active);
+    }
+  };
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',handler);
+  window.addEventListener('resize',handler);
+ }catch(_e){}
+})();
 function addStaffPhoneField(value=''){
  const box=document.getElementById('staffPhonesBox');
  if(!box)return null;
@@ -809,8 +851,8 @@ function addStaffPhoneField(value=''){
  input.className='staff-phone-input-v158';
  input.placeholder='Broj telefona';
  input.value=value||'';
- input.addEventListener('focus',()=>centerStaffPhoneInputOnScreenV167(input,true));
- input.addEventListener('click',()=>centerStaffPhoneInputOnScreenV167(input,true));
+ input.addEventListener('focus',()=>scheduleStaffPhoneCenterAfterKeyboardV178(input));
+ input.addEventListener('click',()=>scheduleStaffPhoneCenterAfterKeyboardV178(input));
  input.addEventListener('input',()=>{
   const addBtnBefore=document.getElementById('staffPhonesBox')?.querySelector('.staff-add-phone-v158');
   const wasHidden=!addBtnBefore || addBtnBefore.classList.contains('hidden');
@@ -860,11 +902,29 @@ function renderStaffPhones(value=''){
  add.type='button';
  add.className='staff-add-phone-v158 hidden';
  add.textContent='Dodaj još jedan telefon';
- add.onclick=()=>{
+ add.onclick=(ev)=>{
+  if(ev)ev.preventDefault();
+  const form=document.querySelector('#staffModal .staff-modal-form-v145');
+  const oldTop=form?form.scrollTop:0;
+
   const input=addStaffPhoneField('');
   syncStaffPhoneUi();
   markUnsavedScope(staffForm);
-  if(input){input.focus();centerStaffPhoneInputOnScreenV167(input,true);}
+
+  // Sprečava Android/WebView da pri fokusu prvo povuče ekran gore,
+  // pa tek onda da ga naš kod vrati u centar.
+  if(form)form.scrollTop=oldTop;
+  if(input){
+    try{
+      input.focus({preventScroll:true});
+    }catch(_e){
+      input.focus();
+      if(form)form.scrollTop=oldTop;
+    }
+    centerStaffPhoneInputOnScreenV167(input,true);
+    keepStaffPhoneLockedAfterTypingV174();
+    requestAnimationFrame(()=>keepStaffPhoneLockedAfterTypingV174());
+  }
  };
  box.appendChild(add);
  syncStaffPhoneUi();
@@ -3062,7 +3122,7 @@ document.addEventListener('keydown', function(ev){
   function ready(fn){ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn,{once:true}); else fn(); }
   ready(function(){
     const cancel=document.getElementById('manualCancel');
-    if(cancel)cancel.textContent='Otkaži';
+    if(cancel)cancel.textContent='Poništi';
   });
 })();
 
@@ -3080,3 +3140,29 @@ document.addEventListener('keydown', function(ev){
 
 
 /* Staff phone no first digit jump v175 */
+
+
+/* Staff active phone row centered v176 */
+
+
+/* Staff add phone prevent scroll flash v177 */
+
+
+/* Staff first empty phone click fix v178 */
+
+
+/* Schedule section restyled like reference v179 */
+
+
+/* Button labels Poništi v180 */
+(function(){
+  function ready(fn){ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn,{once:true}); else fn(); }
+  ready(function(){
+    const manualCancel=document.getElementById('manualCancel');
+    if(manualCancel)manualCancel.textContent='Poništi';
+    const resetStaff=document.getElementById('resetStaff');
+    if(resetStaff)resetStaff.textContent='Poništi';
+    const staffSave=document.querySelector('#staffModal .staff-modal-actions-v145 button[type="submit"]');
+    if(staffSave)staffSave.textContent='Sačuvaj radnika';
+  });
+})();

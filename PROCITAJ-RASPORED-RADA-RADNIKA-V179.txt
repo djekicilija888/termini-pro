@@ -1,0 +1,10 @@
+
+URADJENO:
+- deo "Raspored rada radnika" izgleda kao na referentnoj slici
+- naslov je sada: Raspored rada radnika
+- opis je sada: Odredi kog dana je radnik na kojoj lokaciji. Mušterija vidi radnika samo na lokaciji gde je tog dana podešen.
+- kartice po danima su veće i urednije
+- tekst "Lokacija" i polja za vreme su sređeni u istom stilu
+- ako lokacija nema upisanu adresu/naziv, prikazuje se "Adresa nije uneta"
+- dugmad su promenjena u: OTKAŽI i SAČUVAJ
+- izmena je ubačena i u web i u android kopiju projekta

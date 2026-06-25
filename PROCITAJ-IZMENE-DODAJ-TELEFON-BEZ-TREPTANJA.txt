@@ -1,0 +1,8 @@
+VERZIJA: RADNICI-DODAJ-TELEFON-BEZ-TREPTANJA
+
+Ispravka:
+- Kada klikneš "Dodaj još jedan telefon", novo polje dobija fokus bez automatskog skrolovanja Android WebView-a.
+- Uklonjeno je treptanje/pomeranje gore pa vraćanje u centar.
+- Aktivno novo polje se odmah centrira i zaključava u toj poziciji.
+- Izgled nije menjan.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

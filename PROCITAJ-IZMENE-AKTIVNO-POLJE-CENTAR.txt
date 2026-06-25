@@ -1,0 +1,8 @@
+VERZIJA: RADNICI-AKTIVNO-POLJE-CENTAR
+
+Ispravka:
+- Kada ima više polja za telefon, centriranje se više ne računa po celom svetloplavom pravougaoniku.
+- Centriranje se računa po aktivnom redu/polju u koje se trenutno kuca.
+- Aktivno polje ostaje u centru, a dugme i ostala polja ostaju normalnog izgleda.
+- Posle centriranja se scroll zaključava dok se unose cifre.
+- Izmenjeno je i u public fajlovima i u Android kopiji.

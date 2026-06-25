@@ -3379,3 +3379,164 @@ html body.cap-mobile-owner-ready #staffModal .staff-phone-field-v158 .staff-add-
 /* Staff phone locked center while typing v174: no visual style change, only scroll lock in JS. */
 
 /* Staff phone no first digit jump v175: centering now runs immediately on first digit. */
+
+/* Staff active phone row centered v176 */
+html body.cap-mobile-owner-ready #staffModal .staff-phone-row-v158{
+  scroll-margin-top:130px !important;
+  scroll-margin-bottom:310px !important;
+}
+
+/* Staff first empty phone click fix v178: keyboard-aware recenter after first focus. */
+
+
+/* v179 - staff schedule mobile section matching reference */
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox{
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  display:grid !important;
+  gap:14px !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-head-v125{
+  display:grid !important;
+  gap:8px !important;
+  padding:0 2px !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-head-v125 h3{
+  font-size:17px !important;
+  line-height:1.1 !important;
+  margin:0 !important;
+  font-weight:800 !important;
+  color:#0f172a !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-head-v125 p{
+  font-size:12px !important;
+  line-height:1.4 !important;
+  margin:0 !important;
+  font-weight:700 !important;
+  color:#6b7280 !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-day-v125{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:12px !important;
+  padding:16px !important;
+  border-radius:20px !important;
+  border:1px solid #e5e7eb !important;
+  background:#f9fafb !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-day-title-v179{
+  font-size:16px !important;
+  line-height:1.1 !important;
+  font-weight:800 !important;
+  color:#111827 !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-location-wrap-v179{
+  display:grid !important;
+  gap:8px !important;
+  margin:0 !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-field-label-v179{
+  font-size:13px !important;
+  line-height:1.15 !important;
+  font-weight:800 !important;
+  color:#111827 !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-location-wrap-v179 select,
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-time-row-v179 input{
+  min-height:46px !important;
+  height:46px !important;
+  padding:8px 12px !important;
+  border-radius:14px !important;
+  border:1px solid #dbe2ea !important;
+  background:#fff !important;
+  font-size:15px !important;
+  font-weight:700 !important;
+  color:#111827 !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-time-row-v179{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:0 !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-time-row-v179 input:first-child{
+  border-top-right-radius:0 !important;
+  border-bottom-right-radius:0 !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) #staffLocationScheduleBox .staff-schedule-time-row-v179 input:last-child{
+  border-top-left-radius:0 !important;
+  border-bottom-left-radius:0 !important;
+  margin-left:-1px !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145{
+  position:sticky !important;
+  bottom:0 !important;
+  z-index:60 !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:16px !important;
+  background:#fff !important;
+  border-top:1px solid #eceff3 !important;
+  padding:14px 0 0 0 !important;
+  margin-top:8px !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145 .btn{
+  min-height:50px !important;
+  height:50px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  font-size:18px !important;
+  line-height:1 !important;
+  font-weight:800 !important;
+  letter-spacing:.02em !important;
+  text-transform:uppercase !important;
+  color:#111827 !important;
+}
+
+
+/* Staff modal bottom buttons like manual appointment v180 */
+html body #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145{
+  position:sticky !important;
+  bottom:0 !important;
+  z-index:70 !important;
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:12px !important;
+  align-items:stretch !important;
+  width:100% !important;
+  background:#ffffff !important;
+  border-top:1px solid #e5e7eb !important;
+  padding:10px 0 0 0 !important;
+  margin-top:8px !important;
+  box-shadow:0 -8px 18px rgba(255,255,255,0.95) !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145 .btn{
+  width:100% !important;
+  min-height:44px !important;
+  height:44px !important;
+  border-radius:12px !important;
+  padding:6px 10px !important;
+  font-size:15px !important;
+  line-height:1.05 !important;
+  font-weight:900 !important;
+  text-transform:none !important;
+  letter-spacing:0 !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145 .btn.ghost,
+html body #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145 #resetStaff{
+  background:#ffffff !important;
+  color:#111827 !important;
+  border:1px solid #e5e7eb !important;
+  box-shadow:none !important;
+}
+html body #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145 button[type="submit"]{
+  background:#0f172a !important;
+  color:#ffffff !important;
+  border:1px solid #0f172a !important;
+  box-shadow:none !important;
+}
+html body #manualForm .manual-appointment-actions-v161 #manualCancel{
+  text-transform:none !important;
+}
