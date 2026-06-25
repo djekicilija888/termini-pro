@@ -3928,35 +3928,11 @@ body.phone-add-freeze-v192 .multi-add-phone-v159{
   }
 }
 
-
-/* v195 - Android: SAMO popup Radnici.
-   Bela neprovidna podloga iza donjih dugmadi Poništi / Sačuvaj radnika,
-   da tekst iz rasporeda ne prolazi vizuelno iza njih. Ne menja položaj dugmadi. */
+/* v196 - SAMO Dodaj radnika: neprovidna bela zona iza donjih dugmadi.
+   Ne menja raspored, velicinu, poziciju ni logiku. Samo pojacava belu podlogu oko sticky dugmadi. */
 @media (max-width: 820px){
   html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145{
-    position:sticky !important;
-    bottom:0 !important;
-    z-index:90 !important;
     background:#ffffff !important;
-    background-color:#ffffff !important;
-    isolation:isolate !important;
-    overflow:visible !important;
-  }
-
-  html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145::before{
-    content:"" !important;
-    position:absolute !important;
-    left:-12px !important;
-    right:-12px !important;
-    top:-12px !important;
-    bottom:calc(-18px - env(safe-area-inset-bottom,0px)) !important;
-    z-index:0 !important;
-    background:#ffffff !important;
-    pointer-events:none !important;
-  }
-
-  html body.cap-mobile-owner-ready #staffModal.location-modal-v115:not(.hidden) .staff-modal-actions-v145 > *{
-    position:relative !important;
-    z-index:1 !important;
+    box-shadow:0 -14px 0 14px #ffffff !important;
   }
 }

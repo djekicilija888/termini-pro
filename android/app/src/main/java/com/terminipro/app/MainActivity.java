@@ -38,8 +38,46 @@ public class MainActivity extends BridgeActivity {
         try {
             if (this.bridge != null && this.bridge.getWebView() != null) {
                 this.bridge.getWebView().addJavascriptInterface(new TerminiAndroidFiles(this), "TerminiAndroidFiles");
+                this.bridge.getWebView().addJavascriptInterface(new TerminiAndroidInsets(this), "TerminiAndroidInsets");
             }
         } catch (Exception ignored) {}
+    }
+
+
+    public static class TerminiAndroidInsets {
+        private final Activity activity;
+
+        TerminiAndroidInsets(Activity activity) {
+            this.activity = activity;
+        }
+
+        @JavascriptInterface
+        public String getInsetsJson() {
+            int top = 0;
+            int bottom = 0;
+            int left = 0;
+            int right = 0;
+
+            try {
+                android.view.WindowInsets insets = activity.getWindow().getDecorView().getRootWindowInsets();
+                if (insets != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        android.graphics.Insets bars = insets.getInsets(android.view.WindowInsets.Type.systemBars());
+                        top = bars.top;
+                        bottom = bars.bottom;
+                        left = bars.left;
+                        right = bars.right;
+                    } else {
+                        top = insets.getSystemWindowInsetTop();
+                        bottom = insets.getSystemWindowInsetBottom();
+                        left = insets.getSystemWindowInsetLeft();
+                        right = insets.getSystemWindowInsetRight();
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            return "{\"top\":" + top + ",\"bottom\":" + bottom + ",\"left\":" + left + ",\"right\":" + right + "}";
+        }
     }
 
     public static class TerminiAndroidFiles {
