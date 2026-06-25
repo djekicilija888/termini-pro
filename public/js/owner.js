@@ -1918,22 +1918,33 @@ function collectProfileExtraLocations(){
   active:l.active!==0
  }));
 }
+function profilePrimaryLocationFromFieldsV183(){
+ syncBusinessPhones();
+ const first=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:makeEmptyProfileLocation(1);
+ first.name=first.name||'Lokacija 1';
+ first.city=typeof setCity!=='undefined'?setCity.value:'';
+ first.address=typeof setAddress!=='undefined'?setAddress.value:'';
+ first.phone=typeof setPhone!=='undefined'?setPhone.value:'';
+ first.active=1;
+ first.sort_order=1;
+ return first;
+}
 function ensureFullLocationModeFromPrimary(){
  syncBusinessPhones();
  if(profileUsingFullLocations())return true;
  if(!ownerHasWrittenLocation())return false;
- const first=(ownerLocationsCache&&ownerLocationsCache[0])?ownerLocationsCache[0]:makeEmptyProfileLocation(1);
- first.name='Lokacija 1';
- first.city=setCity.value;
- first.address=setAddress.value;
- first.phone=setPhone.value;
- first.active=1;
- first.sort_order=1;
+ const first=profilePrimaryLocationFromFieldsV183();
  ownerLocationsCache=[first];
  profileLocationsMode='all';
  refreshProfileAddLocationButton();
  renderProfileExtraLocations();
  return true;
+}
+function forceProfileLocationListModeV183(){
+ // Kada se dodaje druga lokacija, grad/adresa/telefoni iz glavnih polja moraju da pređu u Lokaciju 1,
+ // a nova lokacija onda postaje Lokacija 2. Glavna polja se odmah sakrivaju.
+ if(profileUsingFullLocations())return true;
+ return ensureFullLocationModeFromPrimary();
 }
 function openProfileLocationModal(idx=null){
  if(!profileUsingFullLocations()){
@@ -2194,6 +2205,7 @@ async function loadBookingLink(render=true){
 }
 if(typeof addLocationBtn!=='undefined')addLocationBtn.onclick=()=>openOwnerLocationQrModal(null);
 if(typeof profileAddLocationBtn!=='undefined')profileAddLocationBtn.onclick=()=>{
+ if(!forceProfileLocationListModeV183())return msg('Prvo upiši Grad i Adresu za prvu lokaciju.','err');
  openProfileLocationModal(null);
 };
 if(typeof setCity!=='undefined')setCity.addEventListener('input',refreshProfileAddLocationButton);
@@ -2210,6 +2222,9 @@ async function saveProfileLocationFromModal(e){
  const loadingDone = window.AppLoading ? window.AppLoading.begin('Čuvam lokaciju...', {immediate:true}) : null;
  if(btn){btn.disabled=true;btn.textContent='Čuvam...';}
  try{
+  if(isNew && !profileUsingFullLocations()){
+   if(!forceProfileLocationListModeV183())throw Error('Prvo upiši Grad i Adresu za prvu lokaciju.');
+  }
   const loc=isNew?makeEmptyProfileLocation((ownerLocationsCache||[]).length+1):(ownerLocationsCache[editIndex]||makeEmptyProfileLocation(editIndex+1));
   syncProfileModalPhones();
   loc.city=profileModalCity.value;
@@ -2221,6 +2236,9 @@ async function saveProfileLocationFromModal(e){
   if(isNew)ownerLocationsCache.push(loc);
   else ownerLocationsCache[editIndex]=loc;
   profileLocationsMode='all';
+  // Odmah sakrij glavna polja Grad/Adresa/Telefon i prikaži listu lokacija.
+  refreshProfileAddLocationButton();
+  renderProfileExtraLocations();
   resetUnsavedGuard(profileLocationForm);
   closeProfileLocationModalFn(true);
   renderProfileExtraLocations();
@@ -3312,3 +3330,6 @@ document.addEventListener('keydown', function(ev){
     if(staffSave)staffSave.textContent='Sačuvaj radnika';
   });
 })();
+
+
+/* Profile location primary move fix v183 */

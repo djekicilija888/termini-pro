@@ -2586,3 +2586,19 @@ body.staff-phone-typing-v167 #staffModal .staff-modal-form-v145{
 .multi-add-phone-v159.hidden{
   display:none !important;
 }
+
+
+/* Profil firme - manje dugme Dodaj još jedan telefon v182 */
+.multi-add-phone-v159{
+  min-height:42px !important;
+  padding:7px 10px !important;
+  font-size:16px !important;
+  line-height:1.08 !important;
+  border-radius:12px !important;
+}
+
+
+/* Profil firme - sakrivanje glavnih polja kada postoje dodatne lokacije v183 */
+.primary-location-hidden{
+  display:none !important;
+}
