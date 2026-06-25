@@ -1,0 +1,7 @@
+Urađeno:
+- Glavna stranica za prijavu i registraciju je sređena i za Android i za desktop.
+- Na Androidu su tekstovi i polja smanjeni i lepše raspoređeni.
+- Login forma više ne izgleda ogromno i ne beži ispod donje navigacije.
+- Na desktopu je sređen moderan dvokolonski izgled.
+- Izmenjeni su public/index.html i Android kopija index.html, kao i styles.css u obe kopije.
+- Provereno je da owner.js nema JavaScript syntax grešku.
